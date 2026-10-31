@@ -1,0 +1,41 @@
+{
+  "expectedGenerator": "whole-project-scope-2026-10-04-v44",
+  "qualification": [
+    {
+      "id": "vanity-standard",
+      "prompt": "Disconnect and remove one existing vanity and sink top, and install one new 31-inch by 19-inch two-door composition vanity and sink top. Keep plumbing locations. Use small-volume pricing. Owner handles disposal after removal. No other fixtures, floor or painting."
+    },
+    {
+      "id": "laminate-proxy-waste",
+      "prompt": "Install standard laminate flooring over exactly 120 SF of sound, ready wood subfloor in a bedroom. Use small-volume pricing and the approved resilient plank approximation, clearly labeled as an approximation. Purchase 10% additional material for cutting waste, but install only 120 SF. No existing flooring removal, underlayment, trim, repairs or disposal is required."
+    },
+    {
+      "id": "paint-100",
+      "prompt": "Apply two coats of flat latex with a roller to exactly 100 SF of smooth interior bedroom drywall walls. Surfaces are sound and ready for normal painting. Do not paint ceiling or trim. No repairs or debris disposal are required. Use small-volume pricing."
+    },
+    {
+      "id": "toilet-standard",
+      "prompt": "Remove one existing toilet and install one standard two-piece floor-mounted toilet, including seat and supply, at the same plumbing location. Use small-volume pricing. Owner handles debris disposal. No plumbing relocation, floor repair or other fixtures."
+    },
+    {
+      "id": "bathroom-fixtures-paint",
+      "prompt": "In one bathroom, remove one existing toilet and install one standard two-piece floor-mounted toilet including seat and supply. Disconnect and remove one existing vanity and sink top and install one new 31-inch by 19-inch two-door composition vanity and sink top. Keep all plumbing locations. Apply two coats of flat latex with a roller to exactly 100 SF of smooth drywall walls; surfaces are sound and ready for normal painting. Use small-volume pricing for all work. Owner handles debris disposal after removal. No floor, tub, shower, ceiling, trim, plumbing relocation or repairs."
+    },
+    {
+      "id": "paint-room-derived",
+      "prompt": "Repaint the walls of a 10 ft x 12 ft bedroom with an 8 ft ceiling. There is one 30-inch x 80-inch door and two 3 ft x 4 ft windows. Apply two coats of flat latex with a roller. Existing smooth drywall is sound and ready for painting. Exclude ceiling, trim, repairs and disposal. Use small-volume pricing."
+    },
+    {
+      "id": "paint-plan-image",
+      "prompt": "Repaint only the bedroom walls shown in the attached measured plan. Read the room dimensions, wall height and all opening dimensions from the image. Apply two coats of flat latex with a roller to smooth drywall that is sound and ready for painting. Exclude ceiling, trim, repairs and disposal. Use small-volume pricing.",
+      "imageResource": "EstimatorMeasuredPlan"
+    }
+  ],
+  "repeats": [],
+  "diagnostics": [
+    {
+      "id": "milwaukee-bathroom-vague",
+      "prompt": "In Milwaukee, Wisconsin, estimate a remodel of a 5 ft x 8 ft bathroom. Keep the existing layout and plumbing locations. Remove the existing floor, vanity, toilet, and tub/shower surround. Install a new bathroom floor, vanity and countertop, toilet, and tub/shower surround. Repaint the walls. Retain the existing bathtub. Total before tax."
+    }
+  ]
+}
