@@ -1,0 +1,493 @@
+{
+  "title": "5 by 8 bathroom remodel \u2014 supported direct scope",
+  "unpriced": [
+    {
+      "name": "Waterproofing materials and system validation",
+      "reason": "Full catalog waterproof/membrane/damp-proof searches found no suitable shower system; roofing membranes rejected. Cement board and caulk are not waterproofing. Need compatible membrane, bands, penetration seals and tub-flange treatment for 66.306 SF; labor priced."
+    },
+    {
+      "name": "Porcelain floor tile and setting materials",
+      "reason": "Porcelain search found no porcelain row; ceramic floor variants 1636\u20131651 are not proven matching porcelain specification. Floor installation labor priced, but porcelain tile, compatible thinset/grout and threshold transition material unpriced."
+    },
+    {
+      "name": "Exhaust fan material and duct connection consumables",
+      "reason": "Fan/ventilation and adjacent bathroom heater rows inspected. Rows 7328\u20137334 add a light; heater/attic fan variants have different scope. No plain midgrade 70\u201380 CFM bath fan material source. Replacement labor priced; retained duct assumed sound."
+    },
+    {
+      "name": "Protection consumables and unresolved plumbing incidentals",
+      "reason": "No defensible dedicated protection consumables row found. Tub waste/overflow and vanity trap/supply inclusion not explicit in selected assemblies; normal connection labor included but new material allowance unsupported if not furnished with fixtures."
+    },
+    {
+      "name": "Tile edge profiles and doorway threshold materials",
+      "reason": "Thinset ceramic field rows do not identify exposed edge profiles. Wainscot cap variants are not vertical termination/porcelain doorway transition equivalents. Need 12.833 LF vertical edge finish and 2.5 LF threshold; fit labor priced."
+    }
+  ],
+  "coverage": [
+    {
+      "requirement": "Bathroom scope",
+      "componentIds": [
+        "disposal",
+        "protection",
+        "handling-clean",
+        "tub-remove",
+        "vanity-remove",
+        "toilet-remove",
+        "mirror-remove",
+        "walltile-remove",
+        "floor-remove",
+        "wallboard-remove",
+        "electric-remove",
+        "tub-valve-remove",
+        "tub",
+        "tub-faucet",
+        "vanity",
+        "sink-faucet",
+        "toilet",
+        "wall-backer",
+        "floor-backer",
+        "wall-tile",
+        "wet-caulk",
+        "floor-prep",
+        "porcelain-labor",
+        "waterproof-labor",
+        "edge-finishing",
+        "light",
+        "fan-install",
+        "mirror",
+        "paint-wash",
+        "paint-sand"
+      ],
+      "status": "partial",
+      "reason": "Explicit missing materials"
+    }
+  ],
+  "summary": "Bathroom remodel",
+  "assumptions": [
+    "60 x 32 x 19 inch acrylic alcove tub, average grade; matching existing footprint.",
+    "One 30-inch birch cabinet with nominal 31 x 19 inch integral sink top; catalog 31-inch unit is proxy for top overhang. Existing stops, drains, toilet flange, electrical boxes, circuits and exterior fan duct are serviceable.",
+    "Existing small ceramic tile on gypsum surround, thinset ceramic floor over sound wood subfloor; no window, one 30 x 80 inch door opening (16.667 SF).",
+    "New ceramic 4-1/4 inch surround tile; porcelain 12-inch square floor tile. Flat latex paint is catalog finish assumption.",
+    "No special stairs or long carry; one shared 12 CY dumpster is smallest catalog disposal container.",
+    "Assemblies include ordinary fastening, setting and connection labor where integral to installation, but not removal unless explicitly stated. No new whole fixture rough-ins.",
+    "Labor mixes omitted: no business rates supplied; source crew averages retained and manhours treated as person-hours."
+  ],
+  "exclusions": [
+    "Layout changes, hidden damage, new circuits, new vent routing and unrelated upgrades."
+  ],
+  "review": {
+    "quantities": "Coherent bathroom geometry",
+    "inclusions": "Separate assemblies and support",
+    "productivity": "Reviewed source person-hours",
+    "completeness": "Gaps preserved"
+  },
+  "components": [
+    {
+      "id": "disposal",
+      "category": "Protection, disposal and completion",
+      "name": "Disposal",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 2566,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "One smallest available dumpster covers all bathroom debris; delivery, haul and fees included. No other disposal line. Capacity minimum exceeds expected few cubic yards."
+    },
+    {
+      "id": "protection",
+      "category": "Protection, disposal and completion",
+      "name": "Protection",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 3618,
+      "quantity": 4,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two laborers x 2 hours for shared route/tub protection setup and removal; excludes trade installation and paint masking. Reusable coverings assumed available; consumables gap recorded."
+    },
+    {
+      "id": "handling-clean",
+      "category": "Protection, disposal and completion",
+      "name": "Handling Clean",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 3618,
+      "quantity": 6,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two laborers x 3 hours total for consolidated loading of staged debris and final vacuum/wipe clean; excludes vanity transport expressly included by removal row and trade spot cleanup."
+    },
+    {
+      "id": "tub-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Tub Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 737,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Remove old alcove tub; no reset."
+    },
+    {
+      "id": "vanity-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Vanity Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 2820,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Disconnect and remove old cabinet/sink/faucet to dumpster; not remove-and-replace labor row."
+    },
+    {
+      "id": "toilet-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Toilet Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 11366,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Remove toilet before floor work; new installation separate."
+    },
+    {
+      "id": "mirror-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Mirror Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 2814,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Screw-mounted mirror clips assumed; comparable screwed bathroom accessory removal."
+    },
+    {
+      "id": "walltile-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Walltile Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1659,
+      "quantity": 66.30555555555556,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Existing thinset ceramic tiles over same surround area; substrate removal separate."
+    },
+    {
+      "id": "floor-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Floor Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1637,
+      "quantity": 26.666666666666664,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Thinset small ceramic floor over same net floor area."
+    },
+    {
+      "id": "wallboard-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Wallboard Remove",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 3618,
+      "quantity": 66.30555555555556,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Remove underlying gypsum to install wet-area backer; tile removal row covers finish only."
+    },
+    {
+      "id": "electric-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Electric Remove",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 7848,
+      "quantity": 1,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "One electrician x 1 hour to safely disconnect/remove vanity light and old fan; installation rows do not specify removal."
+    },
+    {
+      "id": "tub-valve-remove",
+      "category": "Selective bathroom demolition",
+      "name": "Tub Valve Remove",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 10864,
+      "quantity": 0.75,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "One plumber x 0.75 hour to disconnect/remove old tub valve and trim in opened wall, not tub removal or new assembly installation."
+    },
+    {
+      "id": "tub",
+      "category": "Tub, faucet, vanity and toilet installation",
+      "name": "Tub",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 785,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Average 60 x 32 acrylic alcove tub, installed; includes normal setting/drain reconnection labor; no demolition implied by installed row."
+    },
+    {
+      "id": "tub-faucet",
+      "category": "Tub, faucet, vanity and toilet installation",
+      "name": "Tub Faucet",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 913,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Average complete tub faucet with shower assembly. Do not add separate mixer/showerhead or rough-in rows."
+    },
+    {
+      "id": "vanity",
+      "category": "Tub, faucet, vanity and toilet installation",
+      "name": "Vanity",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1357,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Birch vanity plus sink top assembly; assume integral basin and routine drain reconnection. 31-inch top proxy for 30-inch cabinet. Do not also charge separate sink or replacement labor."
+    },
+    {
+      "id": "sink-faucet",
+      "category": "Tub, faucet, vanity and toilet installation",
+      "name": "Sink Faucet",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 10864,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Average bathroom faucet with installation, separate from cabinet/sink-top."
+    },
+    {
+      "id": "toilet",
+      "category": "Tub, faucet, vanity and toilet installation",
+      "name": "Toilet",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 11388,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Average two-piece toilet; includes seat and supply plus normal setting/connection."
+    },
+    {
+      "id": "wall-backer",
+      "category": "Substrates, surround and floor labor",
+      "name": "Wall Backer",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1677,
+      "quantity": 66.30555555555556,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Half-inch cement board for surround. Includes ordinary mounting and seam preparation; waterproof membrane is separate."
+    },
+    {
+      "id": "floor-backer",
+      "category": "Substrates, surround and floor labor",
+      "name": "Floor Backer",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1675,
+      "quantity": 26.666666666666664,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Quarter-inch cement board over sound subfloor; fastening and ordinary installation bed assumed included. No structural repair."
+    },
+    {
+      "id": "wall-tile",
+      "category": "Substrates, surround and floor labor",
+      "name": "Wall Tile",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1673,
+      "quantity": 66.30555555555556,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Small ceramic tile thinset assembly includes tile setting and grout as normal completion; not waterproofing, backer or change-of-plane caulk. Net installed area, no labor waste multiplier."
+    },
+    {
+      "id": "wet-caulk",
+      "category": "Substrates, surround and floor labor",
+      "name": "Wet Caulk",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 1601,
+      "quantity": 23.166666666666664,
+      "unit": "LF",
+      "basis": "derived",
+      "rationale": "Quarter-inch mildew-resistant wet-area caulk at tub lip and two wall corners; change-of-plane joints separate from grouted tile field."
+    },
+    {
+      "id": "floor-prep",
+      "category": "Substrates, surround and floor labor",
+      "name": "Floor Prep",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 1673,
+      "quantity": 2,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two-person tile crew x 1 hour scraping residual adhesive, checking floor flatness and vacuuming before board; no hidden damage repair or tile demo duplication."
+    },
+    {
+      "id": "porcelain-labor",
+      "category": "Substrates, surround and floor labor",
+      "name": "Porcelain Labor",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 1673,
+      "quantity": 8,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two-person tile crew x 4 hours for layout/cutting/setting/grouting 26.667 SF small porcelain floor; no porcelain/thinset/grout material priced. Crew average per person $36.97."
+    },
+    {
+      "id": "waterproof-labor",
+      "category": "Substrates, surround and floor labor",
+      "name": "Waterproof Labor",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 1673,
+      "quantity": 4,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two-person tile crew x 2 active hours sealing penetrations/corners and applying compatible membrane coats to 66.306 SF; excludes passive cure time and backer seams. Waterproof system materials unpriced."
+    },
+    {
+      "id": "edge-finishing",
+      "category": "Substrates, surround and floor labor",
+      "name": "Edge Finishing",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 1673,
+      "quantity": 1,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "Two-person tile crew x 0.5 hours total to fit exposed vertical surround edge profiles (12.833 LF) and doorway threshold (2.5 LF); distinct from field tile setting. Profile and threshold materials unpriced."
+    },
+    {
+      "id": "light",
+      "category": "Vanity light and fan replacement labor",
+      "name": "Light",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 7848,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Average wall light bar, same bathroom function as requested; catalog incandescent-type fixture assumed rather than integrated LED. Connection included."
+    },
+    {
+      "id": "fan-install",
+      "category": "Vanity light and fan replacement labor",
+      "name": "Fan Install",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 7848,
+      "quantity": 2.5,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "One electrician x 2.5 hours to fit replacement 70\u201380 CFM fan, reconnect existing duct/wiring, seal joint and test. No new duct or circuit; fan material unavailable in exact specification."
+    },
+    {
+      "id": "mirror",
+      "category": "Mirror and painted surfaces",
+      "name": "Mirror",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 727,
+      "quantity": 1,
+      "unit": "Ea",
+      "basis": "assumed",
+      "rationale": "Clear framed plate-glass mirror, one unit exactly as Ea; catalog omits dimensions, assumes typical vanity-size mirror, not area pricing."
+    },
+    {
+      "id": "paint-wash",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint Wash",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 8880,
+      "quantity": 148.66666666666669,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Wet clean paint surfaces before coating."
+    },
+    {
+      "id": "paint-sand",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint Sand",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 8894,
+      "quantity": 148.66666666666669,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Light sand existing paint before first coat."
+    },
+    {
+      "id": "paint-patch",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint Patch",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 8890,
+      "quantity": 12,
+      "unit": "SF",
+      "basis": "assumed",
+      "rationale": "12 SF localized normal anchor holes/edges from mirror/light and tile interface; no hidden damage."
+    },
+    {
+      "id": "paint-prime",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint Prime",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 8918,
+      "quantity": 12,
+      "unit": "SF",
+      "basis": "assumed",
+      "rationale": "Spot seal repaired areas only, before finish coats."
+    },
+    {
+      "id": "paint",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint",
+      "location": "Bathroom",
+      "kind": "catalog",
+      "row": 9034,
+      "quantity": 148.66666666666669,
+      "unit": "SF",
+      "basis": "derived",
+      "rationale": "Two-coat roller assembly; quantity is surface area once, not twice. Flat latex explicitly assumed catalog specification."
+    },
+    {
+      "id": "paint-detail",
+      "category": "Mirror and painted surfaces",
+      "name": "Paint Detail",
+      "location": "Bathroom",
+      "kind": "labor",
+      "row": 9034,
+      "quantity": 2,
+      "unit": "person-hour",
+      "basis": "assumed",
+      "rationale": "One painter x 2 hours masking fixtures and cutting in room perimeter/tile/door on both coats; additional detailed brushwork to roller assembly, no duplicate rolling or shared route protection."
+    }
+  ]
+}

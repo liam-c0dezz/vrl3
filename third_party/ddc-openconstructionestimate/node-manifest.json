@@ -1,0 +1,53 @@
+{
+  "commit": "e9e23fbab91014c8537b054d8f625c6f390fcf08",
+  "nodes": [
+    {
+      "name": "Prep Text LLM",
+      "sha256": "0f106b468082bd6ec8b8fa98108d20b2ea6a2b1e201e9e15a066fbf9cdd60581"
+    },
+    {
+      "name": "\ud83d\udcdd Parse Text Response",
+      "sha256": "297a29c3dd3f3feda3e42e63b13b6c2c58fcc1d5d1ea5c2ce64857d5e1079321"
+    },
+    {
+      "name": "Prep Works",
+      "sha256": "53d20691b370a00ded8e54019b1c40eef8cc9fe2cd8882799341d57d68f6305a"
+    },
+    {
+      "name": "1\ufe0f\u20e3 Prep Query",
+      "sha256": "126b17cf6e0c4fdd84e644c521e221dd47eb90b4d533f285e1e5a1279361286c"
+    },
+    {
+      "name": "2\ufe0f\u20e3 Extract Transform",
+      "sha256": "97f48b7885e96f535ccbaa43e81eb91c81518a8ae47adfcf206ce35981b684e3"
+    },
+    {
+      "name": "4\ufe0f\u20e3 Extract Embedding",
+      "sha256": "8084903b466f411d24028e0dbb63c5a1ab360cd437235b62a84cc7e99fa39d0d"
+    },
+    {
+      "name": "6\ufe0f\u20e3 Prep Rerank",
+      "sha256": "c0b54f39d52f5129bec7135475d807a1ed51eb611ed41a4c8795704a423875fd"
+    },
+    {
+      "name": "8\ufe0f\u20e3 Apply Rerank",
+      "sha256": "a521353e791d295ce1a5d48abd72b87290dfbff5f7d6239580f65c1d8e87dc95"
+    },
+    {
+      "name": "9\ufe0f\u20e3 Calculate",
+      "sha256": "31b6c094ac239ae594300af2c34b660526a83e71bf8780ccbe1e694faa76ec96"
+    },
+    {
+      "name": "\ud83d\udcca Update Result",
+      "sha256": "0b63779e9c92863a3981f5623a438c11d8e4a4a70d9d6975d6db18f405b5504e"
+    },
+    {
+      "name": "Acc",
+      "sha256": "b99779a230afa50ae7bda996bfa9d5605c2736d87558d2e2be44e1dd8cfc6e10"
+    },
+    {
+      "name": "Agg",
+      "sha256": "b333cee09fe0d8909da6b02e5af9b1a1bf0819c1397235fd484e062a5e036f32"
+    }
+  ]
+}
