@@ -81,7 +81,7 @@ Do not add permission prompts for Microphone, Photos, Location, Contacts, or Not
 
 ## Privacy manifest
 
-`Construction Estimate/PrivacyInfo.xcprivacy` declares:
+`Construction Estimate/Resources/PrivacyInfo.xcprivacy` declares:
 
 - the collected data types above;
 - no tracking and no tracking domains; and
