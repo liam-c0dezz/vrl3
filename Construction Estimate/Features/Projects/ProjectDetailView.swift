@@ -494,7 +494,7 @@ struct ProjectDetailView: View {
                                         Text(L("Estimates"))
                                             .font(.system(size: 17, weight: .semibold))
                                             .foregroundColor(AppGray.ink)
-                                        Text(estimatesForDisplay.count == 1 ? L("1 estimate for this project") : L("%@ estimates for this project", "\(estimatesForDisplay.count)"))
+                                        Text(estimatesForDisplay.count == 1 ? L("1 estimate for this project") : L("%@ estimates for this project", estimatesForDisplay.count.formatted()))
                                             .font(.system(size: 15))
                                             .foregroundColor(AppGray.secondary)
                                     }
@@ -1078,6 +1078,7 @@ private struct ProjectDashboardView: View {
             Text(L(title))
                 .font(.system(size: 14, weight: .semibold))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             if let trailingIcon {
                 Image(systemName: trailingIcon)
                     .font(.system(size: 12, weight: .semibold))
@@ -1101,7 +1102,7 @@ private struct ProjectDashboardView: View {
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
-                Text(L("%@ of 5", "\(progressStep)"))
+                Text(L("%@ of 5", progressStep.formatted()))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppGray.ink)
             }
@@ -1666,7 +1667,7 @@ private struct DashboardSegmentedProgress: View {
             }
         }
         .frame(height: 7.6)
-        .accessibilityLabel(L("Job progress, step %@ of 5", "\(step)"))
+        .accessibilityLabel(L("Job progress, step %@ of 5", step.formatted()))
     }
 }
 
@@ -2046,7 +2047,7 @@ private struct EstimateDocumentDetailView: View {
 
     private var navigationBar: some View {
         ZStack {
-            Text(L("Estimate %@", "\(position)"))
+            Text(L("Estimate %@", position.formatted()))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -3084,7 +3085,7 @@ struct ItemizedEstimateCard: View {
                     Text(L(group.name))
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(AppGray.ink)
-                    Text(group.items.count == 1 ? L("1 item") : L("%@ items", "\(group.items.count)"))
+                    Text(group.items.count == 1 ? L("1 item") : L("%@ items", group.items.count.formatted()))
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(AppGray.secondary)
 
@@ -3531,7 +3532,7 @@ private struct EstimateCategorySection: View {
                         Text(category.name)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.black)
-                        Text(L("%@ items", "\(category.items.count)"))
+                        Text(L("%@ items", category.items.count.formatted()))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -3837,7 +3838,7 @@ struct InvoicesTabContent: View {
                 Text(L("Invoices"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                Text(invoices.count == 1 ? L("1 invoice for this project") : L("%@ invoices for this project", "\(invoices.count)"))
+                Text(invoices.count == 1 ? L("1 invoice for this project") : L("%@ invoices for this project", invoices.count.formatted()))
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.secondary)
             }
@@ -4595,7 +4596,7 @@ struct MaterialsTabContent: View {
                         .padding(.top, -2)
                     HStack(spacing: 8) {
                         headerButton(icon: "plus", label: L("Add")) {}
-                        Text(L("%@ items", "\(materials.count)"))
+                        Text(L("%@ items", materials.count.formatted()))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(labelGray)
                     }
@@ -4687,7 +4688,7 @@ struct MaterialsTabContent: View {
             }
 
             if onHandCount > 0 {
-                Text(L("%@ of %@ marked on hand", "\(onHandCount)", "\(materials.count)"))
+                Text(L("%@ of %@ marked on hand", onHandCount.formatted(), materials.count.formatted()))
                     .font(.system(size: 12))
                     .foregroundColor(labelGray)
                     .frame(maxWidth: .infinity, alignment: .leading)

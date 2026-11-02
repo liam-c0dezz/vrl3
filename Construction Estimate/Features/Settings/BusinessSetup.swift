@@ -589,10 +589,10 @@ struct BusinessSetupView: View {
                 }
             }
             BusinessDivider()
-            BusinessPickerRow(label: L("Quote Valid"), value: L("%@ days", "\(draft.quoteValidDays)")) {
+            BusinessPickerRow(label: L("Quote Valid"), value: L("%@ days", draft.quoteValidDays.formatted())) {
                 Picker(L("Quote Valid"), selection: $draft.quoteValidDays) {
                     ForEach(quoteValidOptions, id: \.self) { days in
-                        Text(L("%@ days", "\(days)")).tag(days)
+                        Text(L("%@ days", days.formatted())).tag(days)
                     }
                 }
             }
@@ -628,7 +628,7 @@ struct BusinessSetupView: View {
                     title: L("My Prices"),
                     subtitle: store.hourlyRates.isEmpty
                         ? L("Set up your hourly rates")
-                        : (store.hourlyRates.count == 1 ? L("1 custom rate") : L("%@ custom rates", "\(store.hourlyRates.count)"))
+                        : (store.hourlyRates.count == 1 ? L("1 custom rate") : L("%@ custom rates", store.hourlyRates.count.formatted()))
                 )
             }
             NavigationLink {
@@ -639,7 +639,7 @@ struct BusinessSetupView: View {
                     title: L("My Upsells"),
                     subtitle: store.upsells.isEmpty
                         ? L("Add add-ons you always offer")
-                        : (store.upsells.count == 1 ? L("1 saved upsell") : L("%@ saved upsells", "\(store.upsells.count)"))
+                        : (store.upsells.count == 1 ? L("1 saved upsell") : L("%@ saved upsells", store.upsells.count.formatted()))
                 )
             }
         }

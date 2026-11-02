@@ -132,7 +132,7 @@ struct DashboardHomeView: View {
                     isGettingStartedExpanded.toggle()
                 } label: {
                     HStack(spacing: 14) {
-                        Text(L("%@ of 4", "\(gettingStartedCompletedCount)"))
+                        Text(L("%@ of 4", gettingStartedCompletedCount.formatted()))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Color.white)
                             .fixedSize()

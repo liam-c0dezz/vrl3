@@ -578,6 +578,7 @@ private struct WelcomeTestimonialCard: View {
                     .font(.system(size: 10.45 * scale, weight: .regular, design: .rounded))
                     .foregroundStyle(AppBrand.dark.opacity(0.68))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -1329,6 +1330,7 @@ private struct LocalActivityGraphicVisual: View {
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.22), radius: 2.5, y: 1)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .frame(width: 300, alignment: .center)
                         .position(
                             x: graphGeometry.size.width / 2,
@@ -1340,6 +1342,7 @@ private struct LocalActivityGraphicVisual: View {
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .frame(width: 170, alignment: .trailing)
                         .position(
                             x: curveEndX - 85,
@@ -2566,6 +2569,7 @@ private struct PhotoPriceCallout: View {
                 .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                 .foregroundStyle(AppGray.ink)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .opacity(isTitleVisible ? 1 : 0)
                 .scaleEffect(isTitleVisible ? 1 : 0.96, anchor: .leading)
                 .offset(y: isTitleVisible ? 0 : 2)
@@ -3041,6 +3045,8 @@ private struct AnimatedOnboardingInvoiceCard: View {
             Text(L("Description"))
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(L("Qty"))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .frame(width: 28)
             Text(L("Amount"))
                 .frame(width: 60, alignment: .trailing)

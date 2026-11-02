@@ -54,7 +54,7 @@ struct SettingsView: View {
 
                 Section {
                     LabeledContent(L("Free Trial")) {
-                        Text(L("%@ days", "\(SuperwallService.freeTrialDays)"))
+                        Text(L("%@ days", SuperwallService.freeTrialDays.formatted()))
                             .foregroundStyle(.secondary)
                     }
 

@@ -1007,7 +1007,7 @@ struct InvoiceDetailView: View {
                     beginSendingInvoice()
                 }
             }) {
-                Text(deletingLineItems ? (selectedLineItemIDs.count == 1 ? L("Delete (1 line item)?") : L("Delete (%@ line items)?", "\(selectedLineItemIDs.count)")) : L("Preview & Send"))
+                Text(deletingLineItems ? (selectedLineItemIDs.count == 1 ? L("Delete (1 line item)?") : L("Delete (%@ line items)?", selectedLineItemIDs.count.formatted())) : L("Preview & Send"))
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
