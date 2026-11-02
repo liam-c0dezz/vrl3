@@ -37,51 +37,51 @@ struct SmartServiceApacheView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Scope of work") {
+                Section(L("Scope of work")) {
                     TextEditor(text: $scope).frame(minHeight: 140)
                     PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        Label(photoData == nil ? "Add photo" : "Change photo", systemImage: "photo")
+                        Label(photoData == nil ? L("Add photo") : L("Change photo"), systemImage: "photo")
                     }
-                    if photoData != nil { Button("Remove photo") { photoData = nil; selectedPhoto = nil } }
-                    HStack { Text("Markup (%)"); TextField("0", text: $markup).keyboardType(.decimalPad).multilineTextAlignment(.trailing) }
+                    if photoData != nil { Button(L("Remove photo")) { photoData = nil; selectedPhoto = nil } }
+                    HStack { Text(L("Markup (%)")); TextField("0", text: $markup).keyboardType(.decimalPad).multilineTextAlignment(.trailing) }
                 }
                 if !consent.isGranted {
-                    Section { Text("Enable AI features in Settings before generating an estimate.") }
+                    Section { Text(L("Enable AI features in Settings before generating an estimate.")) }
                 }
                 Section {
                     Button { Task { await generate() } } label: {
-                        if busy { HStack { ProgressView(); Text("Preparing estimate…") } }
-                        else { Text("Generate with Smart Service Apache") }
+                        if busy { HStack { ProgressView(); Text(L("Preparing estimate…")) } }
+                        else { Text(L("Generate with Smart Service Apache")) }
                     }
                     .disabled(busy || loadingPhoto || !consent.isGranted || scope.trimmingCharacters(in: .whitespacesAndNewlines).count < 3)
-                    if let message { Text(message).foregroundStyle(.red) }
+                    if let message { Text(L(message)).foregroundStyle(.red) }
                 }
                 if let result {
-                    Section("Estimate preview") {
+                    Section(L("Estimate preview")) {
                         ForEach(Array(result.items.enumerated()), id: \.offset) { _, item in
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(item.description)
                                 Text("\(item.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(item.unit) × \(item.unit_price.formatted(.currency(code: "USD")))")
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text(item.total, format: .currency(code: "USD"))
-                                Text("Match confidence: \(item.quality)").font(.caption).foregroundStyle(.secondary)
+                                Text(L("Match confidence: %@", "\(item.quality)")).font(.caption).foregroundStyle(.secondary)
                             }
                         }
-                        LabeledContent("Subtotal", value: result.subtotal.formatted(.currency(code: "USD")))
-                        LabeledContent("Markup", value: result.markup_amount.formatted(.currency(code: "USD")))
-                        LabeledContent(result.status == "partial" ? "Priced work total" : "Total", value: result.total.formatted(.currency(code: "USD")))
-                        Text("Review the proposed work and estimated quantities before quoting. This preview is not saved as a project estimate.").font(.caption)
+                        LabeledContent(L("Subtotal"), value: result.subtotal.formatted(.currency(code: "USD")))
+                        LabeledContent(L("Markup"), value: result.markup_amount.formatted(.currency(code: "USD")))
+                        LabeledContent(result.status == "partial" ? L("Priced work total") : L("Total"), value: result.total.formatted(.currency(code: "USD")))
+                        Text(L("Review the proposed work and estimated quantities before quoting. This preview is not saved as a project estimate.")).font(.caption)
                     }
                     if !result.unresolved.isEmpty {
-                        Section("Work needing review") {
+                        Section(L("Work needing review")) {
                             ForEach(Array(result.unresolved.enumerated()), id: \.offset) { _, item in Text(item.work) }
                         }
                     }
                 }
             }
-            .navigationTitle("Smart Service Apache")
+            .navigationTitle(L("Smart Service Apache"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L("Close")) { dismiss() } } }
             .task { await consent.refresh() }
             .onChange(of: selectedPhoto) { _, photo in
                 Task {
@@ -90,17 +90,17 @@ struct SmartServiceApacheView: View {
                     do {
                         guard let data = try await photo?.loadTransferable(type: Data.self), let image = UIImage(data: data),
                               let jpeg = image.jpegData(compressionQuality: 0.6), jpeg.count <= 2_900_000 else {
-                            photoData = nil; message = "Choose a smaller photo."; return
+                            photoData = nil; message = L("Choose a smaller photo."); return
                         }
                         photoData = jpeg; message = nil
-                    } catch { message = "Photo could not be loaded." }
+                    } catch { message = L("Photo could not be loaded.") }
                 }
             }
         }
     }
 
     @MainActor private func generate() async {
-        guard let percent = Double(markup), percent.isFinite, (0...100).contains(percent) else { message = "Enter a markup from 0 to 100."; return }
+        guard let percent = Double(markup), percent.isFinite, (0...100).contains(percent) else { message = L("Enter a markup from 0 to 100."); return }
         busy = true; message = nil; result = nil
         defer { busy = false }
         do {
@@ -118,10 +118,10 @@ struct SmartServiceApacheView: View {
             defer { client.finishTasksAndInvalidate() }
             let (data, response) = try await client.data(for: request)
             if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let error = object["error"] as? String {
-                message = error == "consent_required" ? "Enable AI features in Settings." : "The estimate could not finish. Please try again."; return
+                message = error == "consent_required" ? L("Enable AI features in Settings.") : L("The estimate could not finish. Please try again."); return
             }
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { message = "The estimate could not finish. Please try again."; return }
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { message = L("The estimate could not finish. Please try again."); return }
             result = try JSONDecoder().decode(ApacheEstimate.self, from: data)
-        } catch { message = "The estimate could not finish. Please try again." }
+        } catch { message = L("The estimate could not finish. Please try again.") }
     }
 }

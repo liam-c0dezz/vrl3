@@ -45,11 +45,12 @@ struct ChatSession: Identifiable, Codable {
         if let name = customName, !name.isEmpty { return name }
         return messages.first(where: { $0.role == "user" })
             .map { String($0.content.prefix(36)) }
-            ?? "New Chat"
+            ?? L("New Chat")
     }
 
     var subtitle: String {
         let formatter = RelativeDateTimeFormatter()
+        formatter.locale = appLocale
         formatter.unitsStyle = .short
         return formatter.localizedString(for: createdAt, relativeTo: Date())
     }
@@ -125,10 +126,10 @@ private struct ScreeningQuestionField: View {
 
     private var placeholder: String {
         switch question.response_type {
-        case "measurement": return "Enter dimensions or measurements"
-        case "number": return "Enter a number"
-        case "postal_code": return "Enter ZIP or postal code"
-        default: return "Enter your answer"
+        case "measurement": return L("Enter dimensions or measurements")
+        case "number": return L("Enter a number")
+        case "postal_code": return L("Enter ZIP or postal code")
+        default: return L("Enter your answer")
         }
     }
 
@@ -248,7 +249,7 @@ struct ScreeningCardView: View {
                 HapticButton(action: {
                     onSubmit(answers)
                 }) {
-                    Text("Get Estimate")
+                    Text(L("Get Estimate"))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -529,7 +530,7 @@ final class ChatViewModel {
                 return
             }
             guard consentStore.isGranted else {
-                errorMessage = "AI permission was withdrawn before this request completed."
+                errorMessage = L("AI permission was withdrawn before this request completed.")
                 return
             }
             applyReply(from: data)
@@ -553,12 +554,12 @@ final class ChatViewModel {
         }
         guard consentStore.isGranted else {
             throw NSError(domain: "EstimatorAcceptance", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: consentStore.errorMessage ?? "AI permission is not granted for this test."
+                NSLocalizedDescriptionKey: consentStore.errorMessage ?? L("AI permission is not granted for this test.")
             ])
         }
         guard let projectID else {
             throw NSError(domain: "EstimatorAcceptance", code: 2, userInfo: [
-                NSLocalizedDescriptionKey: "The QA project is no longer available."
+                NSLocalizedDescriptionKey: L("The QA project is no longer available.")
             ])
         }
         let requestID = UUID()
@@ -608,7 +609,7 @@ final class ChatViewModel {
         updateActiveSession {
             $0.messages.append(ChatMessage(
                 role: "assistant",
-                content: "Answer a few questions to finish your estimate.",
+                content: L("Answer a few questions to finish your estimate."),
                 attachmentKind: "screening_prompt"
             ))
         }
@@ -635,14 +636,14 @@ final class ChatViewModel {
             throw NSError(
                 domain: "EasyBid.AIEdit",
                 code: 403,
-                userInfo: [NSLocalizedDescriptionKey: "Allow AI features before editing with AI."]
+                userInfo: [NSLocalizedDescriptionKey: L("Allow AI features before editing with AI.")]
             )
         }
         guard let projectID else {
             throw NSError(
                 domain: "EasyBid.AIEdit",
                 code: 400,
-                userInfo: [NSLocalizedDescriptionKey: "This estimate is not connected to a project."]
+                userInfo: [NSLocalizedDescriptionKey: L("This estimate is not connected to a project.")]
             )
         }
 
@@ -677,7 +678,7 @@ final class ChatViewModel {
                 domain: "EasyBid.AIEdit",
                 code: 403,
                 userInfo: [
-                    NSLocalizedDescriptionKey: "AI permission was withdrawn before this request completed."
+                    NSLocalizedDescriptionKey: L("AI permission was withdrawn before this request completed.")
                 ]
             )
         }
@@ -688,7 +689,7 @@ final class ChatViewModel {
             throw NSError(
                 domain: "EasyBid.AIEdit",
                 code: 500,
-                userInfo: [NSLocalizedDescriptionKey: "The edited estimate could not be loaded. Please try again."]
+                userInfo: [NSLocalizedDescriptionKey: L("The edited estimate could not be loaded. Please try again.")]
             )
         }
         return (estimate, returnedID)
@@ -701,7 +702,7 @@ final class ChatViewModel {
         errorMessage = nil
         inputText = ""
         let thumbnail = UIImage(data: imageData).flatMap { $0.jpegData(compressionQuality: 0.25) }
-        let displayContent = caption.isEmpty ? "📷 Photo" : caption
+        let displayContent = caption.isEmpty ? L("📷 Photo") : caption
         let msg = ChatMessage(role: "user", content: displayContent,
                               attachmentKind: "photo", thumbnailJpeg: thumbnail)
         updateActiveSession { $0.messages.append(msg) }
@@ -743,7 +744,7 @@ final class ChatViewModel {
                 return
             }
             guard consentStore.isGranted else {
-                errorMessage = "AI permission was withdrawn before this request completed."
+                errorMessage = L("AI permission was withdrawn before this request completed.")
                 return
             }
             applyReply(from: data)
@@ -789,7 +790,7 @@ final class ChatViewModel {
         payload["image_caption"] = String(caption.prefix(2_000))
         if let projectID { payload["project_id"] = projectID.uuidString }
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else {
-            errorMessage = "That attachment couldn't be prepared. Please try another file."
+            errorMessage = L("That attachment couldn't be prepared. Please try another file.")
             return
         }
 
@@ -803,7 +804,7 @@ final class ChatViewModel {
                 return
             }
             guard consentStore.isGranted else {
-                errorMessage = "AI permission was withdrawn before this request completed."
+                errorMessage = L("AI permission was withdrawn before this request completed.")
                 return
             }
             applyReply(from: data)
@@ -814,7 +815,7 @@ final class ChatViewModel {
 
     private func requireAIConsent() -> Bool {
         guard consentStore.isGranted else {
-            errorMessage = "Allow AI features before using AI Chat."
+            errorMessage = L("Allow AI features before using AI Chat.")
             return false
         }
         return true
@@ -844,7 +845,7 @@ final class ChatViewModel {
            let questions = resp.questions, !questions.isEmpty {
             screeningPrompt = ScreeningPrompt(
                 jobId: jobId,
-                jobName: resp.job_name ?? "Job",
+                jobName: resp.job_name ?? L("Job"),
                 questions: questions
             )
             screeningSubmitted = false
@@ -854,7 +855,7 @@ final class ChatViewModel {
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let reply = json["reply"] as? String else {
-            errorMessage = "Couldn't parse response from server."
+            errorMessage = L("Couldn't parse response from server.")
             return
         }
         let newMsg = ChatMessage(role: "assistant", content: reply)
@@ -936,7 +937,7 @@ struct ChatView: View {
                 .background(Color.white)
 
                 if let err = vm.errorMessage {
-                    Text(err)
+                    Text(L(err))
                         .font(.system(size: 13))
                         .foregroundColor(.red)
                         .padding(.horizontal, 16)
@@ -986,7 +987,7 @@ struct ChatView: View {
         ) { result in
             guard case let .success(urls) = result, let url = urls.first else {
                 if case .failure = result {
-                    attachmentErrorMessage = "That attachment couldn't be opened."
+                    attachmentErrorMessage = L("That attachment couldn't be opened.")
                 }
                 return
             }
@@ -999,9 +1000,9 @@ struct ChatView: View {
                     pendingImageData = nil
                 } catch let error as LocalizedError {
                     attachmentErrorMessage = error.errorDescription ??
-                        "That attachment couldn't be prepared."
+                        L("That attachment couldn't be prepared.")
                 } catch {
-                    attachmentErrorMessage = "That attachment couldn't be prepared."
+                    attachmentErrorMessage = L("That attachment couldn't be prepared.")
                 }
             }
         }
@@ -1025,9 +1026,9 @@ struct ChatView: View {
         }
         .alert(item: $deniedPermission) { resource in
             Alert(
-                title: Text("\(resource.displayName) Access Needed"),
+                title: Text(L("%@ Access Needed", "\(resource.displayName)")),
                 message: Text(resource.deniedMessage),
-                primaryButton: .default(Text("Open Settings")) {
+                primaryButton: .default(Text(L("Open Settings"))) {
                     AppPermissions.openSettings()
                 },
                 secondaryButton: .cancel()
@@ -1140,13 +1141,13 @@ struct ChatView: View {
 
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Text("How can I help you?")
+            Text(L("How can I help you?"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(AppBrand.accent)
                 .multilineTextAlignment(.center)
 
             if consentStore.status == .denied {
-                Text("AI features are off. Non-AI EasyBid features still work normally.")
+                Text(L("AI features are off. Non-AI EasyBid features still work normally."))
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1187,7 +1188,7 @@ struct ChatView: View {
                         .scaledToFill()
                         .frame(width: 56, height: 56)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
-                    Text("Photo attached")
+                    Text(L("Photo attached"))
                         .font(.system(size: 13))
                         .foregroundColor(AppGray.secondary)
                     Spacer()
@@ -1234,20 +1235,20 @@ struct ChatView: View {
             if isPreparingAttachment {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("Preparing attachment…")
+                    Text(L("Preparing attachment…"))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 }
             }
 
             if let attachmentErrorMessage {
-                Text(attachmentErrorMessage)
+                Text(L(attachmentErrorMessage))
                     .font(.system(size: 13))
                     .foregroundStyle(.red)
             }
 
             // Text field
-            TextField("Ask anything about your estimate…", text: $vm.inputText, axis: .vertical)
+            TextField(L("Ask anything about your estimate…"), text: $vm.inputText, axis: .vertical)
                 .lineLimit(1...4)
                 .font(.system(size: 15))
                 .foregroundColor(Color(UIColor.label))
@@ -1265,7 +1266,7 @@ struct ChatView: View {
                         .background(AppGray.bgSubtle)
                         .clipShape(Circle())
                 }
-                .confirmationDialog("Add Attachment", isPresented: $showAttachmentSheet) {
+                .confirmationDialog(L("Add Attachment"), isPresented: $showAttachmentSheet) {
                     HapticButton("Take Photo") {
                         requestPermission(.camera) {
                             showCameraPicker = true
@@ -1476,7 +1477,7 @@ struct GuidedEstimateFlowView: View {
                     throw NSError(
                         domain: "EasyBid.AIEdit",
                         code: 400,
-                        userInfo: [NSLocalizedDescriptionKey: "The estimate draft is still loading. Please try again."]
+                        userInfo: [NSLocalizedDescriptionKey: L("The estimate draft is still loading. Please try again.")]
                     )
                 }
                 let (payload, returnedID) = try await vm.editEstimate(
@@ -1494,9 +1495,9 @@ struct GuidedEstimateFlowView: View {
         }
         .alert(item: $deniedPermission) { resource in
             Alert(
-                title: Text("\(resource.displayName) Access Needed"),
+                title: Text(L("%@ Access Needed", "\(resource.displayName)")),
                 message: Text(resource.deniedMessage),
-                primaryButton: .default(Text("Open Settings")) {
+                primaryButton: .default(Text(L("Open Settings"))) {
                     AppPermissions.openSettings()
                 },
                 secondaryButton: .cancel()
@@ -1530,7 +1531,7 @@ struct GuidedEstimateFlowView: View {
 
     private var navigationBar: some View {
         ZStack {
-            Text(navigationTitle)
+            Text(L(navigationTitle))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -1560,9 +1561,9 @@ struct GuidedEstimateFlowView: View {
 
     private var navigationTitle: String {
         switch step {
-        case .description: return "New Estimate"
-        case .questions: return "Project Details"
-        case .result: return "Estimate Preview"
+        case .description: return L("New Estimate")
+        case .questions: return L("Project Details")
+        case .result: return L("Estimate Preview")
         }
     }
 
@@ -1582,7 +1583,7 @@ struct GuidedEstimateFlowView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Project Description")
+                        Text(L("Project Description"))
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(AppGray.ink)
 
@@ -1595,7 +1596,7 @@ struct GuidedEstimateFlowView: View {
                                 .padding(10)
 
                             if projectDescription.isEmpty {
-                                Text("Describe the project, including the work needed, measurements, materials, site conditions, and any other details you already know.")
+                                Text(L("Describe the project, including the work needed, measurements, materials, site conditions, and any other details you already know."))
                                     .font(.system(size: 16))
                                     .foregroundColor(AppGray.muted)
                                     .padding(.horizontal, 16)
@@ -1610,15 +1611,15 @@ struct GuidedEstimateFlowView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Attach Photo")
+                        Text(L("Attach Photo"))
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(AppGray.ink)
 
                         HStack(spacing: 12) {
-                            attachmentButton(title: "Add photo", icon: "photo") {
+                            attachmentButton(title: L("Add photo"), icon: "photo") {
                                 showPhotoPicker = true
                             }
-                            attachmentButton(title: "Take photo", icon: "camera") {
+                            attachmentButton(title: L("Take photo"), icon: "camera") {
                                 requestCamera()
                             }
                         }
@@ -1632,7 +1633,7 @@ struct GuidedEstimateFlowView: View {
                                 .scaledToFill()
                                 .frame(width: 54, height: 54)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                            Text("Photo attached")
+                            Text(L("Photo attached"))
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(AppGray.ink)
                             Spacer()
@@ -1666,7 +1667,7 @@ struct GuidedEstimateFlowView: View {
             .scrollDismissesKeyboard(.interactively)
 
             bottomButton(
-                title: vm.isLoading ? "Preparing questions…" : "Next",
+                title: vm.isLoading ? L("Preparing questions…") : L("Next"),
                 enabled: !trimmedDescription.isEmpty && !vm.isLoading,
                 action: beginEstimate
             )
@@ -1678,10 +1679,10 @@ struct GuidedEstimateFlowView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     VStack(alignment: .leading, spacing: 9) {
-                        Text("A few project details")
+                        Text(L("A few project details"))
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(AppGray.ink)
-                        Text("Answer the details needed for this job. You can edit the finished estimate before saving it.")
+                        Text(L("Answer the details needed for this job. You can edit the finished estimate before saving it."))
                             .font(.system(size: 15))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -1702,7 +1703,7 @@ struct GuidedEstimateFlowView: View {
             }
 
             bottomButton(
-                title: vm.isLoading ? "Generating estimate…" : "Generate Estimate",
+                title: vm.isLoading ? L("Generating estimate…") : L("Generate Estimate"),
                 enabled: allQuestionsAnswered && !vm.isLoading,
                 action: generateEstimate
             )
@@ -1715,10 +1716,10 @@ struct GuidedEstimateFlowView: View {
                 if let estimate = resultEstimate {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 9) {
-                            Text("Review your estimate")
+                            Text(L("Review your estimate"))
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(AppGray.ink)
-                            Text("Check the scope, quantities, pricing, and terms before saving.")
+                            Text(L("Check the scope, quantities, pricing, and terms before saving."))
                                 .font(.system(size: 15))
                                 .foregroundColor(AppGray.secondary)
                         }
@@ -1728,10 +1729,10 @@ struct GuidedEstimateFlowView: View {
                                 Text(note)
                                     .font(.system(size: 14, weight: .medium))
                             }
-                            Text("Tax not included. Location-based tax calculation is not configured yet.")
+                            Text(L("Tax not included. Location-based tax calculation is not configured yet."))
                                 .font(.system(size: 14))
                             if let exclusions = estimate.exclusions, !exclusions.isEmpty {
-                                Text("Scope and exclusions")
+                                Text(L("Scope and exclusions"))
                                     .font(.system(size: 14, weight: .semibold))
                                 ForEach(Array(exclusions.enumerated()), id: \.offset) { _, exclusion in
                                     Text(exclusion)
@@ -1765,7 +1766,7 @@ struct GuidedEstimateFlowView: View {
             VStack(spacing: 10) {
                 if let total = reviewTotalText {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text("Total before tax")
+                        Text(L("Total before tax"))
                             .font(.system(size: 16, weight: .semibold))
                         Spacer(minLength: 8)
                         Text(total)
@@ -1781,7 +1782,7 @@ struct GuidedEstimateFlowView: View {
 
                 HapticButton {
                     if resultSupabaseID == nil {
-                        vm.errorMessage = "The estimate draft is still loading. Please try again."
+                        vm.errorMessage = L("The estimate draft is still loading. Please try again.")
                     } else {
                         showAIEditor = true
                     }
@@ -1789,7 +1790,7 @@ struct GuidedEstimateFlowView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "sparkles.2")
                             .font(.system(size: 15, weight: .semibold))
-                        Text("Edit with AI")
+                        Text(L("Edit with AI"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(AppGray.ink)
@@ -1805,7 +1806,7 @@ struct GuidedEstimateFlowView: View {
                 .buttonStyle(PlainButtonStyle())
 
                 HapticButton(action: saveEstimate) {
-                    Text("Save Estimate")
+                    Text(L("Save Estimate"))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1826,7 +1827,7 @@ struct GuidedEstimateFlowView: View {
     @ViewBuilder
     private var errorMessage: some View {
         if let error = vm.errorMessage {
-            Text(error)
+            Text(L(error))
                 .font(.system(size: 13))
                 .foregroundColor(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1838,9 +1839,9 @@ struct GuidedEstimateFlowView: View {
 
     private func templateButton(_ title: String) -> some View {
         HapticButton {
-            projectDescription = title
+            projectDescription = L(title)
         } label: {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(AppGray.secondary)
                 .frame(maxWidth: .infinity)
@@ -1885,7 +1886,7 @@ struct GuidedEstimateFlowView: View {
                     ProgressView()
                         .tint(.white)
                 }
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -2105,10 +2106,10 @@ private struct EstimateAIEditSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Edit with AI")
+                            Text(L("Edit with AI"))
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(AppGray.ink)
-                            Text("Describe exactly what should change. Everything else in the estimate will stay the same.")
+                            Text(L("Describe exactly what should change. Everything else in the estimate will stay the same."))
                                 .font(.system(size: 15))
                                 .foregroundColor(AppGray.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -2123,7 +2124,7 @@ private struct EstimateAIEditSheet: View {
                                 .padding(10)
 
                             if instruction.isEmpty {
-                                Text("For example: add two hours of labor, remove the disposal fee, or change the faucet quantity to two.")
+                                Text(L("For example: add two hours of labor, remove the disposal fee, or change the faucet quantity to two."))
                                     .font(.system(size: 16))
                                     .foregroundColor(AppGray.borderStrong)
                                     .padding(.horizontal, 16)
@@ -2140,7 +2141,7 @@ private struct EstimateAIEditSheet: View {
                         )
 
                         if let errorMessage {
-                            Text(errorMessage)
+                            Text(L(errorMessage))
                                 .font(.system(size: 13))
                                 .foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -2158,7 +2159,7 @@ private struct EstimateAIEditSheet: View {
                         if isSubmitting {
                             ProgressView().tint(.white)
                         }
-                        Text(isSubmitting ? "Updating estimate…" : "Update Estimate")
+                        Text(isSubmitting ? L("Updating estimate…") : L("Update Estimate"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -2174,7 +2175,7 @@ private struct EstimateAIEditSheet: View {
                 .background(Color.white)
             }
             .background(Color.white.ignoresSafeArea())
-            .navigationTitle("Edit with AI")
+            .navigationTitle(L("Edit with AI"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -2222,7 +2223,7 @@ private struct AddressInputSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Estimate Address")
+                Text(L("Estimate Address"))
                     .font(.system(size: 17, weight: .semibold))
                 Spacer()
                 HapticButton("Done") {
@@ -2242,7 +2243,7 @@ private struct AddressInputSheet: View {
                     .scaledToFit()
                     .foregroundColor(.black)
                     .frame(width: 20, height: 20)
-                TextField("Enter address or location", text: $draft)
+                TextField(L("Enter address or location"), text: $draft)
                     .focused($focused)
                     .submitLabel(.done)
                     .onSubmit {
@@ -2284,7 +2285,7 @@ struct ChatSidebarView: View {
     private var sidebarHeader: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Chats")
+                Text(L("Chats"))
                     .font(.system(size: 26, weight: .bold))
                 Spacer()
             }
@@ -2293,7 +2294,7 @@ struct ChatSidebarView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .bold))
-                    Text("New Chat")
+                    Text(L("New Chat"))
                         .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -2363,7 +2364,7 @@ private struct ChatSessionRow: View {
                         .rotationEffect(.degrees(90))
                         .frame(width: 32, height: 32)
                 }
-                .confirmationDialog("Chat Options", isPresented: $showActions) {
+                .confirmationDialog(L("Chat Options"), isPresented: $showActions) {
                     if isActive {
                         HapticButton("Clear Messages", role: .destructive) { onClear() }
                     }
@@ -2728,7 +2729,7 @@ private struct ScreeningPromptBubble: View {
 
             if showButton {
                 HapticButton(action: { onFinish?() }) {
-                    Text("Finish estimate")
+                    Text(L("Finish estimate"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
@@ -3073,7 +3074,7 @@ private struct AssistantBubbleView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .bold))
-                    Text("Confirm Estimate")
+                    Text(L("Confirm Estimate"))
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -3163,7 +3164,7 @@ private struct ResearchItemView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(AppGray.secondary)
                     }
-                    Text(bullet.linkText ?? "View product")
+                    Text(bullet.linkText ?? L("View product"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(AppBrand.accent)
                         .lineLimit(1)
@@ -3233,7 +3234,7 @@ private struct ChatEstimateCard: View {
 
     @ViewBuilder private func breakdownRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label)
+            Text(L(label))
                 .font(.system(size: 14))
                 .foregroundColor(AppGray.secondary)
             Spacer()
@@ -3246,7 +3247,7 @@ private struct ChatEstimateCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Estimate")
+                Text(L("Estimate"))
                     .font(.system(size: 14))
                     .foregroundColor(AppGray.secondary)
                 Text(estimate.title)
@@ -3262,7 +3263,7 @@ private struct ChatEstimateCard: View {
                         Image(systemName: "circle")
                             .font(.system(size: 12))
                             .foregroundColor(AppGray.secondary)
-                        Text(estimate.status)
+                        Text(L(estimate.status))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -3328,10 +3329,10 @@ private struct ChatEstimateCard: View {
 
             // Pricing breakdown
             VStack(spacing: 10) {
-                breakdownRow("Subtotal", formatted(estimate.subtotal))
-                breakdownRow("Markup (\(pctText(estimate.markupPercent)))", formatted(estimate.markupAmount))
+                breakdownRow(L("Subtotal"), formatted(estimate.subtotal))
+                breakdownRow(L("Markup (%@)", "\(pctText(estimate.markupPercent))"), formatted(estimate.markupAmount))
                 if let c = estimate.contingency, c.amount > 0 {
-                    breakdownRow("Contingency (\(pctText(c.percent)))", formatted(c.amount))
+                    breakdownRow(L("Contingency (%@)", "\(pctText(c.percent))"), formatted(c.amount))
                 }
             }
             .padding(.horizontal, 20)
@@ -3344,7 +3345,7 @@ private struct ChatEstimateCard: View {
 
             if showConfirmButtons {
                 HapticButton(action: { onConfirm?() }) {
-                    Text("Confirm Estimate")
+                    Text(L("Confirm Estimate"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -3389,7 +3390,7 @@ private struct ChatEstimateItemRow: View {
                         .foregroundColor(AppGray.muted)
                 }
                 Spacer()
-                Text(item.onHand ? "On Hand" : totalFormatted)
+                Text(item.onHand ? L("On Hand") : totalFormatted)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppGray.textDark)
             }
@@ -3400,7 +3401,7 @@ private struct ChatEstimateItemRow: View {
                         Image(systemName: "pencil")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(brandBlue)
-                        Text("Edit")
+                        Text(L("Edit"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(brandBlue)
                     }
@@ -3468,18 +3469,18 @@ struct MaterialEditSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    card("Product") {
-                        TextField("Name", text: $name)
+                    card(L("Product")) {
+                        TextField(L("Name"), text: $name)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                     }
-                    card("Quantity") {
+                    card(L("Quantity")) {
                         TextField("0", text: $quantity)
                             .keyboardType(.decimalPad)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                     }
-                    card("Unit price") {
+                    card(L("Unit price")) {
                         HStack(spacing: 4) {
                             Text("$").foregroundColor(AppGray.secondary)
                             TextField("0.0", text: $unitPrice)
@@ -3489,7 +3490,7 @@ struct MaterialEditSheet: View {
                         }
                     }
                     HStack {
-                        Text("Line total")
+                        Text(L("Line total"))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                         Spacer()
@@ -3498,8 +3499,8 @@ struct MaterialEditSheet: View {
                             .foregroundColor(AppGray.textDark)
                     }
                     .padding(.horizontal, 4)
-                    card("Description") {
-                        TextField("Optional notes", text: $descriptionText, axis: .vertical)
+                    card(L("Description")) {
+                        TextField(L("Optional notes"), text: $descriptionText, axis: .vertical)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                             .lineLimit(2...5)
@@ -3508,7 +3509,7 @@ struct MaterialEditSheet: View {
                 .padding(20)
             }
             .background(Color.white.ignoresSafeArea())
-            .navigationTitle(title)
+            .navigationTitle(L(title))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -3539,7 +3540,7 @@ struct MaterialEditSheet: View {
         @ViewBuilder _ content: () -> Content,
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(AppGray.textDark)
             content()
@@ -3659,10 +3660,10 @@ private struct EstimateCardView: View {
 
             // ── Header ──────────────────────────────────────────
             VStack(alignment: .leading, spacing: 10) {
-                Text("Estimate")
+                Text(L("Estimate"))
                     .font(.system(size: 14))
                     .foregroundColor(AppGray.secondary)
-                Text(cleanTitle)
+                Text(L(cleanTitle))
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(darkText)
                     .padding(.top, -6)
@@ -3672,7 +3673,7 @@ private struct EstimateCardView: View {
                     if !address.isEmpty {
                         AddressTagPill(text: address)
                     }
-                    TagPill(icon: "circle", text: "Draft")
+                    TagPill(icon: "circle", text: L("Draft"))
                 }
             }
             .padding(.horizontal, 20)
@@ -3732,7 +3733,7 @@ private struct EstimateCardView: View {
                             let lines = cleanBodyLines(for: section)
                             ForEach(Array(lines.enumerated()), id: \.offset) { idx, line in
                                 if idx > 0 { Divider().padding(.leading, 20) }
-                                Text(line)
+                                Text(L(line))
                                     .font(.system(size: 14))
                                     .foregroundColor(AppGray.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -3750,7 +3751,7 @@ private struct EstimateCardView: View {
 
             // ── Total row ────────────────────────────────────────
             HStack(alignment: .center) {
-                Text("Recommended Quote")
+                Text(L("Recommended Quote"))
                     .font(.system(size: 14))
                     .foregroundColor(AppGray.secondary)
                 Spacer()
@@ -3774,7 +3775,7 @@ private struct EstimateCardView: View {
             // ── Confirm button ───────────────────────────────────
             if showConfirmButtons {
                 HapticButton(action: { onConfirm?() }) {
-                    Text("Confirm Estimate")
+                    Text(L("Confirm Estimate"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -3846,10 +3847,10 @@ private struct EstimateGenerationProgressView: View {
             EstimatorProgressRing(progress: progress, foreground: AppGray.ink)
                 .frame(width: 156, height: 156)
             VStack(spacing: 10) {
-                Text(isComplete ? "Your estimate is ready" : "Creating your estimate")
+                Text(isComplete ? L("Your estimate is ready") : L("Creating your estimate"))
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(AppGray.ink)
-                Text(isComplete ? "Opening your estimate…" : "Estimated progress · This may take a moment")
+                Text(isComplete ? L("Opening your estimate…") : L("Estimated progress · This may take a moment"))
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.secondary)
                     .multilineTextAlignment(.center)

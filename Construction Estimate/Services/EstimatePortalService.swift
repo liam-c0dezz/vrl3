@@ -9,9 +9,9 @@ enum EstimatePortalError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .estimateNotSynced:
-            return "This estimate has not finished syncing. Try again in a moment."
+            return L("This estimate has not finished syncing. Try again in a moment.")
         case .invalidPortalURL:
-            return "The estimate review link could not be created."
+            return L("The estimate review link could not be created.")
         }
     }
 }

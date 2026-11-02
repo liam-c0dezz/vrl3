@@ -49,8 +49,18 @@ the target (see the exception set in the project file).
 
 ## Language
 
-Onboarding can be switched between English and Spanish with the EN/ES toggle in
-the top-right corner. The choice is stored under the `app.language` user default
-and defaults to the device language. To translate another screen, read
-`@Environment(\.appLanguage) private var lang`, wrap text in `lang("…")`, and
-add the Spanish string to `Core/Localization/AppLanguage.swift`.
+The whole app switches between English and Spanish instantly with the animated
+EN/ES toggle — top-right during onboarding, and under **Settings → Language**.
+
+- `Core/Localization/AppLanguage.swift` — `LanguageStore` (observable current
+  language) and `L(...)`, which translates an English string at render time.
+- `Resources/Localization/Translations-es.json` — English → Spanish table.
+  Missing entries fall back to English.
+- The choice is saved as the app's `AppleLanguages` override (the same setting
+  iOS uses for per-app language), so it defaults to the device language and
+  system screens (photo picker, share sheet) follow it after the next launch.
+
+To translate new UI: write `Text(L("New label"))` (or
+`L("%@ items", "\(count)")` for values) and add the Spanish string to the JSON.
+Keep stored data values (statuses such as "Draft", payment terms) in English and
+translate them where they are displayed.

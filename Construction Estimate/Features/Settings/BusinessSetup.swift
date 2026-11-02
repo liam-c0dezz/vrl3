@@ -35,18 +35,18 @@ struct BusinessHourlyRate: Identifiable, Equatable {
     var name: String
     var hourlyRate: Double
 
-    static let starterDefaults: [BusinessHourlyRate] = [
-        BusinessHourlyRate(name: "General Contractor (GC)", hourlyRate: 90),
-        BusinessHourlyRate(name: "Standard labor", hourlyRate: 50),
-        BusinessHourlyRate(name: "Plumber", hourlyRate: 95),
-        BusinessHourlyRate(name: "Electrician", hourlyRate: 100),
-        BusinessHourlyRate(name: "HVAC Technician", hourlyRate: 110),
-        BusinessHourlyRate(name: "Roofer", hourlyRate: 70),
-        BusinessHourlyRate(name: "Painter", hourlyRate: 60),
-        BusinessHourlyRate(name: "Tile Setter", hourlyRate: 70),
-        BusinessHourlyRate(name: "Carpenter / Framing", hourlyRate: 90),
-        BusinessHourlyRate(name: "Drywaller", hourlyRate: 58)
-    ]
+    static var starterDefaults: [BusinessHourlyRate] {[
+        BusinessHourlyRate(name: L("General Contractor (GC)"), hourlyRate: 90),
+        BusinessHourlyRate(name: L("Standard labor"), hourlyRate: 50),
+        BusinessHourlyRate(name: L("Plumber"), hourlyRate: 95),
+        BusinessHourlyRate(name: L("Electrician"), hourlyRate: 100),
+        BusinessHourlyRate(name: L("HVAC Technician"), hourlyRate: 110),
+        BusinessHourlyRate(name: L("Roofer"), hourlyRate: 70),
+        BusinessHourlyRate(name: L("Painter"), hourlyRate: 60),
+        BusinessHourlyRate(name: L("Tile Setter"), hourlyRate: 70),
+        BusinessHourlyRate(name: L("Carpenter / Framing"), hourlyRate: 90),
+        BusinessHourlyRate(name: L("Drywaller"), hourlyRate: 58)
+    ]}
 }
 
 struct BusinessUpsell: Identifiable, Equatable {
@@ -449,7 +449,7 @@ struct BusinessSetupView: View {
                     relatedSetupLinks
 
                     if let error = store.errorMessage {
-                        Text(error)
+                        Text(L(error))
                             .font(.system(size: 13))
                             .foregroundStyle(.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -459,11 +459,11 @@ struct BusinessSetupView: View {
                 .padding(.bottom, 82)
             }
             .background(AppGray.bgPale.ignoresSafeArea())
-            .navigationTitle("Business")
+            .navigationTitle(L("Business"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("Cancel")) { dismiss() }
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -472,7 +472,7 @@ struct BusinessSetupView: View {
                         if store.isSaving {
                             ProgressView().tint(.white)
                         }
-                        Text(store.isSaving ? "Saving…" : "Save Business")
+                        Text(store.isSaving ? L("Saving…") : L("Save Business"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundStyle(.white)
@@ -524,7 +524,7 @@ struct BusinessSetupView: View {
                 .background(AppGray.pill)
                 .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                Text(hasLogo ? "Change business logo" : "Add business logo")
+                Text(hasLogo ? L("Change business logo") : L("Add business logo"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppGray.secondary)
                     .padding(.top, 8)
@@ -542,25 +542,25 @@ struct BusinessSetupView: View {
     }
 
     private var companyCard: some View {
-        BusinessFormCard(title: "Company", icon: "building.2") {
-            BusinessTextField(label: "Business Name", placeholder: "Your company name", text: $draft.businessName)
+        BusinessFormCard(title: L("Company"), icon: "building.2") {
+            BusinessTextField(label: L("Business Name"), placeholder: L("Your company name"), text: $draft.businessName)
                 .textContentType(.organizationName)
             BusinessDivider()
-            BusinessTextField(label: "License #", placeholder: "CGC1234567", text: $draft.licenseNumber)
+            BusinessTextField(label: L("License #"), placeholder: L("CGC1234567"), text: $draft.licenseNumber)
             BusinessDivider()
-            BusinessTextField(label: "Website", placeholder: "yourwebsite.com", text: $draft.website)
+            BusinessTextField(label: L("Website"), placeholder: L("yourwebsite.com"), text: $draft.website)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
         }
     }
 
     private var contactCard: some View {
-        BusinessFormCard(title: "Contact", icon: "phone") {
-            BusinessTextField(label: "Phone", placeholder: "+1 234 567 8900", text: $draft.phone)
+        BusinessFormCard(title: L("Contact"), icon: "phone") {
+            BusinessTextField(label: L("Phone"), placeholder: "+1 234 567 8900", text: $draft.phone)
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
             BusinessDivider()
-            BusinessTextField(label: "Email", placeholder: "email@company.com", text: $draft.email)
+            BusinessTextField(label: L("Email"), placeholder: L("email@company.com"), text: $draft.email)
                 .textContentType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
@@ -568,35 +568,35 @@ struct BusinessSetupView: View {
     }
 
     private var locationCard: some View {
-        BusinessFormCard(title: "Location", icon: "map") {
-            BusinessTextField(label: "ZIP Code", placeholder: "e.g. 90210", text: $draft.postalCode)
+        BusinessFormCard(title: L("Location"), icon: "map") {
+            BusinessTextField(label: L("ZIP Code"), placeholder: "e.g. 90210", text: $draft.postalCode)
                 .textContentType(.postalCode)
                 .keyboardType(.numbersAndPunctuation)
         }
     }
 
     private var estimateDefaultsCard: some View {
-        BusinessFormCard(title: "Estimate Defaults", icon: "percent") {
-            BusinessTextField(label: "Markup %", placeholder: "20", text: $markupText, suffix: "%")
+        BusinessFormCard(title: L("Estimate Defaults"), icon: "percent") {
+            BusinessTextField(label: L("Markup %"), placeholder: "20", text: $markupText, suffix: "%")
                 .keyboardType(.decimalPad)
             BusinessDivider()
-            BusinessTextField(label: "Sales Tax %", placeholder: "0", text: $taxText, suffix: "%")
+            BusinessTextField(label: L("Sales Tax %"), placeholder: "0", text: $taxText, suffix: "%")
                 .keyboardType(.decimalPad)
             BusinessDivider()
-            BusinessPickerRow(label: "Payment Terms", value: draft.paymentTerms) {
-                Picker("Payment Terms", selection: $draft.paymentTerms) {
-                    ForEach(paymentTerms, id: \.self) { Text($0).tag($0) }
+            BusinessPickerRow(label: L("Payment Terms"), value: draft.paymentTerms) {
+                Picker(L("Payment Terms"), selection: $draft.paymentTerms) {
+                    ForEach(paymentTerms, id: \.self) { Text(L($0)).tag($0) }
                 }
             }
             BusinessDivider()
-            BusinessPickerRow(label: "Quote Valid", value: "\(draft.quoteValidDays) days") {
-                Picker("Quote Valid", selection: $draft.quoteValidDays) {
+            BusinessPickerRow(label: L("Quote Valid"), value: L("%@ days", "\(draft.quoteValidDays)")) {
+                Picker(L("Quote Valid"), selection: $draft.quoteValidDays) {
                     ForEach(quoteValidOptions, id: \.self) { days in
-                        Text("\(days) days").tag(days)
+                        Text(L("%@ days", "\(days)")).tag(days)
                     }
                 }
             }
-            Text("Applied automatically to new estimates")
+            Text(L("Applied automatically to new estimates"))
                 .font(.system(size: 12))
                 .foregroundStyle(AppGray.secondary)
                 .padding(.top, 2)
@@ -604,15 +604,15 @@ struct BusinessSetupView: View {
     }
 
     private var paymentCard: some View {
-        BusinessFormCard(title: "Get Paid", icon: "creditcard") {
+        BusinessFormCard(title: L("Get Paid"), icon: "creditcard") {
             BusinessTextField(
-                label: "Payment link",
-                placeholder: "stripe.com/pay/... or paypal.me/you",
+                label: L("Payment link"),
+                placeholder: L("stripe.com/pay/... or paypal.me/you"),
                 text: $draft.paymentLink
             )
             .textInputAutocapitalization(.never)
             .keyboardType(.URL)
-            Text("Clients can use this link to pay after accepting an estimate.")
+            Text(L("Clients can use this link to pay after accepting an estimate."))
                 .font(.system(size: 12))
                 .foregroundStyle(AppGray.secondary)
         }
@@ -625,10 +625,10 @@ struct BusinessSetupView: View {
             } label: {
                 BusinessLinkCard(
                     icon: "tag.fill",
-                    title: "My Prices",
+                    title: L("My Prices"),
                     subtitle: store.hourlyRates.isEmpty
-                        ? "Set up your hourly rates"
-                        : "\(store.hourlyRates.count) custom rate\(store.hourlyRates.count == 1 ? "" : "s")"
+                        ? L("Set up your hourly rates")
+                        : (store.hourlyRates.count == 1 ? L("1 custom rate") : L("%@ custom rates", "\(store.hourlyRates.count)"))
                 )
             }
             NavigationLink {
@@ -636,10 +636,10 @@ struct BusinessSetupView: View {
             } label: {
                 BusinessLinkCard(
                     icon: "plus.circle.fill",
-                    title: "My Upsells",
+                    title: L("My Upsells"),
                     subtitle: store.upsells.isEmpty
-                        ? "Add add-ons you always offer"
-                        : "\(store.upsells.count) saved upsell\(store.upsells.count == 1 ? "" : "s")"
+                        ? L("Add add-ons you always offer")
+                        : (store.upsells.count == 1 ? L("1 saved upsell") : L("%@ saved upsells", "\(store.upsells.count)"))
                 )
             }
         }
@@ -682,7 +682,7 @@ struct HourlyRatesSetupView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                Text("Add the labor rates you use most. These are saved to your business and available on every device.")
+                Text(L("Add the labor rates you use most. These are saved to your business and available on every device."))
                     .font(.system(size: 14))
                     .foregroundStyle(AppGray.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -690,10 +690,10 @@ struct HourlyRatesSetupView: View {
                 ForEach($drafts) { $rate in
                     EditableLineItemCard(
                         title: $rate.name,
-                        titlePlaceholder: "Rate name",
+                        titlePlaceholder: L("Rate name"),
                         amount: $rate.amount,
-                        amountLabel: "Hourly rate",
-                        amountSuffix: "/ hr",
+                        amountLabel: L("Hourly rate"),
+                        amountSuffix: L("/ hr"),
                         onDelete: { drafts.removeAll { $0.id == rate.id } }
                     )
                 }
@@ -701,7 +701,7 @@ struct HourlyRatesSetupView: View {
                 Button {
                     drafts.append(RateDraft(name: "", amount: ""))
                 } label: {
-                    Label("Add hourly rate", systemImage: "plus")
+                    Label(L("Add hourly rate"), systemImage: "plus")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(AppGray.ink)
                         .frame(maxWidth: .infinity)
@@ -713,16 +713,16 @@ struct HourlyRatesSetupView: View {
                 .buttonStyle(.plain)
 
                 if let error = store.errorMessage {
-                    Text(error).font(.system(size: 13)).foregroundStyle(.red)
+                    Text(L(error)).font(.system(size: 13)).foregroundStyle(.red)
                 }
             }
             .padding(20)
             .padding(.bottom, 80)
         }
         .background(AppGray.bgPale.ignoresSafeArea())
-        .navigationTitle("Hourly Rates")
+        .navigationTitle(L("Hourly Rates"))
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) { saveBar(title: "Save Rates", action: save) }
+        .safeAreaInset(edge: .bottom) { saveBar(title: L("Save Rates"), action: save) }
         .task { await loadIfNeeded() }
     }
 
@@ -758,7 +758,7 @@ struct HourlyRatesSetupView: View {
     @ViewBuilder
     private func saveBar(title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(store.isSaving ? "Saving…" : title)
+            Text(store.isSaving ? L("Saving…") : title)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -783,7 +783,7 @@ struct BusinessUpsellsSetupView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                Text("Save the add-ons you regularly offer so they are ready for future estimates.")
+                Text(L("Save the add-ons you regularly offer so they are ready for future estimates."))
                     .font(.system(size: 14))
                     .foregroundStyle(AppGray.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -792,13 +792,13 @@ struct BusinessUpsellsSetupView: View {
                     VStack(spacing: 12) {
                         EditableLineItemCard(
                             title: $upsell.name,
-                            titlePlaceholder: "Upsell name",
+                            titlePlaceholder: L("Upsell name"),
                             amount: $upsell.amount,
-                            amountLabel: "Price",
+                            amountLabel: L("Price"),
                             amountSuffix: nil,
                             onDelete: { drafts.removeAll { $0.id == upsell.id } }
                         )
-                        TextField("Optional description", text: $upsell.description, axis: .vertical)
+                        TextField(L("Optional description"), text: $upsell.description, axis: .vertical)
                             .font(.system(size: 15))
                             .lineLimit(2...4)
                             .padding(16)
@@ -809,7 +809,7 @@ struct BusinessUpsellsSetupView: View {
                 Button {
                     drafts.append(UpsellDraft(name: "", description: "", amount: ""))
                 } label: {
-                    Label("Add upsell", systemImage: "plus")
+                    Label(L("Add upsell"), systemImage: "plus")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(AppGray.ink)
                         .frame(maxWidth: .infinity)
@@ -821,18 +821,18 @@ struct BusinessUpsellsSetupView: View {
                 .buttonStyle(.plain)
 
                 if let error = store.errorMessage {
-                    Text(error).font(.system(size: 13)).foregroundStyle(.red)
+                    Text(L(error)).font(.system(size: 13)).foregroundStyle(.red)
                 }
             }
             .padding(20)
             .padding(.bottom, 80)
         }
         .background(AppGray.bgPale.ignoresSafeArea())
-        .navigationTitle("My Upsells")
+        .navigationTitle(L("My Upsells"))
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Button(action: save) {
-                Text(store.isSaving ? "Saving…" : "Save Upsells")
+                Text(store.isSaving ? L("Saving…") : L("Save Upsells"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -931,7 +931,7 @@ private struct BusinessFormCard<Content: View>: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
                     .frame(width: 22)
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
             }
@@ -959,7 +959,7 @@ private struct BusinessTextField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label)
+            Text(L(label))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(AppGray.secondary)
             HStack {
@@ -967,7 +967,7 @@ private struct BusinessTextField: View {
                     .font(.system(size: 16))
                     .foregroundStyle(AppGray.ink)
                 if let suffix {
-                    Text(suffix).font(.system(size: 16)).foregroundStyle(AppGray.secondary)
+                    Text(L(suffix)).font(.system(size: 16)).foregroundStyle(AppGray.secondary)
                 }
             }
             .padding(.horizontal, 14)
@@ -986,14 +986,14 @@ private struct BusinessPickerRow<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label)
+            Text(L(label))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(AppGray.secondary)
             Menu {
                 content
             } label: {
                 HStack {
-                    Text(value).font(.system(size: 16)).foregroundStyle(AppGray.ink)
+                    Text(L(value)).font(.system(size: 16)).foregroundStyle(AppGray.ink)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 12, weight: .semibold))
@@ -1027,8 +1027,8 @@ private struct BusinessLinkCard: View {
                 .background(AppGray.pill)
                 .clipShape(RoundedRectangle(cornerRadius: 13))
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppGray.ink)
-                Text(subtitle).font(.system(size: 13)).foregroundStyle(AppGray.secondary)
+                Text(L(title)).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppGray.ink)
+                Text(L(subtitle)).font(.system(size: 13)).foregroundStyle(AppGray.secondary)
             }
             Spacer()
             Image(systemName: "chevron.right")
@@ -1065,7 +1065,7 @@ private struct EditableLineItemCard: View {
             }
             Divider()
             HStack {
-                Text(amountLabel)
+                Text(L(amountLabel))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AppGray.secondary)
                 Spacer()
@@ -1074,7 +1074,7 @@ private struct EditableLineItemCard: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 90)
-                if let amountSuffix { Text(amountSuffix).foregroundStyle(AppGray.secondary) }
+                if let amountSuffix { Text(L(amountSuffix)).foregroundStyle(AppGray.secondary) }
             }
         }
         .padding(16)

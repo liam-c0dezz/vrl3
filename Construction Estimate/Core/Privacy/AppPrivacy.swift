@@ -35,17 +35,17 @@ enum AppProtectedResource: String, Identifiable {
 
     var displayName: String {
         switch self {
-        case .camera: "Camera"
-        case .microphone: "Microphone"
+        case .camera: L("Camera")
+        case .microphone: L("Microphone")
         }
     }
 
     var deniedMessage: String {
         switch self {
         case .camera:
-            "Camera access is off. Enable it in Settings to photograph jobs for an estimate."
+            L("Camera access is off. Enable it in Settings to photograph jobs for an estimate.")
         case .microphone:
-            "Microphone access is off. Enable it in Settings when a feature asks to record job audio."
+            L("Microphone access is off. Enable it in Settings when a feature asks to record job audio.")
         }
     }
 }
@@ -69,11 +69,11 @@ enum AppPermissions {
     static func statusText(for resource: AppProtectedResource) -> String {
         let mediaType: AVMediaType = resource == .camera ? .video : .audio
         return switch AVCaptureDevice.authorizationStatus(for: mediaType) {
-        case .authorized: "Allowed"
-        case .denied: "Off"
-        case .restricted: "Restricted"
-        case .notDetermined: "Not requested"
-        @unknown default: "Unknown"
+        case .authorized: L("Allowed")
+        case .denied: L("Off")
+        case .restricted: L("Restricted")
+        case .notDetermined: L("Not requested")
+        @unknown default: L("Unknown")
         }
     }
 
@@ -94,45 +94,45 @@ struct PrivacyCenterView: View {
             List {
                 Section {
                     Text(
-                        "EasyBid uses your information to provide accounts, projects, AI-assisted estimates and renders, invoices, client approvals, document storage, and subscriptions. We do not sell personal information or use it for cross-app advertising tracking."
+                        L("EasyBid uses your information to provide accounts, projects, AI-assisted estimates and renders, invoices, client approvals, document storage, and subscriptions. We do not sell personal information or use it for cross-app advertising tracking.")
                     )
                     .font(.system(size: 15))
                 } header: {
-                    Text("Privacy")
+                    Text(L("Privacy"))
                 }
 
                 Section {
                     permissionRow(.camera)
 
-                    Button("Open iOS Settings") {
+                    Button(L("Open iOS Settings")) {
                         AppPermissions.openSettings()
                     }
                 } header: {
-                    Text("Device permissions")
+                    Text(L("Device permissions"))
                 } footer: {
                     Text(
-                        "EasyBid asks for camera access only when you choose to take a job photo. Photo, video, audio, and file selection use Apple’s private system pickers and do not require broad library access."
+                        L("EasyBid asks for camera access only when you choose to take a job photo. Photo, video, audio, and file selection use Apple’s private system pickers and do not require broad library access.")
                     )
                 }
 
                 Section {
                     HStack {
-                        Label("AI Features", systemImage: "sparkles")
+                        Label(L("AI Features"), systemImage: "sparkles")
                         Spacer()
                         Text(aiStatusText)
                             .foregroundStyle(.secondary)
                     }
 
                     if consentStore.status == .granted {
-                        Button("Withdraw AI Permission", role: .destructive) {
+                        Button(L("Withdraw AI Permission"), role: .destructive) {
                             Task { _ = await consentStore.setConsent(granted: false) }
                         }
                     } else if consentStore.status == .denied {
-                        Button("Allow AI Features") {
+                        Button(L("Allow AI Features")) {
                             Task { _ = await consentStore.setConsent(granted: true) }
                         }
                     } else if consentStore.status == .unknown {
-                        Button("Review AI Permission") {
+                        Button(L("Review AI Permission")) {
                             showConsentPrompt = true
                         }
                     }
@@ -143,45 +143,45 @@ struct PrivacyCenterView: View {
                             .foregroundStyle(.red)
                     }
                 } header: {
-                    Text("AI permission")
+                    Text(L("AI permission"))
                 } footer: {
                     Text(
-                        "AI Chat and Renders send your messages, relevant project information, and media you intentionally attach to OpenAI. Withdrawing permission immediately blocks new AI requests."
+                        L("AI Chat and Renders send your messages, relevant project information, and media you intentionally attach to OpenAI. Withdrawing permission immediately blocks new AI requests.")
                     )
                 }
 
-                Section("Policies and choices") {
+                Section(L("Policies and choices")) {
                     if let policyURL = PrivacyResources.policyURL {
-                        Link("Privacy Policy", destination: policyURL)
+                        Link(L("Privacy Policy"), destination: policyURL)
                     }
                     if let choicesURL = PrivacyResources.choicesURL {
-                        Link("Privacy Choices", destination: choicesURL)
+                        Link(L("Privacy Choices"), destination: choicesURL)
                     }
                     if let supportURL = PrivacyResources.supportURL {
-                        Link("EasyBid Support", destination: supportURL)
+                        Link(L("EasyBid Support"), destination: supportURL)
                     }
-                    Link("Terms of Use", destination: PrivacyResources.termsURL)
+                    Link(L("Terms of Use"), destination: PrivacyResources.termsURL)
                     Text(
-                        "To cancel a subscription: open iPhone Settings, tap your name, choose Subscriptions, select EasyBid, then tap Cancel Subscription."
+                        L("To cancel a subscription: open iPhone Settings, tap your name, choose Subscriptions, select EasyBid, then tap Cancel Subscription.")
                     )
                     .font(.system(size: 14))
                 }
 
                 Section {
                     Text(
-                        "To delete your account and associated workspace data, return to the account menu and choose Delete Account."
+                        L("To delete your account and associated workspace data, return to the account menu and choose Delete Account.")
                     )
                     .font(.system(size: 14))
                 } header: {
-                    Text("Account deletion")
+                    Text(L("Account deletion"))
                 }
             }
             .id(refreshID)
-            .navigationTitle("Privacy & Permissions")
+            .navigationTitle(L("Privacy & Permissions"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(L("Done")) { dismiss() }
                 }
             }
             .onReceive(
@@ -202,10 +202,10 @@ struct PrivacyCenterView: View {
 
     private var aiStatusText: String {
         switch consentStore.status {
-        case .unknown: "Not chosen"
-        case .loading: "Loading…"
-        case .granted: "Allowed"
-        case .denied: "Off"
+        case .unknown: L("Not chosen")
+        case .loading: L("Loading…")
+        case .granted: L("Allowed")
+        case .denied: L("Off")
         }
     }
 

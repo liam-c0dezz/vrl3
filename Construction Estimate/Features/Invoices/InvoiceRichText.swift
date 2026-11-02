@@ -197,7 +197,7 @@ struct InvoiceDescriptionEditor: UIViewRepresentable {
         textView.textContainer.lineFragmentPadding = 0
         textView.attributedText = InvoiceRichText.attributedString(from: storedValue)
         textView.typingAttributes = InvoiceRichText.baseAttributes(fontSize: 15)
-        textView.accessibilityLabel = "Invoice description"
+        textView.accessibilityLabel = L("Invoice description")
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         controller.textView = textView
         context.coordinator.lastStoredValue = storedValue

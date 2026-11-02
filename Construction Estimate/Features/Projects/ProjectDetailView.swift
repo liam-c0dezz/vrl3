@@ -32,8 +32,8 @@ private enum ProjectMetadataField: String, Identifiable {
     case assignee
 
     var id: String { rawValue }
-    var title: String { self == .address ? "Project address" : "Assignee" }
-    var placeholder: String { self == .address ? "Enter address" : "Enter assignee name" }
+    var title: String { self == .address ? L("Project address") : L("Assignee") }
+    var placeholder: String { self == .address ? L("Enter address") : L("Enter assignee name") }
 }
 
 struct ProjectDetailView: View {
@@ -106,7 +106,7 @@ struct ProjectDetailView: View {
 
     func buildCurrentProject() -> Project {
         let finalPrice = confirmedEstimate?.total ?? Double(estimatePrice.replacingOccurrences(of: ",", with: "")) ?? project?.price ?? 0
-        let fallbackTitle = project?.title ?? confirmedEstimate?.title ?? "Untitled Project"
+        let fallbackTitle = project?.title ?? confirmedEstimate?.title ?? L("Untitled Project")
         return Project(
             id: canonicalProjectID,
             organizationId: project?.organizationId,
@@ -218,9 +218,9 @@ struct ProjectDetailView: View {
     }
 
     private func openEstimateChatAfterGate(createNewSession: Bool) {
-        let title = projectTitle.isEmpty ? (project?.title ?? "Untitled Project") : projectTitle
+        let title = projectTitle.isEmpty ? (project?.title ?? L("Untitled Project")) : projectTitle
         if createNewSession {
-            estimateChatSessionId = ChatSession.createAndSave(name: "Estimate – \(title)")
+            estimateChatSessionId = ChatSession.createAndSave(name: L("Estimate – %@", "\(title)"))
         }
 
         Task {
@@ -303,7 +303,7 @@ struct ProjectDetailView: View {
                 // Save / + button
                 if isNewProject {
                     HapticButton(action: buildAndSave) {
-                        Text("Save")
+                        Text(L("Save"))
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
@@ -334,7 +334,7 @@ struct ProjectDetailView: View {
                     .font(.system(size: 13))
                     .foregroundColor(AppGray.secondary)
 
-                TextField("Untitled project", text: $projectTitle)
+                TextField(L("Untitled project"), text: $projectTitle)
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(projectTitle.isEmpty ? AppGray.borderStrong : .black)
                     .focused($projectTitleFocused)
@@ -353,10 +353,10 @@ struct ProjectDetailView: View {
                 
                 // Tags
                 HStack(spacing: 8) {
-                    DetailTagPill(icon: "circle.dotted", text: projectStatus)
+                    DetailTagPill(icon: "circle.dotted", text: L(projectStatus))
                     HapticButton { editingProjectMetadata = .address } label: {
                         HStack(spacing: 4) {
-                            Text(projectAddress.isEmpty ? "Address" : projectAddress)
+                            Text(projectAddress.isEmpty ? L("Address") : projectAddress)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
@@ -378,7 +378,7 @@ struct ProjectDetailView: View {
                             Image(systemName: projectAssignee.isEmpty ? "person.crop.circle.badge.xmark" : "person.crop.circle")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
-                            Text(projectAssignee.isEmpty ? "No assignee" : projectAssignee)
+                            Text(projectAssignee.isEmpty ? L("No assignee") : projectAssignee)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
@@ -406,7 +406,7 @@ struct ProjectDetailView: View {
                             selectedTab = tab
                         } label: {
                             VStack(spacing: 8) {
-                                Text(tab.rawValue)
+                                Text(L(tab.rawValue))
                                     .font(.system(size: 15, weight: selectedTab == tab ? .semibold : .regular))
                                     .foregroundColor(selectedTab == tab ? AppBrand.accent : AppGray.secondary)
 
@@ -453,10 +453,10 @@ struct ProjectDetailView: View {
                         } else {
                             VStack(spacing: 16) {
                                 Spacer().frame(height: 60)
-                                Text("No client yet")
+                                Text(L("No client yet"))
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(AppGray.ink)
-                                Text("Add the client you're working with\nto keep this project organized.")
+                                Text(L("Add the client you're working with\nto keep this project organized."))
                                     .font(.system(size: 16, weight: .regular))
                                     .foregroundColor(AppGray.secondary)
                                     .multilineTextAlignment(.center)
@@ -466,7 +466,7 @@ struct ProjectDetailView: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "plus")
                                             .font(.system(size: 13, weight: .semibold))
-                                        Text("Add client")
+                                        Text(L("Add client"))
                                             .font(.system(size: 15, weight: .semibold))
                                     }
                                     .foregroundColor(.white)
@@ -482,7 +482,7 @@ struct ProjectDetailView: View {
                     } else if selectedTab == .estimate {
                         if !isNewProject {
                             HapticButton { showApacheEstimator = true } label: {
-                                Label("Smart Service Apache", systemImage: "sparkles")
+                                Label(L("Smart Service Apache"), systemImage: "sparkles")
                             }
                             .buttonStyle(.bordered)
                             .padding(.horizontal, 24)
@@ -491,10 +491,10 @@ struct ProjectDetailView: View {
                             VStack(spacing: 16) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Estimates")
+                                        Text(L("Estimates"))
                                             .font(.system(size: 17, weight: .semibold))
                                             .foregroundColor(AppGray.ink)
-                                        Text("\(estimatesForDisplay.count) estimate\(estimatesForDisplay.count == 1 ? "" : "s") for this project")
+                                        Text(estimatesForDisplay.count == 1 ? L("1 estimate for this project") : L("%@ estimates for this project", "\(estimatesForDisplay.count)"))
                                             .font(.system(size: 15))
                                             .foregroundColor(AppGray.secondary)
                                     }
@@ -504,7 +504,7 @@ struct ProjectDetailView: View {
                                     HapticButton {
                                         openEstimateChat(createNewSession: true)
                                     } label: {
-                                        Label("New Estimate", systemImage: "plus")
+                                        Label(L("New Estimate"), systemImage: "plus")
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 16)
@@ -537,10 +537,10 @@ struct ProjectDetailView: View {
                         } else {
                             VStack(spacing: 16) {
                                 Spacer().frame(height: 60)
-                                Text("No estimates yet")
+                                Text(L("No estimates yet"))
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(AppGray.ink)
-                                Text("Create a detailed, itemized estimate\nto send to your client.")
+                                Text(L("Create a detailed, itemized estimate\nto send to your client."))
                                     .font(.system(size: 16, weight: .regular))
                                     .foregroundColor(AppGray.secondary)
                                     .multilineTextAlignment(.center)
@@ -552,7 +552,7 @@ struct ProjectDetailView: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "plus")
                                             .font(.system(size: 13, weight: .semibold))
-                                        Text("Create estimate")
+                                        Text(L("Create estimate"))
                                             .font(.system(size: 15, weight: .semibold))
                                     }
                                         .foregroundColor(.white)
@@ -577,9 +577,9 @@ struct ProjectDetailView: View {
                         } else {
                             VStack(spacing: 12) {
                                 Spacer().frame(height: 60)
-                                Text("Save this project first")
+                                Text(L("Save this project first"))
                                     .font(.system(size: 20, weight: .bold))
-                                Text("Renders are stored securely inside a specific project.")
+                                Text(L("Renders are stored securely inside a specific project."))
                                     .font(.system(size: 15))
                                     .foregroundColor(AppGray.secondary)
                                     .multilineTextAlignment(.center)
@@ -592,7 +592,7 @@ struct ProjectDetailView: View {
                     }
 
                     if let saveError {
-                        Text(saveError)
+                        Text(L(saveError))
                             .font(.system(size: 13))
                             .foregroundColor(.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -735,7 +735,7 @@ private struct ProjectMetadataEditor: View {
                         onSave()
                         dismiss()
                     } label: {
-                        Text("Save")
+                        Text(L("Save"))
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -762,7 +762,7 @@ private struct ProjectMetadataEditor: View {
 
             HStack {
                 HapticButton { dismiss() } label: {
-                    Text("Cancel")
+                    Text(L("Cancel"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppGray.ink)
                         .padding(.horizontal, 14)
@@ -871,14 +871,14 @@ private struct ProjectDashboardView: View {
 
     private var progressTitle: String {
         switch stage {
-        case .missing: return "Project Created"
-        case .draft: return "Estimate Created"
-        case .sent: return "Estimate Sent"
+        case .missing: return L("Project Created")
+        case .draft: return L("Estimate Created")
+        case .sent: return L("Estimate Sent")
         case .accepted:
-            if isFullyPaid { return "Payment Collected" }
-            if hasPartialPayment { return "Payment In Progress" }
-            if !projectInvoices.isEmpty { return "Construction Started" }
-            return "Estimate Approved"
+            if isFullyPaid { return L("Payment Collected") }
+            if hasPartialPayment { return L("Payment In Progress") }
+            if !projectInvoices.isEmpty { return L("Construction Started") }
+            return L("Estimate Approved")
         }
     }
 
@@ -932,7 +932,7 @@ private struct ProjectDashboardView: View {
             _ = await (invoices, payments)
         }
         .alert(
-            "Couldn’t prepare estimate",
+            L("Couldn’t prepare estimate"),
             isPresented: Binding(
                 get: { estimateSendError != nil },
                 set: { if !$0 { estimateSendError = nil } }
@@ -948,11 +948,11 @@ private struct ProjectDashboardView: View {
     private var nextActionCard: some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Next Action")
+                Text(L("Next Action"))
                     .font(.system(size: 15, weight: .regular, design: .rounded))
                     .foregroundColor(AppGray.secondary)
 
-                Text(nextActionTitle)
+                Text(L(nextActionTitle))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                     .lineLimit(2)
@@ -972,24 +972,24 @@ private struct ProjectDashboardView: View {
 
     private var nextActionTitle: String {
         if !projectInvoices.isEmpty {
-            if isFullyPaid { return "No new actions" }
-            if hasPartialPayment { return "Collect full payment" }
-            return "Add payment received"
+            if isFullyPaid { return L("No new actions") }
+            if hasPartialPayment { return L("Collect full payment") }
+            return L("Add payment received")
         }
 
         switch stage {
-        case .missing: return "Create the estimate"
-        case .draft: return "Send estimate\nto client"
-        case .sent: return "Waiting for client approval"
+        case .missing: return L("Create the estimate")
+        case .draft: return L("Send estimate\nto client")
+        case .sent: return L("Waiting for client approval")
         case .accepted:
-            return "Create the first invoice"
+            return L("Create the first invoice")
         }
     }
 
     @ViewBuilder
     private var nextActionButton: some View {
         if !projectInvoices.isEmpty && isFullyPaid {
-            Text("Job completed")
+            Text(L("Job completed"))
                 .font(.system(size: 13, weight: .medium))
             .foregroundColor(AppGray.secondary)
             .padding(.horizontal, 14)
@@ -1002,7 +1002,7 @@ private struct ProjectDashboardView: View {
             )
         } else if !projectInvoices.isEmpty {
             dashboardActionButton(
-                title: hasPartialPayment ? "Collect payment" : "Add payment",
+                title: hasPartialPayment ? L("Collect payment") : L("Add payment"),
                 icon: "creditcard",
                 action: {
                     paymentSheetStartsWithNewPayment = true
@@ -1012,13 +1012,13 @@ private struct ProjectDashboardView: View {
         } else {
             switch stage {
             case .missing:
-                dashboardActionButton(title: "Create", icon: "plus", action: onCreateEstimate)
+                dashboardActionButton(title: L("Create"), icon: "plus", action: onCreateEstimate)
             case .draft:
                 HapticButton {
                     prepareEstimateForSending()
                 } label: {
                     dashboardActionLabel(
-                        title: "Send estimate",
+                        title: L("Send estimate"),
                         trailingIcon: "arrow.up.right",
                         background: AppGray.ink,
                         horizontalPadding: 22,
@@ -1028,13 +1028,13 @@ private struct ProjectDashboardView: View {
                 .buttonStyle(PlainButtonStyle())
             case .sent:
                 VStack(spacing: 10) {
-                    dashboardActionButton(title: "View estimate", icon: "doc", action: { showEstimatePDF = true })
+                    dashboardActionButton(title: L("View estimate"), icon: "doc", action: { showEstimatePDF = true })
                     HapticButton("Send again", action: prepareEstimateForSending)
                         .font(.system(size: 13, weight: .medium))
                 }
             case .accepted:
                 dashboardActionButton(
-                    title: "Create invoice",
+                    title: L("Create invoice"),
                     icon: "creditcard",
                     action: onOpenInvoices
                 )
@@ -1075,7 +1075,7 @@ private struct ProjectDashboardView: View {
                 Image(systemName: icon)
                     .font(.system(size: 13, weight: .semibold))
             }
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 14, weight: .semibold))
                 .lineLimit(1)
             if let trailingIcon {
@@ -1092,16 +1092,16 @@ private struct ProjectDashboardView: View {
 
     private var milestonesCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Job Progress")
+            Text(L("Job Progress"))
                 .font(.system(size: 15, weight: .regular, design: .rounded))
                 .foregroundColor(AppGray.secondary)
 
             HStack(alignment: .firstTextBaseline) {
-                Text(progressTitle)
+                Text(L(progressTitle))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
-                Text("\(progressStep) of 5")
+                Text(L("%@ of 5", "\(progressStep)"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppGray.ink)
             }
@@ -1110,7 +1110,7 @@ private struct ProjectDashboardView: View {
             DashboardSegmentedProgress(step: progressStep)
                 .padding(.top, 18)
 
-            Text("Next Steps")
+            Text(L("Next Steps"))
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(AppGray.secondary)
                 .padding(.top, 24)
@@ -1118,38 +1118,38 @@ private struct ProjectDashboardView: View {
 
             VStack(spacing: 0) {
                 DashboardNextStepRow(
-                    title: "Send Estimate",
-                    status: stage == .draft ? "Next" : "Complete",
+                    title: L("Send Estimate"),
+                    status: stage == .draft ? L("Next") : L("Complete"),
                     isNext: stage == .draft
                 )
                 DashboardNextStepRow(
-                    title: "Client Approval",
-                    status: stage == .accepted ? "Complete" : "Waiting",
+                    title: L("Client Approval"),
+                    status: stage == .accepted ? L("Complete") : L("Waiting"),
                     detail: stage == .sent
-                        ? "The estimate has been sent and is waiting for approval."
+                        ? L("The estimate has been sent and is waiting for approval.")
                         : nil
                 )
                 DashboardNextStepRow(
-                    title: "Begin Construction",
+                    title: L("Begin Construction"),
                     status: {
-                        if !projectInvoices.isEmpty { return "Complete" }
-                        return stage == .accepted ? "Next" : "Not Started"
+                        if !projectInvoices.isEmpty { return L("Complete") }
+                        return stage == .accepted ? L("Next") : L("Not Started")
                     }(),
                     isNext: stage == .accepted && projectInvoices.isEmpty,
                     detail: stage == .accepted && projectInvoices.isEmpty
-                        ? "The estimate is approved. Create the first invoice to begin billing."
+                        ? L("The estimate is approved. Create the first invoice to begin billing.")
                         : nil
                 )
                 DashboardNextStepRow(
-                    title: "Collect Payment",
+                    title: L("Collect Payment"),
                     status: isFullyPaid
-                        ? "Complete"
-                        : (!projectInvoices.isEmpty ? "Next" : "Upcoming"),
+                        ? L("Complete")
+                        : (!projectInvoices.isEmpty ? L("Next") : L("Upcoming")),
                     isNext: stage == .accepted && !projectInvoices.isEmpty && !isFullyPaid,
                     detail: paidAmount > 0
                         ? (isFullyPaid
-                            ? "\(currency(paidAmount)) collected in full."
-                            : "\(currency(paidAmount)) collected; \(currency(max(invoicedAmount - paidAmount, 0))) remaining.")
+                            ? L("%@ collected in full.", "\(currency(paidAmount))")
+                            : L("%@ collected; %@ remaining.", "\(currency(paidAmount))", "\(currency(max(invoicedAmount - paidAmount, 0)))"))
                         : nil,
                     showsDivider: false
                 )
@@ -1165,7 +1165,7 @@ private struct ProjectDashboardView: View {
     private func financialSummary(_ estimate: Estimate) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Budget")
+                Text(L("Budget"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
@@ -1176,15 +1176,15 @@ private struct ProjectDashboardView: View {
 
             HStack(spacing: 0) {
                 DashboardMetric(
-                    label: "Project value",
+                    label: L("Project value"),
                     value: estimate.formattedTotal
                 )
                 DashboardMetric(
-                    label: "Materials cost",
+                    label: L("Materials cost"),
                     value: currency(estimate.materialsSubtotal)
                 )
                 DashboardMetric(
-                    label: "Estimated profit",
+                    label: L("Estimated profit"),
                     value: currency(max(estimate.total - estimate.materialsSubtotal, 0))
                 )
             }
@@ -1197,13 +1197,13 @@ private struct ProjectDashboardView: View {
 
     private var paymentsCard: some View {
         DashboardSummaryCard(
-            title: "Payments",
+            title: L("Payments"),
             value: currency(paidAmount),
             detail: invoicedAmount > 0
-                ? "\(currency(invoicedAmount)) invoiced"
-                : "No invoices yet",
+                ? L("%@ invoiced", "\(currency(invoicedAmount))")
+                : L("No invoices yet"),
             icon: "creditcard",
-            actionTitle: "Open",
+            actionTitle: L("Open"),
             action: {
                 paymentSheetStartsWithNewPayment = false
                 showPaymentsSheet = true
@@ -1213,9 +1213,9 @@ private struct ProjectDashboardView: View {
 
     private var changeOrdersCard: some View {
         DashboardSummaryCard(
-            title: "Change orders",
+            title: L("Change orders"),
             value: "$0.00",
-            detail: "No changes yet",
+            detail: L("No changes yet"),
             icon: "doc.badge.plus",
             actionTitle: nil,
             action: nil
@@ -1227,11 +1227,11 @@ private struct ProjectDashboardView: View {
             Image(systemName: "square.grid.2x2")
                 .font(.system(size: 28))
                 .foregroundColor(AppGray.secondary)
-            Text("Your project dashboard starts here")
+            Text(L("Your project dashboard starts here"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(AppGray.ink)
                 .frame(maxWidth: .infinity, alignment: .center)
-            Text("Create an estimate to unlock milestones, budget tracking, payments, and change orders.")
+            Text(L("Create an estimate to unlock milestones, budget tracking, payments, and change orders."))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(AppGray.secondary)
                 .multilineTextAlignment(.center)
@@ -1242,7 +1242,7 @@ private struct ProjectDashboardView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Create estimate")
+                    Text(L("Create estimate"))
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -1319,10 +1319,10 @@ private struct PaymentEditorSheet: View {
     private var amountValidationMessage: String? {
         guard !amountText.isEmpty else { return nil }
         guard let enteredAmount, enteredAmount > 0 else {
-            return "Enter an amount greater than $0."
+            return L("Enter an amount greater than $0.")
         }
         if invoicedAmount > 0 && enteredAmount > maximumAllowedAmount + 0.005 {
-            return "This is more than the remaining invoice balance."
+            return L("This is more than the remaining invoice balance.")
         }
         return nil
     }
@@ -1339,7 +1339,7 @@ private struct PaymentEditorSheet: View {
                     if !projectPayments.isEmpty {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Received")
+                                Text(L("Received"))
                                     .font(.system(size: 14, weight: .regular))
                                     .foregroundColor(AppGray.secondary)
                                 Text(currency(totalPaid))
@@ -1348,7 +1348,7 @@ private struct PaymentEditorSheet: View {
                             }
                             Spacer()
                             VStack(alignment: .trailing, spacing: 4) {
-                                Text("Remaining")
+                                Text(L("Remaining"))
                                     .font(.system(size: 14, weight: .regular))
                                     .foregroundColor(AppGray.secondary)
                                 Text(currency(remainingBalance))
@@ -1358,7 +1358,7 @@ private struct PaymentEditorSheet: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Payments received")
+                            Text(L("Payments received"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(AppGray.textDark)
 
@@ -1369,10 +1369,10 @@ private struct PaymentEditorSheet: View {
                                     } label: {
                                         HStack(spacing: 12) {
                                             VStack(alignment: .leading, spacing: 3) {
-                                                Text(payment.method)
+                                                Text(L(payment.method))
                                                     .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(AppGray.ink)
-                                                Text(payment.receivedAt.formatted(date: .abbreviated, time: .omitted))
+                                                Text(payment.receivedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(appLocale)))
                                                     .font(.system(size: 13, weight: .regular))
                                                     .foregroundColor(AppGray.secondary)
                                             }
@@ -1403,14 +1403,14 @@ private struct PaymentEditorSheet: View {
                         }
                     }
 
-                    paymentField("Payment method") {
+                    paymentField(L("Payment method")) {
                         Menu {
                             ForEach(methods, id: \.self) { method in
                                 HapticButton(method) { selectedMethod = method }
                             }
                         } label: {
                             HStack {
-                                Text(selectedMethod)
+                                Text(L(selectedMethod))
                                     .foregroundColor(AppGray.secondary)
                                 Spacer()
                                 Image(systemName: "chevron.down")
@@ -1421,7 +1421,7 @@ private struct PaymentEditorSheet: View {
                         }
                     }
 
-                    paymentField("Amount received") {
+                    paymentField(L("Amount received")) {
                         HStack(spacing: 8) {
                             Text("$")
                                 .foregroundColor(AppGray.secondary)
@@ -1433,13 +1433,13 @@ private struct PaymentEditorSheet: View {
                     }
 
                     if let amountValidationMessage {
-                        Text(amountValidationMessage)
+                        Text(L(amountValidationMessage))
                             .font(.system(size: 12, weight: .regular))
                             .foregroundColor(.red)
                     }
 
                     if let saveError {
-                        Text(saveError)
+                        Text(L(saveError))
                             .font(.system(size: 13, weight: .regular))
                             .foregroundColor(.red)
                     }
@@ -1451,7 +1451,7 @@ private struct PaymentEditorSheet: View {
                             if isSaving {
                                 ProgressView().tint(.white)
                             }
-                            Text(editingPayment == nil ? "Add to total" : "Save payment")
+                            Text(editingPayment == nil ? L("Add to total") : L("Save payment"))
                                 .font(.system(size: 16, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -1468,7 +1468,7 @@ private struct PaymentEditorSheet: View {
                 .padding(20)
             }
             .background(Color.white.ignoresSafeArea())
-            .navigationTitle(editingPayment == nil ? "Add Payment" : "Edit Payment")
+            .navigationTitle(editingPayment == nil ? L("Add Payment") : L("Edit Payment"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -1489,7 +1489,7 @@ private struct PaymentEditorSheet: View {
         @ViewBuilder _ content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(AppGray.textDark)
             content()
@@ -1561,7 +1561,7 @@ private struct DashboardMetric: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(label)
+            Text(L(label))
                 .font(.system(size: 11))
                 .foregroundColor(AppGray.secondary)
                 .lineLimit(1)
@@ -1598,13 +1598,13 @@ private struct DashboardSummaryCard: View {
                 }
             }
 
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 15, weight: .regular, design: .rounded))
                 .foregroundColor(AppGray.secondary)
             Text(value)
                 .font(.system(size: 19, weight: .bold))
                 .foregroundColor(AppGray.ink)
-            Text(detail)
+            Text(L(detail))
                 .font(.system(size: 13, weight: .regular))
                 .foregroundColor(AppGray.secondary)
                 .lineLimit(1)
@@ -1666,7 +1666,7 @@ private struct DashboardSegmentedProgress: View {
             }
         }
         .frame(height: 7.6)
-        .accessibilityLabel("Job progress, step \(step) of 5")
+        .accessibilityLabel(L("Job progress, step %@ of 5", "\(step)"))
     }
 }
 
@@ -1680,12 +1680,12 @@ private struct DashboardNextStepRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 10) {
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(AppGray.ink)
 
                 if let detail, !detail.isEmpty {
-                    Text(detail)
+                    Text(L(detail))
                         .font(.system(size: 14.3, weight: .regular))
                         .foregroundColor(AppGray.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1694,7 +1694,7 @@ private struct DashboardNextStepRow: View {
 
             Spacer()
 
-            Text(status)
+            Text(L(status))
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(AppGray.secondary)
         }
@@ -1722,12 +1722,12 @@ struct NewEstimateCard: View {
         VStack(spacing: 16) {
             Spacer().frame(height: 60)
 
-            Text("AI-powered estimates")
+            Text(L("AI-powered estimates"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(AppGray.ink)
                 .multilineTextAlignment(.center)
 
-            Text("Quickly create detailed, professional proposals and impress your customers with speed and accuracy.")
+            Text(L("Quickly create detailed, professional proposals and impress your customers with speed and accuracy."))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(AppGray.secondary)
                 .multilineTextAlignment(.center)
@@ -1739,7 +1739,7 @@ struct NewEstimateCard: View {
                     HStack(spacing: 6) {
                         Image(systemName: "bubble.left.and.bubble.right")
                             .font(.system(size: 13, weight: .regular))
-                        Text("View estimate")
+                        Text(L("View estimate"))
                             .font(.system(size: 15, weight: .medium))
                     }
                     .foregroundColor(AppGray.secondary)
@@ -1757,7 +1757,7 @@ struct NewEstimateCard: View {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
                             .font(.system(size: 13, weight: .semibold))
-                        Text("Create estimate")
+                        Text(L("Create estimate"))
                             .font(.system(size: 15, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -1786,7 +1786,7 @@ private struct EstimateSummaryCard: View {
                     .foregroundColor(AppGray.secondary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(estimate.title.isEmpty ? "Untitled estimate" : estimate.title)
+                    Text(estimate.title.isEmpty ? L("Untitled estimate") : estimate.title)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(AppGray.ink)
                         .lineLimit(1)
@@ -1799,7 +1799,7 @@ private struct EstimateSummaryCard: View {
 
             HStack(alignment: .center, spacing: 12) {
                 HStack(spacing: 6) {
-                    Text(estimate.status)
+                    Text(L(estimate.status))
                     if estimate.status.caseInsensitiveCompare("Sent") == .orderedSame {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 11, weight: .semibold))
@@ -1939,7 +1939,7 @@ private struct EstimateDocumentDetailView: View {
             HapticButton { saveEstimateAndClose() } label: {
                 HStack(spacing: 8) {
                     if isSavingProposal { ProgressView().tint(.white) }
-                    Text(isSavingProposal ? "Saving…" : "Save")
+                    Text(isSavingProposal ? L("Saving…") : L("Save"))
                         .font(.system(size: 17, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -1972,7 +1972,7 @@ private struct EstimateDocumentDetailView: View {
             )
         }
         .alert(
-            "Couldn’t prepare estimate",
+            L("Couldn’t prepare estimate"),
             isPresented: Binding(
                 get: { sendError != nil },
                 set: { if !$0 { sendError = nil } }
@@ -1980,10 +1980,10 @@ private struct EstimateDocumentDetailView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(sendError ?? "Please try again.")
+            Text(sendError ?? L("Please try again."))
         }
         .alert(
-            "Couldn’t update estimate",
+            L("Couldn’t update estimate"),
             isPresented: Binding(
                 get: { proposalError != nil },
                 set: { if !$0 { proposalError = nil } }
@@ -1991,9 +1991,9 @@ private struct EstimateDocumentDetailView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(proposalError ?? "Please try again.")
+            Text(proposalError ?? L("Please try again."))
         }
-        .confirmationDialog("Estimate Options", isPresented: $showingEstimateOptions, titleVisibility: .visible) {
+        .confirmationDialog(L("Estimate Options"), isPresented: $showingEstimateOptions, titleVisibility: .visible) {
             HapticButton("Preview & Send", action: prepareForSending)
                 .disabled(isSavingProposal || isPreparingSend)
             HapticButton("Delete Estimate", role: .destructive) {
@@ -2002,7 +2002,7 @@ private struct EstimateDocumentDetailView: View {
             }
             HapticButton("Cancel", role: .cancel) {}
         } message: {
-            Text("Send this estimate or delete it permanently.")
+            Text(L("Send this estimate or delete it permanently."))
         }
         .task(id: estimate.supabaseEstimateId) {
             guard !didLoadProposal else { return }
@@ -2046,7 +2046,7 @@ private struct EstimateDocumentDetailView: View {
 
     private var navigationBar: some View {
         ZStack {
-            Text("Estimate \(position)")
+            Text(L("Estimate %@", "\(position)"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -2084,7 +2084,7 @@ private struct EstimateDocumentDetailView: View {
             ForEach(EstimateProposalTab.allCases) { tab in
                 HapticButton { selectedTab = tab } label: {
                     VStack(spacing: 7) {
-                        Text(tab.rawValue)
+                        Text(L(tab.rawValue))
                             .font(.system(size: 17, weight: selectedTab == tab ? .medium : .regular))
                             .foregroundColor(selectedTab == tab ? AppGray.ink : AppGray.secondary)
                         Color.clear
@@ -2217,7 +2217,7 @@ private struct EstimateDocumentDetailView: View {
             try await EstimateProposalRepository.uploadMedia(
                 data: jpeg,
                 mimeType: "image/jpeg",
-                displayName: "Project photo",
+                displayName: L("Project photo"),
                 kind: "photo",
                 projectID: project.id,
                 estimateID: estimateID,
@@ -2351,10 +2351,10 @@ private struct EstimatePlanEditor: View {
                     if isGenerating {
                         ProgressView()
                             .tint(AppGray.ink)
-                        Text("Building detailed job plan…")
+                        Text(L("Building detailed job plan…"))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(AppGray.ink)
-                        Text("AI is organizing the saved scope into process cards and detailed steps.")
+                        Text(L("AI is organizing the saved scope into process cards and detailed steps."))
                             .font(.system(size: 16))
                             .foregroundColor(AppGray.secondary)
                             .multilineTextAlignment(.center)
@@ -2362,10 +2362,10 @@ private struct EstimatePlanEditor: View {
                         Image(systemName: "list.bullet.clipboard")
                             .font(.system(size: 29))
                             .foregroundColor(AppGray.secondary)
-                        Text("Job plan not generated")
+                        Text(L("Job plan not generated"))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(AppGray.ink)
-                        Text("Generate the detailed process cards from this estimate’s saved scope.")
+                        Text(L("Generate the detailed process cards from this estimate’s saved scope."))
                             .font(.system(size: 16))
                             .foregroundColor(AppGray.secondary)
                             .multilineTextAlignment(.center)
@@ -2440,7 +2440,7 @@ private struct EstimatePlanEditor: View {
             .presentationDetents([.large])
         }
         .confirmationDialog(
-            "Delete plan phase?",
+            L("Delete plan phase?"),
             isPresented: Binding(
                 get: { deletingSection != nil },
                 set: { if !$0 { deletingSection = nil } }
@@ -2496,20 +2496,20 @@ private struct PlanSectionEditorSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Phase title")
+                Text(L("Phase title"))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                TextField("Example: Removal and disposal", text: $title)
+                TextField(L("Example: Removal and disposal"), text: $title)
                     .font(.system(size: 16, weight: .medium))
                     .padding(14)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(AppGray.border))
 
-                Text("Plan steps")
+                Text(L("Plan steps"))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                Text("Put each bullet point on its own line.")
+                Text(L("Put each bullet point on its own line."))
                     .font(.system(size: 13))
                     .foregroundColor(AppGray.secondary)
                 TextEditor(text: $stepsText)
@@ -2524,7 +2524,7 @@ private struct PlanSectionEditorSheet: View {
             }
             .padding(20)
             .background(AppGray.bgPale.ignoresSafeArea())
-            .navigationTitle(section.title.isEmpty ? "Add Plan Phase" : "Edit Plan Phase")
+            .navigationTitle(section.title.isEmpty ? L("Add Plan Phase") : L("Edit Plan Phase"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -2553,14 +2553,14 @@ private struct EstimateNotesEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Estimate notes")
+            Text(L("Estimate notes"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
             VStack(alignment: .leading, spacing: 12) {
                 ZStack(alignment: .topLeading) {
                     if notes.isEmpty {
-                        Text("Add any notes you want the client to see on the estimate here")
+                        Text(L("Add any notes you want the client to see on the estimate here"))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(AppGray.muted)
                             .padding(.horizontal, 14)
@@ -2579,7 +2579,7 @@ private struct EstimateNotesEditor: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
                 HapticButton(action: onSave) {
-                    Text(isSaving ? "Saving…" : "Save notes")
+                    Text(isSaving ? L("Saving…") : L("Save notes"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2606,28 +2606,28 @@ private struct EstimateMediaEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Photos & plans")
+            Text(L("Photos & plans"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 PhotosPicker(selection: $photoPickerItem, matching: .images) {
-                    mediaAction(title: "Upload Photo", icon: "photo")
+                    mediaAction(title: L("Upload Photo"), icon: "photo")
                 }
                 .buttonStyle(.plain)
 
                 HapticButton(action: onImportFile) {
-                    mediaAction(title: "Add Floorplan", icon: "doc")
+                    mediaAction(title: L("Add Floorplan"), icon: "doc")
                 }
                 .buttonStyle(.plain)
 
                 HapticButton(action: onChooseRender) {
-                    mediaAction(title: "Add Render", icon: "photo.stack")
+                    mediaAction(title: L("Add Render"), icon: "photo.stack")
                 }
                 .buttonStyle(.plain)
 
                 HapticButton(action: onCreateRender) {
-                    mediaAction(title: "Create Render", icon: "sparkles")
+                    mediaAction(title: L("Create Render"), icon: "sparkles")
                 }
                 .buttonStyle(.plain)
             }
@@ -2647,7 +2647,7 @@ private struct EstimateMediaEditor: View {
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(AppGray.ink)
                             .lineLimit(2)
-                        Text(record.kind.capitalized)
+                        Text(L(record.kind.capitalized))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -2674,7 +2674,7 @@ private struct EstimateMediaEditor: View {
         VStack(spacing: 9) {
             Image(systemName: icon)
                 .font(.system(size: 21, weight: .medium))
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 14, weight: .semibold))
         }
         .foregroundColor(AppGray.ink)
@@ -2725,7 +2725,7 @@ private struct EstimateRenderPicker: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         if available.isEmpty {
-                            Text("No unattached renders are available for this project.")
+                            Text(L("No unattached renders are available for this project."))
                                 .font(.system(size: 15))
                                 .foregroundColor(AppGray.secondary)
                                 .multilineTextAlignment(.center)
@@ -2740,7 +2740,7 @@ private struct EstimateRenderPicker: View {
                                                 .font(.system(size: 15, weight: .semibold))
                                                 .foregroundColor(AppGray.ink)
                                                 .lineLimit(2)
-                                            Text(render.isAccepted ? "Accepted render" : "Project render")
+                                            Text(render.isAccepted ? L("Accepted render") : L("Project render"))
                                                 .font(.system(size: 13))
                                                 .foregroundColor(AppGray.secondary)
                                         }
@@ -2768,13 +2768,13 @@ private struct EstimateRenderPicker: View {
 
     private var navigationHeader: some View {
         ZStack {
-            Text("Add Render")
+            Text(L("Add Render"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
             HStack {
                 HapticButton { dismiss() } label: {
-                    Text("Cancel")
+                    Text(L("Cancel"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppGray.ink)
                         .padding(.horizontal, 14)
@@ -2960,7 +2960,7 @@ struct ItemizedEstimateCard: View {
 
     private func insertItem(_ item: EstimateLineItem, into category: String) async {
         guard let estId = estimate.supabaseEstimateId else {
-            await MainActor.run { loadError = "Save the estimate before adding items." }
+            await MainActor.run { loadError = L("Save the estimate before adding items.") }
             return
         }
         struct NewItem: Encodable {
@@ -3033,7 +3033,7 @@ struct ItemizedEstimateCard: View {
             }
         } catch {
             await MainActor.run {
-                loadError = SafeErrorMessages.data(error, action: "\(name) deletion")
+                loadError = SafeErrorMessages.data(error, action: L("%@ deletion", L(name)))
             }
         }
     }
@@ -3081,10 +3081,10 @@ struct ItemizedEstimateCard: View {
                 VStack(spacing: 0) {
                 // ── Category header ──
                 HStack(spacing: 6) {
-                    Text(group.name)
+                    Text(L(group.name))
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(AppGray.ink)
-                    Text("\(group.items.count) item\(group.items.count == 1 ? "" : "s")")
+                    Text(group.items.count == 1 ? L("1 item") : L("%@ items", "\(group.items.count)"))
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(AppGray.secondary)
 
@@ -3169,7 +3169,7 @@ struct ItemizedEstimateCard: View {
                                             HapticButton {
                                                 editingRow = rows?.first(where: { $0.id == rowId })
                                             } label: {
-                                                Text("Edit")
+                                                Text(L("Edit"))
                                                     .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(AppGray.secondary)
                                                     .padding(.horizontal, 14)
@@ -3192,7 +3192,7 @@ struct ItemizedEstimateCard: View {
                                         HStack(spacing: 4) {
                                             Image(systemName: "arrow.up.right.square")
                                                 .font(.system(size: 13, weight: .semibold))
-                                            Text("Visit site")
+                                            Text(L("Visit site"))
                                                 .font(.system(size: 14, weight: .medium))
                                         }
                                         .foregroundColor(brandBlue)
@@ -3218,7 +3218,7 @@ struct ItemizedEstimateCard: View {
                             HapticButton {
                                 addingCategory = group.name
                             } label: {
-                                Text("Add item")
+                                Text(L("Add item"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(AppGray.ink)
                                     .frame(maxWidth: .infinity)
@@ -3239,7 +3239,7 @@ struct ItemizedEstimateCard: View {
                                     }
                                 }
                             } label: {
-                                Text(editingCategories.contains(group.name) ? "Done" : "Edit items")
+                                Text(editingCategories.contains(group.name) ? L("Done") : L("Edit items"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(AppGray.ink)
                                     .frame(maxWidth: .infinity)
@@ -3261,7 +3261,7 @@ struct ItemizedEstimateCard: View {
                         .frame(height: 0.7)
 
                     HStack {
-                        Text("Total")
+                        Text(L("Total"))
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppGray.ink)
                         Spacer()
@@ -3285,7 +3285,7 @@ struct ItemizedEstimateCard: View {
             }
 
             if let loadError {
-                Text(loadError)
+                Text(L(loadError))
                     .font(.system(size: 12))
                     .foregroundColor(.red)
                     .padding(.horizontal, 20)
@@ -3333,7 +3333,7 @@ struct ItemizedEstimateCard: View {
             )
         }
         .confirmationDialog(
-            "Delete \(confirmDeleteCategory ?? "") and its items?",
+            L("Delete %@ and its items?", "\(confirmDeleteCategory ?? "")"),
             isPresented: Binding(
                 get: { confirmDeleteCategory != nil },
                 set: { if !$0 { confirmDeleteCategory = nil } }
@@ -3360,7 +3360,7 @@ struct RecommendedQuoteRow: View {
 
     var body: some View {
         HStack {
-            Text("Recommended Quote")
+            Text(L("Recommended Quote"))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(darkGray)
             Spacer()
@@ -3436,7 +3436,7 @@ struct ItemizedEstimateView: View {
                     HStack(spacing: 6) {
                         Image(systemName: allCollapsed ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 12))
-                        Text(allCollapsed ? "Expand all" : "Collapse all")
+                        Text(allCollapsed ? L("Expand all") : L("Collapse all"))
                             .font(.system(size: 13, weight: .medium))
                     }
                     .foregroundColor(AppGray.secondary)
@@ -3477,7 +3477,7 @@ struct ItemizedEstimateView: View {
                 Divider()
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Total with markup")
+                        Text(L("Total with markup"))
                             .font(.system(size: 12))
                             .foregroundColor(AppGray.secondary)
                         Text(estimate.formattedTotal)
@@ -3488,7 +3488,7 @@ struct ItemizedEstimateView: View {
                     if let onViewChat {
                         HapticButton(action: onViewChat) {
                             HStack(spacing: 6) {
-                                Text("View chat")
+                                Text(L("View chat"))
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 12, weight: .semibold))
                             }
@@ -3531,7 +3531,7 @@ private struct EstimateCategorySection: View {
                         Text(category.name)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.black)
-                        Text("\(category.items.count) items")
+                        Text(L("%@ items", "\(category.items.count)"))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -3571,7 +3571,7 @@ private struct EstimateCategorySection: View {
                                             HStack(spacing: 4) {
                                                 Image(systemName: "arrow.up.right.square")
                                                     .font(.system(size: 11, weight: .semibold))
-                                                Text("Visit site")
+                                                Text(L("Visit site"))
                                                     .font(.system(size: 12, weight: .medium))
                                             }
                                             .foregroundColor(AppBrand.accent)
@@ -3655,7 +3655,7 @@ struct EstimateCard: View {
                         .font(.system(size: 16))
                         .foregroundColor(AppBrand.accent)
                     
-                    Text("Estimate")
+                    Text(L("Estimate"))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                     
@@ -3678,11 +3678,11 @@ struct EstimateCard: View {
                 VStack(alignment: .leading, spacing: 14) {
                     // Description
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Description")
+                        Text(L("Description"))
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                         
-                        TextField("Describe the job...", text: $estimateDescription, axis: .vertical)
+                        TextField(L("Describe the job..."), text: $estimateDescription, axis: .vertical)
                             .font(.system(size: 15))
                             .lineLimit(3...6)
                             .padding(12)
@@ -3692,7 +3692,7 @@ struct EstimateCard: View {
                     
                     // Price
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Price")
+                        Text(L("Price"))
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                         
@@ -3712,7 +3712,7 @@ struct EstimateCard: View {
                     
                     // Create with Handoff AI - green gradient pill
                     HapticButton(action: {}) {
-                        Text("Create with Handoff AI")
+                        Text(L("Create with Handoff AI"))
                             .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -3755,19 +3755,19 @@ struct InvoicesTabContent: View {
             if projectId == nil {
                 VStack(spacing: 12) {
                     Spacer().frame(height: 60)
-                    Text("Save this project first")
+                    Text(L("Save this project first"))
                         .font(.system(size: 20, weight: .bold))
-                    Text("Every invoice must be connected to one project.")
+                    Text(L("Every invoice must be connected to one project."))
                         .font(.system(size: 15))
                         .foregroundColor(AppGray.secondary)
                 }
             } else if invoices.isEmpty {
                 VStack(spacing: 16) {
                     Spacer().frame(height: 60)
-                    Text("No invoices yet")
+                    Text(L("No invoices yet"))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(AppGray.ink)
-                    Text("Bill your client for completed work\nand collect payment.")
+                    Text(L("Bill your client for completed work\nand collect payment."))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(AppGray.secondary)
                         .multilineTextAlignment(.center)
@@ -3779,7 +3779,7 @@ struct InvoicesTabContent: View {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
                                 .font(.system(size: 13, weight: .semibold))
-                            Text("Create invoice")
+                            Text(L("Create invoice"))
                                 .font(.system(size: 15, weight: .semibold))
                         }
                             .foregroundColor(.white)
@@ -3819,7 +3819,7 @@ struct InvoicesTabContent: View {
             await store.refresh()
         }
         .alert(
-            "Subscription unavailable",
+            L("Subscription unavailable"),
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: { if !$0 { subscriptionError = nil } }
@@ -3827,17 +3827,17 @@ struct InvoicesTabContent: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(subscriptionError ?? "Please try again.")
+            Text(subscriptionError ?? L("Please try again."))
         }
     }
 
     private var invoiceHeaderCard: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Invoices")
+                Text(L("Invoices"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                Text("\(invoices.count) invoice\(invoices.count == 1 ? "" : "s") for this project")
+                Text(invoices.count == 1 ? L("1 invoice for this project") : L("%@ invoices for this project", "\(invoices.count)"))
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.secondary)
             }
@@ -3850,7 +3850,7 @@ struct InvoicesTabContent: View {
                 }
                 HapticButton("Blank invoice", action: createBlank)
             } label: {
-                Label("Create Invoice", systemImage: "plus")
+                Label(L("Create Invoice"), systemImage: "plus")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -3919,14 +3919,14 @@ struct CreateInvoiceCard: View {
 
             // Title + subtitle
             VStack(spacing: 10) {
-                Text("Create an invoice")
+                Text(L("Create an invoice"))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
                     .multilineTextAlignment(.center)
 
                 Text(hasEstimate
-                     ? "Turn your estimate into an itemized\ninvoice and send it to your client\nto get paid."
-                     : "Bill your client for completed work\nand collect payment.")
+                     ? L("Turn your estimate into an itemized\ninvoice and send it to your client\nto get paid.")
+                     : L("Bill your client for completed work\nand collect payment."))
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.secondary)
                     .multilineTextAlignment(.center)
@@ -3939,7 +3939,7 @@ struct CreateInvoiceCard: View {
             // Actions
             if hasEstimate {
                 HapticButton(action: onCreateFromEstimate) {
-                    Text("Create from estimate")
+                    Text(L("Create from estimate"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -3951,7 +3951,7 @@ struct CreateInvoiceCard: View {
                 .buttonStyle(PlainButtonStyle())
 
                 HapticButton(action: onBlank) {
-                    Text("Start blank")
+                    Text(L("Start blank"))
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(AppGray.secondary)
                         .padding(.vertical, 12)
@@ -3961,7 +3961,7 @@ struct CreateInvoiceCard: View {
                 .padding(.bottom, 8)
             } else {
                 HapticButton(action: onBlank) {
-                    Text("Create invoice")
+                    Text(L("Create invoice"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(AppGray.secondary)
                         .frame(maxWidth: .infinity)
@@ -4006,7 +4006,7 @@ struct InvoiceSummaryCard: View {
 
                 // Title + price on the same axis
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(invoice.title.isEmpty ? "Untitled invoice" : invoice.title)
+                    Text(invoice.title.isEmpty ? L("Untitled invoice") : invoice.title)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                         .lineLimit(1)
@@ -4020,7 +4020,7 @@ struct InvoiceSummaryCard: View {
             // Status pill + chevron at the bottom, on the same axis
             HStack(alignment: .center, spacing: 12) {
                 HStack(spacing: 6) {
-                    Text(invoice.status)
+                    Text(L(invoice.status))
                     if invoice.status.caseInsensitiveCompare("Sent") == .orderedSame {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 11, weight: .semibold))
@@ -4061,7 +4061,7 @@ struct DetailTagPill: View {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(AppGray.secondary)
-            Text(text)
+            Text(L(text))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppGray.secondary)
         }
@@ -4081,7 +4081,7 @@ struct JobContextCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Add job context")
+                Text(L("Add job context"))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(AppBrand.accent)
                 
@@ -4094,15 +4094,15 @@ struct JobContextCard: View {
                 }
             }
             
-            Text("Better context in → better estimates out")
+            Text(L("Better context in → better estimates out"))
                 .font(.system(size: 14))
                 .foregroundColor(AppGray.secondary)
             
             // Action items. Recording and live walkthroughs are intentionally
             // not offered in the first release.
             VStack(alignment: .leading, spacing: 18) {
-                JobContextRow(icon: "photo", text: "Attach job photos")
-                JobContextRow(icon: "arrow.up.doc", text: "Upload project files")
+                JobContextRow(icon: "photo", text: L("Attach job photos"))
+                JobContextRow(icon: "arrow.up.doc", text: L("Upload project files"))
             }
         }
         .padding(20)
@@ -4126,7 +4126,7 @@ struct JobContextRow: View {
                 .foregroundColor(.black)
                 .frame(width: 24)
             
-            Text(text)
+            Text(L(text))
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(.black)
             
@@ -4146,10 +4146,10 @@ struct ClientDetailsCard: View {
 
     private var detailRows: [(label: String, value: String)] {
         [
-            ("Company", client.company),
-            ("Email", client.email),
-            ("Phone Number", client.phone),
-            ("Address", client.address)
+            (L("Company"), client.company),
+            (L("Email"), client.email),
+            (L("Phone Number"), client.phone),
+            (L("Address"), client.address)
         ].filter { !$0.value.isEmpty }
     }
     
@@ -4157,7 +4157,7 @@ struct ClientDetailsCard: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Client Details")
+                    Text(L("Client Details"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppGray.secondary)
 
@@ -4170,7 +4170,7 @@ struct ClientDetailsCard: View {
                 Spacer()
 
                 HapticButton(action: onChangeClient) {
-                    Text("Change")
+                    Text(L("Change"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppGray.secondary)
                         .padding(.horizontal, 12)
@@ -4193,7 +4193,7 @@ struct ClientDetailsCard: View {
             VStack(alignment: .leading, spacing: 18) {
                 ForEach(Array(detailRows.enumerated()), id: \.offset) { _, row in
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(row.label)
+                        Text(L(row.label))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(AppGray.itemText)
                         Text(row.value)
@@ -4246,7 +4246,7 @@ struct AddClientCard: View {
                     }
                     Spacer()
                     HapticButton(action: onTap) {
-                        Text("Change")
+                        Text(L("Change"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.black)
                             .padding(.horizontal, 14)
@@ -4267,12 +4267,12 @@ struct AddClientCard: View {
 
                     // Title + subtitle
                     VStack(spacing: 10) {
-                        Text("Add a client")
+                        Text(L("Add a client"))
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.black)
                             .multilineTextAlignment(.center)
 
-                        Text("Add client information to keep track of\nwho you are working with\nand stay organized")
+                        Text(L("Add client information to keep track of\nwho you are working with\nand stay organized"))
                             .font(.system(size: 15))
                             .foregroundColor(AppGray.secondary)
                             .multilineTextAlignment(.center)
@@ -4283,7 +4283,7 @@ struct AddClientCard: View {
 
                     // Stroke button
                     HapticButton(action: onTap) {
-                        Text("Add client")
+                        Text(L("Add client"))
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(AppGray.secondary)
                             .frame(maxWidth: .infinity)
@@ -4357,16 +4357,16 @@ struct AddContactSheet: View {
                         
                         // Form Fields
                         VStack(spacing: 16) {
-                            ContactField(label: "Name", text: $name, icon: "person")
-                            ContactField(label: "Phone", text: $phone, icon: "phone")
-                            ContactField(label: "Email", text: $email, icon: "envelope")
-                            ContactField(label: "Company", text: $company, icon: "building.2")
+                            ContactField(label: L("Name"), text: $name, icon: "person")
+                            ContactField(label: L("Phone"), text: $phone, icon: "phone")
+                            ContactField(label: L("Email"), text: $email, icon: "envelope")
+                            ContactField(label: L("Company"), text: $company, icon: "building.2")
                         }
                         .padding(.horizontal, 20)
                     }
                 }
             }
-            .navigationTitle("Add Client")
+            .navigationTitle(L("Add Client"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -4396,7 +4396,7 @@ struct ContactField: View {
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(label)
+                Text(L(label))
                     .font(.system(size: 12))
                     .foregroundColor(AppGray.secondary)
                 
@@ -4578,7 +4578,7 @@ struct MaterialsTabContent: View {
         if materials.isEmpty {
             VStack(spacing: 16) {
                 Spacer().frame(height: 60)
-                Text("No materials on this estimate")
+                Text(L("No materials on this estimate"))
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(AppGray.secondary)
             }
@@ -4586,7 +4586,7 @@ struct MaterialsTabContent: View {
             VStack(alignment: .leading, spacing: 0) {
                 // ── Header ──────────────────────────────────────────
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Materials")
+                    Text(L("Materials"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(labelGray)
                     Text(estimate.title)
@@ -4594,14 +4594,14 @@ struct MaterialsTabContent: View {
                         .foregroundColor(titleText)
                         .padding(.top, -2)
                     HStack(spacing: 8) {
-                        headerButton(icon: "plus", label: "Add") {}
-                        Text("\(materials.count) items")
+                        headerButton(icon: "plus", label: L("Add")) {}
+                        Text(L("%@ items", "\(materials.count)"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(labelGray)
                     }
                     .padding(.top, 6)
                     if let loadError {
-                        Text(loadError)
+                        Text(L(loadError))
                             .font(.system(size: 12))
                             .foregroundColor(.red)
                     }
@@ -4655,7 +4655,7 @@ struct MaterialsTabContent: View {
 
                 // ── Subtotal footer ─────────────────────────────────
                 HStack {
-                    Text("Subtotal")
+                    Text(L("Subtotal"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(labelGray)
                     Spacer()
@@ -4669,7 +4669,7 @@ struct MaterialsTabContent: View {
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
-            .alert("Edit Labor Rate", isPresented: $showingPriceEdit) {
+            .alert(L("Edit Labor Rate"), isPresented: $showingPriceEdit) {
                 TextField("0.00", text: $editingPriceText)
                     .keyboardType(.decimalPad)
                 HapticButton("Save") {
@@ -4683,11 +4683,11 @@ struct MaterialsTabContent: View {
                 }
                 HapticButton("Cancel", role: .cancel) { showingPriceEdit = false }
             } message: {
-                Text("Enter the hourly rate")
+                Text(L("Enter the hourly rate"))
             }
 
             if onHandCount > 0 {
-                Text("\(onHandCount) of \(materials.count) marked on hand")
+                Text(L("%@ of %@ marked on hand", "\(onHandCount)", "\(materials.count)"))
                     .font(.system(size: 12))
                     .foregroundColor(labelGray)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -4702,7 +4702,7 @@ struct MaterialsTabContent: View {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 12, weight: .medium))
-                Text(label)
+                Text(L(label))
                     .font(.system(size: 13, weight: .medium))
             }
             .foregroundColor(labelGray)
@@ -4756,7 +4756,7 @@ private struct MaterialRow: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 if item.onHand {
-                    Text("On Hand")
+                    Text(L("On Hand"))
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(onHandGreen)
                 } else if !isLabor {
@@ -4774,7 +4774,7 @@ private struct MaterialRow: View {
                     laborRateControl
                 } else {
                     HapticButton(action: { showEdit = true }) {
-                        Text("Edit Line")
+                        Text(L("Edit Line"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                         .padding(.horizontal, 12)
@@ -4816,7 +4816,7 @@ private struct MaterialRow: View {
                 HStack(spacing: 3) {
                     Text(unitPriceText)
                         .font(.system(size: 15, weight: .semibold))
-                    Text("/ hr")
+                    Text(L("/ hr"))
                         .font(.system(size: 13))
                 }
                 .foregroundColor(rowText)

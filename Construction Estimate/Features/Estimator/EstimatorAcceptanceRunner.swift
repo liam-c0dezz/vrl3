@@ -137,31 +137,31 @@ struct EstimatorAcceptanceRunnerView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Development-only estimator QA")
-                    Text("Uses the current project, AI consent and authenticated estimator. Creates synthetic estimate drafts; sends no client quotes or invoices.")
+                    Text(L("Development-only estimator QA"))
+                    Text(L("Uses the current project, AI consent and authenticated estimator. Creates synthetic estimate drafts; sends no client quotes or invoices."))
                         .font(.footnote)
-                    Text("Reference prices are not bundled or sent. Received responses still require an independent audit.")
+                    Text(L("Reference prices are not bundled or sent. Received responses still require an independent audit."))
                         .font(.footnote)
                 }
-                Section("Batch status") {
+                Section(L("Batch status")) {
                     Text(batch.status)
                     if batch.isRunning {
                         ProgressView(value: Double(batch.completed), total: Double(max(batch.total, 1)))
-                        Button("Cancel batch", role: .destructive) { batch.cancel() }
+                        Button(L("Cancel batch"), role: .destructive) { batch.cancel() }
                     } else {
-                        Button("Run remaining qualification jobs") { batch.run(projectID: projectID, repeats: false) }
-                        Button("Run repeats after qualification audit") { batch.run(projectID: projectID, repeats: true) }
-                        Button("Run whole-project diagnostics") { batch.run(projectID: projectID, repeats: false, diagnostics: true) }
+                        Button(L("Run remaining qualification jobs")) { batch.run(projectID: projectID, repeats: false) }
+                        Button(L("Run repeats after qualification audit")) { batch.run(projectID: projectID, repeats: true) }
+                        Button(L("Run whole-project diagnostics")) { batch.run(projectID: projectID, repeats: false, diagnostics: true) }
                     }
                     if let file = batch.exportURL {
                         ShareLink("Export recorded responses", item: file)
                     }
                 }
             }
-            .navigationTitle("Estimator QA")
+            .navigationTitle(L("Estimator QA"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }.disabled(batch.isRunning)
+                    Button(L("Done")) { dismiss() }.disabled(batch.isRunning)
                 }
             }
             .interactiveDismissDisabled(batch.isRunning)
@@ -176,7 +176,7 @@ struct EstimatorAcceptanceProjectPickerView: View {
     var body: some View {
         List {
             Section {
-                Text("Choose the existing QA project. Synthetic jobs will be recorded there.")
+                Text(L("Choose the existing QA project. Synthetic jobs will be recorded there."))
                     .font(.footnote)
                 ForEach(projects.projects) { project in
                     Button {
@@ -190,7 +190,7 @@ struct EstimatorAcceptanceProjectPickerView: View {
                 }
             }
         }
-        .navigationTitle("QA project")
+        .navigationTitle(L("QA project"))
         .sheet(item: $selectedProject) { project in
             EstimatorAcceptanceRunnerView(projectID: project.id)
         }

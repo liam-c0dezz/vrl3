@@ -24,7 +24,7 @@ struct HapticButton<Label: View>: View {
 
     init<S: StringProtocol>(_ title: S, role: ButtonRole? = nil,
                             action: @escaping () -> Void) where Label == Text {
-        self.init(role: role, action: action) { Text(String(title)) }
+        self.init(role: role, action: action) { Text(L(String(title))) }
     }
 
     var body: some View {

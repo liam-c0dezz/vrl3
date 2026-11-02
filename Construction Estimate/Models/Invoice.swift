@@ -53,7 +53,7 @@ struct Invoice: Identifiable, Codable {
     var dueAt: Date? = nil
     var companyName: String = ""
     var paymentMethods: [InvoicePaymentMethod] = []
-    var disclaimer: String = "This invoice is an estimate and the final amount may vary based on actual work completed. All prices are subject to change. Payment is due upon receipt unless otherwise agreed."
+    var disclaimer: String = L("This invoice is an estimate and the final amount may vary based on actual work completed. All prices are subject to change. Payment is due upon receipt unless otherwise agreed.")
 
     var subtotal: Double { items.reduce(0) { $0 + $1.total } }
     var discountAmount: Double { discount }
@@ -94,7 +94,7 @@ struct Invoice: Identifiable, Codable {
 
         if estimate.markupAmount > 0 {
             items.append(InvoiceLineItem(
-                title: "Markup (\(Int(estimate.markupPercent.rounded()))%)",
+                title: L("Markup (%@%%)", "\(Int(estimate.markupPercent.rounded()))"),
                 quantity: 1,
                 unitPrice: estimate.markupAmount,
                 unit: "EA"
@@ -103,7 +103,7 @@ struct Invoice: Identifiable, Codable {
 
         if let contingency = estimate.contingency, contingency.amount > 0 {
             items.append(InvoiceLineItem(
-                title: "Contingency (\(Int(contingency.percent.rounded()))%)",
+                title: L("Contingency (%@%%)", "\(Int(contingency.percent.rounded()))"),
                 quantity: 1,
                 unitPrice: contingency.amount,
                 unit: "EA"
@@ -137,7 +137,7 @@ struct Invoice: Identifiable, Codable {
             invoiceNumber: "INV-\(10000 + number)",
             title: "",
             description: "",
-            items: [InvoiceLineItem(title: "First Item", quantity: 1, unitPrice: 0, unit: "EA")],
+            items: [InvoiceLineItem(title: L("First Item"), quantity: 1, unitPrice: 0, unit: "EA")],
             discount: 0,
             taxPercent: defaults.salesTaxPercent,
             status: "Draft",
@@ -187,7 +187,7 @@ extension Invoice {
         companyName = try container.decodeIfPresent(String.self, forKey: .companyName) ?? ""
         paymentMethods = try container.decodeIfPresent([InvoicePaymentMethod].self, forKey: .paymentMethods) ?? []
         disclaimer = try container.decodeIfPresent(String.self, forKey: .disclaimer)
-            ?? "This invoice is an estimate and the final amount may vary based on actual work completed. All prices are subject to change. Payment is due upon receipt unless otherwise agreed."
+            ?? L("This invoice is an estimate and the final amount may vary based on actual work completed. All prices are subject to change. Payment is due upon receipt unless otherwise agreed.")
     }
 }
 

@@ -146,8 +146,8 @@ final class NotificationStore {
                 projectId: row.project_id,
                 estimateId: row.estimate_id,
                 eventType: row.status,
-                title: "Estimate approved",
-                message: "\(estimateNumber) was approved by \(row.approved_by ?? "the client").",
+                title: L("Estimate approved"),
+                message: L("%@ was approved by %@.", "\(estimateNumber)", row.approved_by ?? L("the client")),
                 isRead: readIDs.contains(notificationID),
                 date: NotificationDate.parse(row.approved_at)
             )
@@ -157,8 +157,8 @@ final class NotificationStore {
                 projectId: row.project_id,
                 estimateId: row.estimate_id,
                 eventType: row.status,
-                title: "Changes requested",
-                message: row.change_request ?? "\(estimateNumber) needs changes.",
+                title: L("Changes requested"),
+                message: row.change_request ?? L("%@ needs changes.", "\(estimateNumber)"),
                 isRead: readIDs.contains(notificationID),
                 date: NotificationDate.parse(row.change_requested_at)
             )
@@ -168,8 +168,8 @@ final class NotificationStore {
                 projectId: row.project_id,
                 estimateId: row.estimate_id,
                 eventType: row.status,
-                title: "Estimate viewed",
-                message: "\(estimateNumber) was opened by the client.",
+                title: L("Estimate viewed"),
+                message: L("%@ was opened by the client.", "\(estimateNumber)"),
                 isRead: readIDs.contains(notificationID),
                 date: NotificationDate.parse(row.first_viewed_at)
             )
@@ -249,7 +249,7 @@ struct NotificationsView: View {
             .padding(.bottom, 12)
 
             HStack {
-                Text("Notifications")
+                Text(L("Notifications"))
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
@@ -265,10 +265,10 @@ struct NotificationsView: View {
             Image(systemName: "bell.fill")
                 .font(.system(size: 30, weight: .regular))
                 .foregroundColor(AppGray.secondary)
-            Text("No notifications yet")
+            Text(L("No notifications yet"))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(AppGray.ink)
-            Text("Client views, approvals, and change requests will appear here.")
+            Text(L("Client views, approvals, and change requests will appear here."))
                 .font(.system(size: 14))
                 .foregroundColor(AppGray.secondary)
                 .multilineTextAlignment(.center)

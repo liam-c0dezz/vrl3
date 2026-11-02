@@ -78,7 +78,7 @@ struct ContentView: View {
 
     private var helpButton: some View {
         HapticButton { showSupport = true } label: {
-            Text("Help?")
+            Text(L("Help?"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.white)
                 .padding(.horizontal, 22)
@@ -88,7 +88,7 @@ struct ContentView: View {
                 .overlay(Capsule().strokeBorder(Color.black.opacity(0.12), lineWidth: 0.5).allowsHitTesting(false))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Help and support")
+        .accessibilityLabel(L("Help and support"))
     }
 }
 

@@ -28,7 +28,7 @@ enum OutgoingDocument {
         case .estimate(let estimate):
             return estimate.title
         case .invoice(let invoice):
-            return invoice.title.isEmpty ? "Invoice \(invoice.invoiceNumber)" : invoice.title
+            return invoice.title.isEmpty ? L("Invoice %@", "\(invoice.invoiceNumber)") : invoice.title
         }
     }
 
@@ -41,8 +41,8 @@ enum OutgoingDocument {
 
     var kind: String {
         switch self {
-        case .estimate: return "Estimate"
-        case .invoice: return "Invoice"
+        case .estimate: return L("Estimate")
+        case .invoice: return L("Invoice")
         }
     }
 
@@ -122,7 +122,7 @@ struct DocumentSendSheet: View {
             VStack(spacing: 12) {
                 if case .estimate = document {
                     VStack(alignment: .leading, spacing: 10) {
-                        TextField("Business name", text: $appearance.businessName)
+                        TextField(L("Business name"), text: $appearance.businessName)
                             .textFieldStyle(.roundedBorder)
                             .onChange(of: appearance.businessName) { _, name in
                                 if name.count > 120 { appearance.businessName = String(name.prefix(120)) }
@@ -142,7 +142,7 @@ struct DocumentSendSheet: View {
                             }
                             Spacer()
                         }
-                        Text("Your PDF and client portal use this style.")
+                        Text(L("Your PDF and client portal use this style."))
                             .font(.caption).foregroundColor(.secondary)
                     }
                     .padding(.horizontal, 4)
@@ -153,10 +153,10 @@ struct DocumentSendSheet: View {
                     .frame(minHeight: 180)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Recipient")
+                    Text(L("Recipient"))
                         .font(.system(size: 13))
                         .foregroundColor(AppGray.secondary)
-                    Text(client?.name.isEmpty == false ? client!.name : "Add the recipient in Mail or Messages")
+                    Text(client?.name.isEmpty == false ? client!.name : L("Add the recipient in Mail or Messages"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(AppGray.ink)
                     if let email = client?.email, !email.isEmpty {
@@ -177,27 +177,27 @@ struct DocumentSendSheet: View {
                 .shadow(color: .black.opacity(0.048), radius: 6.4, x: 0, y: 1.6)
 
                 if awaitingConfirmation {
-                    sendButton(title: "Retry status sync", icon: "arrow.clockwise") { finishIfSent(true) }
+                    sendButton(title: L("Retry status sync"), icon: "arrow.clockwise") { finishIfSent(true) }
                 } else {
                     HStack(spacing: 12) {
-                        sendButton(title: "Email", icon: "envelope.fill") {
+                        sendButton(title: L("Email"), icon: "envelope.fill") {
                             beginSending(.email)
                         }
-                        sendButton(title: "Text", icon: "message.fill") {
+                        sendButton(title: L("Text"), icon: "message.fill") {
                             beginSending(.text)
                         }
                     }
                 }
             }
             .disabled(isPreparing || mediaLoadFailed)
-            .overlay { if isPreparing { ProgressView("Preparing…").padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
+            .overlay { if isPreparing { ProgressView(L("Preparing…")).padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
             .padding(16)
             .background(AppGray.bgPale.ignoresSafeArea())
-            .navigationTitle("Preview & Send")
+            .navigationTitle(L("Preview & Send"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.disabled(isPreparing)
+                    Button(L("Cancel")) { dismiss() }.disabled(isPreparing)
                 }
             }
         }
@@ -226,7 +226,7 @@ struct DocumentSendSheet: View {
                     refreshPreview()
                 } catch {
                     mediaLoadFailed = true
-                    unavailableMessage = "Couldn’t load the estimate’s photos and plans. Reopen this preview to try again."
+                    unavailableMessage = L("Couldn’t load the estimate’s photos and plans. Reopen this preview to try again.")
                 }
                 isPreparing = false
             }
@@ -262,13 +262,13 @@ struct DocumentSendSheet: View {
             }
         }
         .alert(
-            "Can’t send",
+            L("Can’t send"),
             isPresented: Binding(
                 get: { unavailableMessage != nil },
                 set: { if !$0 { unavailableMessage = nil } }
             )
         ) {
-            Button("OK", role: .cancel) {}
+            Button(L("OK"), role: .cancel) {}
         } message: {
             Text(unavailableMessage ?? "")
         }
@@ -308,12 +308,12 @@ struct DocumentSendSheet: View {
         switch channel {
         case .email:
             guard MFMailComposeViewController.canSendMail() else {
-                unavailableMessage = "Mail isn’t configured on this device."
+                unavailableMessage = L("Mail isn’t configured on this device.")
                 return
             }
         case .text:
             guard MFMessageComposeViewController.canSendText() else {
-                unavailableMessage = "Text messaging isn’t available on this device."
+                unavailableMessage = L("Text messaging isn’t available on this device.")
                 return
             }
         }
@@ -360,7 +360,7 @@ struct DocumentSendSheet: View {
                 onSent()
                 dismiss()
             } catch {
-                unavailableMessage = "Your message was sent, but the estimate status couldn’t sync. Please check your connection and refresh the project."
+                unavailableMessage = L("Your message was sent, but the estimate status couldn’t sync. Please check your connection and refresh the project.")
             }
             isPreparing = false
         }
@@ -412,7 +412,7 @@ struct DocumentPDFPreviewSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
+                        Button(L("Done")) { dismiss() }
                     }
                 }
         }
@@ -469,7 +469,7 @@ struct DocumentPagePreview: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Invoice document preview")
+        .accessibilityLabel(L("Invoice document preview"))
     }
 }
 
@@ -615,15 +615,15 @@ private enum DocumentPDFRenderer {
 
         mutating func drawEstimate(_ estimate: Estimate, media: [EstimateMediaAsset]) {
             estimateAppearance = estimate.appearance
-            beginDocument(kind: "ESTIMATE", number: estimate.estimateNumber, title: estimate.title)
+            beginDocument(kind: L("ESTIMATE"), number: estimate.estimateNumber, title: estimate.title)
             drawEstimateFinalTotal(estimate.total)
             drawEstimatePlan(estimate.workPlan ?? [])
             drawEstimateMedia(media)
             if let notes = estimate.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-                drawEstimateTextCard(title: "NOTES", body: notes)
+                drawEstimateTextCard(title: L("NOTES"), body: notes)
             }
             if let terms = estimate.paymentTerms, !terms.isEmpty {
-                drawEstimateTextCard(title: "PAYMENT TERMS", body: terms)
+                drawEstimateTextCard(title: L("PAYMENT TERMS"), body: terms)
             }
         }
 
@@ -660,31 +660,31 @@ private enum DocumentPDFRenderer {
             let clientNameY = clientLabelY + 22
             let clientDetailsY = clientNameY + 21
             if company.isEmpty {
-                drawLabel("CLIENT", x: firstX, y: top, width: 220)
+                drawLabel(L("CLIENT"), x: firstX, y: top, width: 220)
             } else {
                 drawLabel(company, x: firstX, y: top, width: 245)
-                drawLabel("CLIENT", x: firstX, y: clientLabelY, width: 220)
+                drawLabel(L("CLIENT"), x: firstX, y: clientLabelY, width: 220)
             }
             if let client {
-                draw(client.name.isEmpty ? "Client" : client.name, in: CGRect(x: firstX, y: clientNameY, width: 230, height: 18), size: 11.5, weight: .semibold)
+                draw(client.name.isEmpty ? L("Client") : client.name, in: CGRect(x: firstX, y: clientNameY, width: 230, height: 18), size: 11.5, weight: .semibold)
                 let details = [client.company, client.address].filter { !$0.isEmpty }
                 draw(details.joined(separator: "\n"), in: CGRect(x: firstX, y: clientDetailsY, width: 235, height: 38), size: 9.5, color: .secondaryLabel)
             } else {
-                draw("Client not selected", in: CGRect(x: firstX, y: clientNameY, width: 230, height: 18), size: 10.5, color: .secondaryLabel)
+                draw(L("Client not selected"), in: CGRect(x: firstX, y: clientNameY, width: 230, height: 18), size: 10.5, color: .secondaryLabel)
             }
 
             let titleY = company.isEmpty ? top + 84 : top + 106
-            draw(invoice.title.isEmpty ? "Project" : invoice.title, in: CGRect(x: firstX, y: titleY, width: 245, height: 28), size: 15, weight: .semibold)
+            draw(invoice.title.isEmpty ? L("Project") : invoice.title, in: CGRect(x: firstX, y: titleY, width: 245, height: 28), size: 15, weight: .semibold)
 
             let metaX: CGFloat = 310
             let metaWidth: CGFloat = 260
             context.cgContext.setFillColor(invoiceBlue.cgColor)
             context.cgContext.fill(CGRect(x: metaX, y: top, width: metaWidth, height: 31))
-            draw("INVOICE #\(invoice.invoiceNumber)", in: CGRect(x: metaX + 10, y: top + 9, width: metaWidth - 20, height: 15), size: 8.5, weight: .bold, color: .white)
-            draw("Issued", in: CGRect(x: metaX + 10, y: top + 44, width: 70, height: 16), size: 8.5, color: .secondaryLabel)
+            draw(L("INVOICE #%@", "\(invoice.invoiceNumber)"), in: CGRect(x: metaX + 10, y: top + 9, width: metaWidth - 20, height: 15), size: 8.5, weight: .bold, color: .white)
+            draw(L("Issued"), in: CGRect(x: metaX + 10, y: top + 44, width: 70, height: 16), size: 8.5, color: .secondaryLabel)
             draw(formattedDate(invoice.createdAt), in: CGRect(x: metaX + 105, y: top + 44, width: 145, height: 16), size: 8.5, alignment: .right)
             drawThinRule(from: CGPoint(x: metaX, y: top + 67), to: CGPoint(x: metaX + metaWidth, y: top + 67))
-            draw("Due", in: CGRect(x: metaX + 10, y: top + 77, width: 70, height: 16), size: 8.5, color: .secondaryLabel)
+            draw(L("Due"), in: CGRect(x: metaX + 10, y: top + 77, width: 70, height: 16), size: 8.5, color: .secondaryLabel)
             let due = invoice.dueAt.map(formattedDate) ?? invoice.dueDate
             draw(due, in: CGRect(x: metaX + 105, y: top + 77, width: 145, height: 16), size: 8.5, alignment: .right)
 
@@ -725,7 +725,7 @@ private enum DocumentPDFRenderer {
                 let box = CGRect(x: margin, y: boxY, width: boxWidth, height: boxHeight)
                 context.cgContext.setFillColor(UIColor(white: 0.97, alpha: 1).cgColor)
                 context.cgContext.fill(box)
-                draw("NOTES", in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+                draw(L("NOTES"), in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
                 notesSource.draw(
                     with: CGRect(x: box.minX + 10, y: box.minY + 26, width: box.width - 20, height: box.height - 30),
                     options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -741,7 +741,7 @@ private enum DocumentPDFRenderer {
                 let body = invoice.paymentMethods.map { method in
                     method.details.isEmpty ? method.name : "\(method.name)  |  \(method.details)"
                 }.joined(separator: "\n")
-                draw("PAYMENT METHODS", in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 160, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+                draw(L("PAYMENT METHODS"), in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 160, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
                 draw(body, in: CGRect(x: box.minX + 10, y: box.minY + 26, width: box.width - 20, height: box.height - 30), size: 9.2, color: .secondaryLabel)
             }
 
@@ -764,7 +764,7 @@ private enum DocumentPDFRenderer {
             let box = CGRect(x: margin, y: y + 8, width: availableWidth, height: height + 32)
             context.cgContext.setFillColor(UIColor(white: 0.97, alpha: 1).cgColor)
             context.cgContext.fill(box)
-            draw("NOTES", in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+            draw(L("NOTES"), in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
             source.draw(
                 with: CGRect(x: box.minX + 10, y: box.minY + 26, width: availableWidth - 20, height: height),
                 options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -783,7 +783,7 @@ private enum DocumentPDFRenderer {
             let box = CGRect(x: margin, y: y, width: 260, height: height)
             context.cgContext.setFillColor(UIColor(white: 0.97, alpha: 1).cgColor)
             context.cgContext.fill(box)
-            draw("PAYMENT METHODS", in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 160, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+            draw(L("PAYMENT METHODS"), in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 160, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
             draw(body, in: CGRect(x: box.minX + 10, y: box.minY + 26, width: box.width - 20, height: box.height - 30), size: 9.2, color: .secondaryLabel)
             y = box.maxY + 10
         }
@@ -791,7 +791,7 @@ private enum DocumentPDFRenderer {
         mutating func drawInvoiceAttachments(_ invoice: Invoice) {
             guard !invoice.attachments.isEmpty else { return }
             ensureInvoiceSpace(52, invoice: invoice)
-            draw("ATTACHMENTS", in: CGRect(x: margin, y: y, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+            draw(L("ATTACHMENTS"), in: CGRect(x: margin, y: y, width: 120, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
             draw(invoice.attachments.joined(separator: ", "), in: CGRect(x: margin, y: y + 18, width: pageRect.width - margin * 2, height: 32), size: 9, color: .secondaryLabel)
             y += 52
         }
@@ -802,7 +802,7 @@ private enum DocumentPDFRenderer {
             let box = CGRect(x: margin, y: y, width: pageRect.width - margin * 2, height: 72)
             context.cgContext.setFillColor(UIColor(white: 0.97, alpha: 1).cgColor)
             context.cgContext.fill(box)
-            draw("DISCLAIMER", in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 140, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
+            draw(L("DISCLAIMER"), in: CGRect(x: box.minX + 10, y: box.minY + 9, width: 140, height: 16), size: 9.5, weight: .bold, color: .secondaryLabel)
             draw(invoice.disclaimer, in: CGRect(x: box.minX + 10, y: box.minY + 27, width: box.width - 20, height: 38), size: 9.5, color: .secondaryLabel)
             y = box.maxY + 10
         }
@@ -810,15 +810,15 @@ private enum DocumentPDFRenderer {
         mutating func drawInvoiceRenderImages(_ images: ProjectRenderImages, invoice: Invoice) {
             ensureInvoiceSpace(215, invoice: invoice)
             y += 22
-            drawSectionHeading("PROJECT VISUALIZATION")
+            drawSectionHeading(L("PROJECT VISUALIZATION"))
 
             let gap: CGFloat = 12
             let width = (pageRect.width - (margin * 2) - gap) / 2
             let imageHeight: CGFloat = 158
             let beforeRect = CGRect(x: margin, y: y, width: width, height: imageHeight)
             let afterRect = CGRect(x: margin + width + gap, y: y, width: width, height: imageHeight)
-            drawImageCard(images.before, in: beforeRect, label: "BEFORE")
-            drawImageCard(images.after, in: afterRect, label: "AFTER")
+            drawImageCard(images.before, in: beforeRect, label: L("BEFORE"))
+            drawImageCard(images.after, in: afterRect, label: L("AFTER"))
             y = beforeRect.maxY + 22
         }
 
@@ -826,10 +826,10 @@ private enum DocumentPDFRenderer {
             let rect = CGRect(x: margin, y: y, width: pageRect.width - (margin * 2), height: 31)
             context.cgContext.setFillColor(invoiceBlue.cgColor)
             context.cgContext.fill(rect)
-            draw("DESCRIPTION", in: CGRect(x: margin + 10, y: y + 9, width: 250, height: 15), size: 8.5, weight: .bold, color: .white)
-            draw("QTY", in: CGRect(x: 315, y: y + 9, width: 44, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
-            draw("UNIT PRICE", in: CGRect(x: 365, y: y + 9, width: 82, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
-            draw("TOTAL", in: CGRect(x: 452, y: y + 9, width: 105, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
+            draw(L("DESCRIPTION"), in: CGRect(x: margin + 10, y: y + 9, width: 250, height: 15), size: 8.5, weight: .bold, color: .white)
+            draw(L("QTY"), in: CGRect(x: 315, y: y + 9, width: 44, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
+            draw(L("UNIT PRICE"), in: CGRect(x: 365, y: y + 9, width: 82, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
+            draw(L("TOTAL"), in: CGRect(x: 452, y: y + 9, width: 105, height: 15), size: 8.5, weight: .bold, color: .white, alignment: .right)
             y = rect.maxY + 3
         }
 
@@ -870,14 +870,14 @@ private enum DocumentPDFRenderer {
             ensureInvoiceSpace(height + 26, invoice: invoice)
             y += 14
             var rowY = y
-            drawInvoiceAmountRow("Subtotal", value: invoice.formattedSubtotal, y: rowY)
+            drawInvoiceAmountRow(L("Subtotal"), value: invoice.formattedSubtotal, y: rowY)
             rowY += 22
             if invoice.discountAmount > 0 {
-                drawInvoiceAmountRow("Discount", value: "−\(currency(invoice.discountAmount))", y: rowY)
+                drawInvoiceAmountRow(L("Discount"), value: "−\(currency(invoice.discountAmount))", y: rowY)
                 rowY += 22
             }
             if invoice.taxAmount > 0 {
-                drawInvoiceAmountRow("Tax (\(percentage(invoice.taxPercent)))", value: currency(invoice.taxAmount), y: rowY)
+                drawInvoiceAmountRow(L("Tax (%@)", "\(percentage(invoice.taxPercent))"), value: currency(invoice.taxAmount), y: rowY)
                 rowY += 22
             }
             context.cgContext.setStrokeColor(UIColor.systemGray4.cgColor)
@@ -886,14 +886,14 @@ private enum DocumentPDFRenderer {
             context.cgContext.addLine(to: CGPoint(x: 552, y: rowY + 2))
             context.cgContext.strokePath()
             rowY += 13
-            drawInvoiceAmountRow("TOTAL", value: invoice.formattedTotal, y: rowY, bold: true)
+            drawInvoiceAmountRow(L("TOTAL"), value: invoice.formattedTotal, y: rowY, bold: true)
             y = rowY + 24
         }
 
         mutating func drawInvoiceTerms(_ terms: String, invoice: Invoice) {
             ensureInvoiceSpace(90, invoice: invoice)
             y += 24
-            drawSectionHeading("TERMS & CONDITIONS")
+            drawSectionHeading(L("TERMS & CONDITIONS"))
             let bodyRect = CGRect(x: margin, y: y, width: pageRect.width - (margin * 2), height: min(72, pageRect.height - margin - y))
             draw(terms, in: bodyRect, size: 9.5, color: UIColor(red: 0.28, green: 0.30, blue: 0.33, alpha: 1))
             y = bodyRect.maxY
@@ -971,6 +971,7 @@ private enum DocumentPDFRenderer {
 
         func formattedDate(_ date: Date) -> String {
             let formatter = DateFormatter()
+            formatter.locale = appLocale
             formatter.dateStyle = .medium
             return formatter.string(from: date)
         }
@@ -996,7 +997,7 @@ private enum DocumentPDFRenderer {
 
             if let client {
                 y += 18
-                drawText("BILL TO", size: 10, weight: .semibold, color: .secondaryLabel)
+                drawText(L("BILL TO"), size: 10, weight: .semibold, color: .secondaryLabel)
                 drawText(client.name, size: 13, weight: .semibold, top: 5)
                 if !client.company.isEmpty { drawText(client.company, size: 11, color: .secondaryLabel, top: 3) }
                 if !client.email.isEmpty { drawText(client.email, size: 11, color: .secondaryLabel, top: 3) }
@@ -1021,12 +1022,12 @@ private enum DocumentPDFRenderer {
         }
 
         mutating func drawEstimateFinalTotal(_ total: Double) {
-            drawEstimateSectionTitle("ESTIMATE TOTAL")
+            drawEstimateSectionTitle(L("ESTIMATE TOTAL"))
             ensureSpace(78)
             let card = CGRect(x: margin, y: y, width: pageRect.width - (margin * 2), height: 70)
             fillRoundedRect(card, color: UIColor(white: 0.965, alpha: 1), radius: 5)
             draw(
-                "Final estimate",
+                L("Final estimate"),
                 in: CGRect(x: card.minX + 16, y: card.minY + 15, width: 180, height: 18),
                 size: 10.5,
                 weight: .semibold,
@@ -1040,7 +1041,7 @@ private enum DocumentPDFRenderer {
                 alignment: .right
             )
             draw(
-                "The project plan, notes, and supporting visuals are included below.",
+                L("The project plan, notes, and supporting visuals are included below."),
                 in: CGRect(x: card.minX + 16, y: card.minY + 42, width: card.width - 32, height: 16),
                 size: 9.5,
                 color: UIColor.secondaryLabel
@@ -1050,7 +1051,7 @@ private enum DocumentPDFRenderer {
 
         mutating func drawEstimatePlan(_ sections: [EstimatePlanSection]) {
             guard !sections.isEmpty else { return }
-            drawEstimateSectionTitle("PROJECT PLAN")
+            drawEstimateSectionTitle(L("PROJECT PLAN"))
 
             for (index, section) in sections.enumerated() {
                 let title = section.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1119,7 +1120,7 @@ private enum DocumentPDFRenderer {
             // Keep the heading with at least the first visual instead of
             // stranding it at the bottom of the previous page.
             ensureSpace(250)
-            drawEstimateSectionTitle("PHOTOS & PLANS")
+            drawEstimateSectionTitle(L("PHOTOS & PLANS"))
             let gap: CGFloat = 12
             let width = (pageRect.width - (margin * 2) - gap) / 2
             let imageHeight: CGFloat = 166
@@ -1136,7 +1137,7 @@ private enum DocumentPDFRenderer {
                     UIBezierPath(roundedRect: imageRect, cornerRadius: 4).addClip()
                     image.draw(in: aspectFitRect(imageSize: image.size, in: imageRect.insetBy(dx: 4, dy: 4)))
                     context.cgContext.restoreGState()
-                    let kind = asset.kind == "floorplan" ? "FLOOR PLAN" : asset.kind.uppercased()
+                    let kind = asset.kind == "floorplan" ? L("FLOOR PLAN") : L(asset.kind.uppercased())
                     draw(kind, in: CGRect(x: x, y: imageRect.maxY + 7, width: width, height: 12), size: 8, weight: .bold, color: invoiceBlue)
                     draw(asset.displayName, in: CGRect(x: x, y: imageRect.maxY + 20, width: width, height: 15), size: 9, color: .secondaryLabel)
                 }
@@ -1175,7 +1176,7 @@ private enum DocumentPDFRenderer {
 
         mutating func drawRenderImages(_ images: ProjectRenderImages) {
             ensureSpace(220)
-            drawText("PROJECT VISUALIZATION", size: 10, weight: .semibold, color: .secondaryLabel)
+            drawText(L("PROJECT VISUALIZATION"), size: 10, weight: .semibold, color: .secondaryLabel)
             let gap: CGFloat = 12
             let width = (pageRect.width - (margin * 2) - gap) / 2
             let imageHeight: CGFloat = 150
@@ -1188,8 +1189,8 @@ private enum DocumentPDFRenderer {
             images.before.draw(in: aspectFitRect(imageSize: images.before.size, in: beforeRect.insetBy(dx: 4, dy: 4)))
             images.after.draw(in: aspectFitRect(imageSize: images.after.size, in: afterRect.insetBy(dx: 4, dy: 4)))
 
-            draw("BEFORE", in: CGRect(x: beforeRect.minX, y: beforeRect.maxY + 5, width: width, height: 16), size: 9, weight: .semibold, color: .secondaryLabel)
-            draw("AFTER", in: CGRect(x: afterRect.minX, y: afterRect.maxY + 5, width: width, height: 16), size: 9, weight: .semibold, color: .secondaryLabel)
+            draw(L("BEFORE"), in: CGRect(x: beforeRect.minX, y: beforeRect.maxY + 5, width: width, height: 16), size: 9, weight: .semibold, color: .secondaryLabel)
+            draw(L("AFTER"), in: CGRect(x: afterRect.minX, y: afterRect.maxY + 5, width: width, height: 16), size: 9, weight: .semibold, color: .secondaryLabel)
             y = beforeRect.maxY + 32
             drawRule(color: UIColor.systemGray5)
         }
@@ -1213,14 +1214,14 @@ private enum DocumentPDFRenderer {
         ) {
             ensureSpace(130)
             y += 10
-            drawAmountRow("Subtotal", amount: subtotal)
+            drawAmountRow(L("Subtotal"), amount: subtotal)
             for (label, amount) in adjustments where abs(amount) > 0.005 {
                 drawAmountRow(label, amount: amount)
             }
             y += 4
             drawRule()
             y += 8
-            drawAmountRow("Total", amount: total, bold: true)
+            drawAmountRow(L("Total"), amount: total, bold: true)
         }
 
         mutating func drawAmountRow(_ label: String, amount: Double, bold: Bool = false) {

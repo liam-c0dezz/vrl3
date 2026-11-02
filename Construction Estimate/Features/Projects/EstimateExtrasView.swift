@@ -43,7 +43,7 @@ struct EstimateExtrasView: View {
         }
         if let tool = estimate.toolRental {
             summaryRow(
-                label: "Tool Rental",
+                label: L("Tool Rental"),
                 value: formatted(tool.amount),
                 detail: tool.notes
             )
@@ -55,10 +55,10 @@ struct EstimateExtrasView: View {
     @ViewBuilder
     var disclosures: some View {
         if let site = estimate.siteConditions, hasSiteConditions(site) {
-            infoBlock(title: "Site Conditions", body: siteConditionsText(site))
+            infoBlock(title: L("Site Conditions"), body: siteConditionsText(site))
         }
         if let note = estimate.crossReferenceNotes, !note.isEmpty {
-            infoBlock(title: "Pricing Sources", body: note)
+            infoBlock(title: L("Pricing Sources"), body: note)
         }
     }
 
@@ -67,7 +67,7 @@ struct EstimateExtrasView: View {
     private func summaryRow(label: String, value: String, detail: String?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(label)
+                Text(L(label))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(darkGray)
                 Spacer()
@@ -88,7 +88,7 @@ struct EstimateExtrasView: View {
     private func permitRow(_ permit: PermitInfo) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Permits")
+                Text(L("Permits"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(darkGray)
                 Spacer()
@@ -97,13 +97,13 @@ struct EstimateExtrasView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(darkGray)
                 } else {
-                    Text("TBD")
+                    Text(L("TBD"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppGray.muted)
                 }
             }
             if permit.priorUnpermittedWork == true {
-                Text("Prior unpermitted work flagged — may require remediation.")
+                Text(L("Prior unpermitted work flagged — may require remediation."))
                     .font(.system(size: 12))
                     .foregroundColor(warningText)
             }
@@ -144,7 +144,7 @@ struct EstimateExtrasView: View {
 
     private func exclusionsBlock(_ items: [String]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("What's not included")
+            Text(L("What's not included"))
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(darkGray)
             VStack(alignment: .leading, spacing: 8) {
@@ -165,7 +165,7 @@ struct EstimateExtrasView: View {
 
     private func infoBlock(title: String, body: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(darkGray)
             Text(body)
@@ -207,17 +207,17 @@ struct EstimateExtrasView: View {
     private func siteConditionsText(_ s: SiteConditions) -> String {
         var parts: [String] = []
         if let interior = s.interior {
-            parts.append(interior ? "Interior" : "Exterior")
+            parts.append(interior ? L("Interior") : L("Exterior"))
         }
         if let floor = s.floorLevel, !floor.isEmpty {
-            parts.append("Floor: \(floor)")
+            parts.append(L("Floor: %@", "\(floor)"))
         }
-        if s.occupiedSpace == true { parts.append("Occupied space") }
-        if s.tightAccess == true { parts.append("Tight access") }
+        if s.occupiedSpace == true { parts.append(L("Occupied space")) }
+        if s.tightAccess == true { parts.append(L("Tight access")) }
         if let adj = s.laborRateAdjustment {
             let pct = adj > 1 ? adj : adj * 100
             let sign = pct >= 0 ? "+" : ""
-            parts.append("Labor adj. \(sign)\(Int(pct.rounded()))%")
+            parts.append(L("Labor adj. %@%@%%", "\(sign)", "\(Int(pct.rounded()))"))
         }
         var line = parts.joined(separator: " · ")
         if let notes = s.notes, !notes.isEmpty {

@@ -9,11 +9,11 @@ enum SupabaseDataError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noOrganization:
-            return "No company workspace is available for this account."
+            return L("No company workspace is available for this account.")
         case .invoiceRequiresProject:
-            return "An invoice must belong to a project before it can be saved."
+            return L("An invoice must belong to a project before it can be saved.")
         case .projectNotSaved:
-            return "Save the project before adding project records."
+            return L("Save the project before adding project records.")
         }
     }
 }

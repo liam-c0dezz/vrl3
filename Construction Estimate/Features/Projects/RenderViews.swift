@@ -9,8 +9,8 @@ enum ProjectQuickCreateAction: String, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .render: "Choose a project to add a render"
-        case .invoice: "Choose a project to create an invoice"
+        case .render: L("Choose a project to add a render")
+        case .invoice: L("Choose a project to create an invoice")
         }
     }
 }
@@ -39,9 +39,9 @@ struct ProjectActionPickerView: View {
                             Image(systemName: "folder")
                                 .font(.system(size: 30))
                                 .foregroundColor(AppGray.muted)
-                            Text("No projects yet")
+                            Text(L("No projects yet"))
                                 .font(.system(size: 20, weight: .bold))
-                            Text("Create a project before adding \(action == .render ? "a render" : "an invoice").")
+                            Text(action == .render ? L("Create a project before adding a render.") : L("Create a project before adding an invoice."))
                                 .font(.system(size: 15))
                                 .foregroundColor(AppGray.secondary)
                         }
@@ -75,7 +75,7 @@ struct ProjectActionPickerView: View {
             }
         }
         .alert(
-            "Subscription unavailable",
+            L("Subscription unavailable"),
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: { if !$0 { subscriptionError = nil } }
@@ -83,7 +83,7 @@ struct ProjectActionPickerView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(subscriptionError ?? "Please try again.")
+            Text(subscriptionError ?? L("Please try again."))
         }
     }
 
@@ -101,7 +101,7 @@ struct ProjectActionPickerView: View {
                 Spacer()
             }
 
-            Text("Projects")
+            Text(L("Projects"))
                 .font(.system(size: 32, weight: .bold))
                 .foregroundColor(AppGray.ink)
             Text(action.subtitle)
@@ -228,18 +228,18 @@ struct RenderCreationView: View {
         .sheet(isPresented: $showAIConsent) {
             AIConsentPromptView(consentStore: consentStore)
         }
-        .alert("Camera access is off", isPresented: $showCameraDenied) {
+        .alert(L("Camera access is off"), isPresented: $showCameraDenied) {
             HapticButton("Open Settings") { AppPermissions.openSettings() }
             HapticButton("Cancel", role: .cancel) {}
         } message: {
-            Text("Enable camera access in Settings to photograph this project.")
+            Text(L("Enable camera access in Settings to photograph this project."))
         }
         .task { await consentStore.refresh() }
     }
 
     private var navigationHeader: some View {
         ZStack {
-            Text("New Render")
+            Text(L("New Render"))
                 .font(.system(size: 17, weight: .semibold))
 
             HStack {
@@ -256,7 +256,7 @@ struct RenderCreationView: View {
                 .buttonStyle(.plain)
                 Spacer()
                 if didAccept {
-                    Text("Saved")
+                    Text(L("Saved"))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(brandBlue)
                 }
@@ -275,15 +275,15 @@ struct RenderCreationView: View {
                     composerContent
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Attach Photo")
+                        Text(L("Attach Photo"))
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(AppGray.ink)
 
                         HStack(spacing: 12) {
-                            mediaButton(title: "Upload Photo", icon: "photo") {
+                            mediaButton(title: L("Upload Photo"), icon: "photo") {
                                 showPhotoPicker = true
                             }
-                            mediaButton(title: "Take Photo", icon: "camera") {
+                            mediaButton(title: L("Take Photo"), icon: "camera") {
                                 Task {
                                     if await AppPermissions.request(.camera) {
                                         showCamera = true
@@ -337,7 +337,7 @@ struct RenderCreationView: View {
 
     private var composerContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Project Description")
+            Text(L("Project Description"))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -350,7 +350,7 @@ struct RenderCreationView: View {
                     .padding(12)
 
                 if prompt.isEmpty {
-                    Text("Describe the remodel or construction you want to visualize.")
+                    Text(L("Describe the remodel or construction you want to visualize."))
                         .font(.system(size: 16))
                         .foregroundColor(AppGray.muted)
                         .padding(.horizontal, 17)
@@ -373,7 +373,7 @@ struct RenderCreationView: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 14, weight: .semibold))
             }
             .foregroundColor(AppGray.ink)
@@ -396,7 +396,7 @@ struct RenderCreationView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
 
-            Text("Photo attached")
+            Text(L("Photo attached"))
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(AppGray.ink)
             Spacer()
@@ -421,7 +421,7 @@ struct RenderCreationView: View {
                 if store.isGenerating {
                     ProgressView().tint(.white)
                 }
-                Text(store.isGenerating ? "Generating Render…" : "Generate Render")
+                Text(store.isGenerating ? L("Generating Render…") : L("Generate Render"))
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -440,7 +440,7 @@ struct RenderCreationView: View {
     @ViewBuilder
     private var errorText: some View {
         if let errorMessage {
-            Text(errorMessage)
+            Text(L(errorMessage))
                 .font(.system(size: 14))
                 .foregroundColor(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -449,7 +449,7 @@ struct RenderCreationView: View {
 
     private func generatedResult(_ render: ProjectRender) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(render.isAccepted ? "Accepted render" : "Your render")
+            Text(render.isAccepted ? L("Accepted render") : L("Your render"))
                 .font(.system(size: 20, weight: .bold))
 
             if let images {
@@ -465,7 +465,7 @@ struct RenderCreationView: View {
             }
 
             VStack(alignment: .leading, spacing: 7) {
-                requestSectionLabel("Your request")
+                requestSectionLabel(L("Your request"))
                 Text("“\(render.initialPrompt)”")
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.ink)
@@ -475,9 +475,9 @@ struct RenderCreationView: View {
             .onTapGesture { promptFocused = false }
 
             if !render.isAccepted {
-                requestSectionLabel("Request an edit")
+                requestSectionLabel(L("Request an edit"))
 
-                TextField("Try “Use white oak cabinets and brass hardware”", text: $prompt, axis: .vertical)
+                TextField(L("Try “Use white oak cabinets and brass hardware”"), text: $prompt, axis: .vertical)
                     .focused($promptFocused)
                     .font(.system(size: 15))
                     .lineLimit(1)
@@ -492,7 +492,7 @@ struct RenderCreationView: View {
 
                 HStack(spacing: 12) {
                     HapticButton(action: reviseRender) {
-                        Text("Request Edit")
+                        Text(L("Request Edit"))
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(AppGray.ink)
                             .frame(maxWidth: .infinity)
@@ -503,7 +503,7 @@ struct RenderCreationView: View {
                     .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).count < 3 || store.isGenerating)
 
                     HapticButton(action: acceptRender) {
-                        Text("Accept")
+                        Text(L("Accept"))
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -522,7 +522,7 @@ struct RenderCreationView: View {
     }
 
     private func requestSectionLabel(_ title: String) -> some View {
-        Text(title)
+        Text(L(title))
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(AppGray.ink)
     }
@@ -531,9 +531,9 @@ struct RenderCreationView: View {
         HStack(spacing: 12) {
             ProgressView()
             VStack(alignment: .leading, spacing: 3) {
-                Text("Creating your render")
+                Text(L("Creating your render"))
                     .font(.system(size: 15, weight: .semibold))
-                Text("This can take a minute.")
+                Text(L("This can take a minute."))
                     .font(.system(size: 13))
                     .foregroundColor(AppGray.secondary)
             }
@@ -616,8 +616,8 @@ struct BeforeAfterRenderView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            imagePanel(images.before, label: "Before")
-            imagePanel(images.after, label: "After")
+            imagePanel(images.before, label: L("Before"))
+            imagePanel(images.after, label: L("After"))
         }
     }
 
@@ -685,10 +685,10 @@ struct ProjectRenderTabView: View {
             } else if projectRenders.isEmpty {
                 VStack(spacing: 16) {
                     Spacer().frame(height: 60)
-                    Text("No renders yet")
+                    Text(L("No renders yet"))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(AppGray.ink)
-                    Text("Upload a job photo and visualize\nthe finished work with AI.")
+                    Text(L("Upload a job photo and visualize\nthe finished work with AI."))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(AppGray.secondary)
                         .multilineTextAlignment(.center)
@@ -698,7 +698,7 @@ struct ProjectRenderTabView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
                                 .font(.system(size: 13, weight: .semibold))
-                            Text("Create render")
+                            Text(L("Create render"))
                                 .font(.system(size: 15, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -713,16 +713,16 @@ struct ProjectRenderTabView: View {
             } else {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Renders")
+                        Text(L("Renders"))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(AppGray.ink)
-                        Text("Before-and-after\nconcept images")
+                        Text(L("Before-and-after\nconcept images"))
                             .font(.system(size: 15))
                             .foregroundColor(AppGray.secondary)
                     }
                     Spacer()
                     HapticButton(action: beginRenderCreation) {
-                        Label("New Render", systemImage: "plus")
+                        Label(L("New Render"), systemImage: "plus")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -757,7 +757,7 @@ struct ProjectRenderTabView: View {
             RenderCreationView(project: project)
         }
         .alert(
-            "Subscription unavailable",
+            L("Subscription unavailable"),
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: { if !$0 { subscriptionError = nil } }
@@ -765,7 +765,7 @@ struct ProjectRenderTabView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(subscriptionError ?? "Please try again.")
+            Text(subscriptionError ?? L("Please try again."))
         }
     }
 
@@ -788,7 +788,7 @@ private struct ProjectRenderCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("\(projectTitle) Render")
+            Text(L("%@ Render", "\(projectTitle)"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -825,7 +825,7 @@ private struct ProjectRenderCard: View {
         .fullScreenCover(item: $selectedImage) { selection in
             RenderImagePreview(
                 selection: selection,
-                title: "\(projectTitle) Render"
+                title: L("%@ Render", "\(projectTitle)")
             )
         }
     }
@@ -855,7 +855,7 @@ private struct RenderImagePreview: View {
             VStack {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(title)
+                        Text(L(title))
                             .font(.system(size: 17, weight: .semibold))
                         Text(selection.label)
                             .font(.system(size: 13, weight: .medium))

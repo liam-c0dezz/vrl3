@@ -67,7 +67,7 @@ enum SuperwallService {
     private(set) static var isConfigured = false
     private static let publicAPIKey = "pk_EM_OrZC8yCvMaPwGkc90n"
     private static let unavailableMessage =
-        "The subscription screen isn't available right now. Please try again."
+        L("The subscription screen isn't available right now. Please try again.")
 
     static func configure() {
         guard !isConfigured else { return }
@@ -103,14 +103,14 @@ enum SuperwallService {
     }
 
     static var subscriptionStatusText: String {
-        guard isConfigured else { return "Unavailable" }
+        guard isConfigured else { return L("Unavailable") }
         switch currentSubscriptionAccessState {
         case .active:
-            return "Active"
+            return L("Active")
         case .inactive:
-            return "Not active"
+            return L("Not active")
         case .unknown:
-            return "Checking…"
+            return L("Checking…")
         }
     }
 

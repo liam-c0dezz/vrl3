@@ -34,7 +34,7 @@ struct DashboardHomeView: View {
                 TopNavBar(onNewTapped: { showNewProject = true })
 
                 HStack {
-                    Text("Home")
+                    Text(L("Home"))
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(AppGray.ink)
                     Spacer()
@@ -91,7 +91,7 @@ struct DashboardHomeView: View {
             }
         }
         .alert(
-            "Subscription unavailable",
+            L("Subscription unavailable"),
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: { if !$0 { subscriptionError = nil } }
@@ -99,7 +99,7 @@ struct DashboardHomeView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(subscriptionError ?? "Please try again.")
+            Text(subscriptionError ?? L("Please try again."))
         }
         .task {
             async let projects: Void = projectStore.refresh()
@@ -123,7 +123,7 @@ struct DashboardHomeView: View {
 
     private var gettingStartedSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Getting Started")
+            Text(L("Getting Started"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -132,7 +132,7 @@ struct DashboardHomeView: View {
                     isGettingStartedExpanded.toggle()
                 } label: {
                     HStack(spacing: 14) {
-                        Text("\(gettingStartedCompletedCount) of 4")
+                        Text(L("%@ of 4", "\(gettingStartedCompletedCount)"))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Color.white)
                             .fixedSize()
@@ -161,30 +161,30 @@ struct DashboardHomeView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isGettingStartedExpanded ? "Collapse Getting Started" : "Expand Getting Started")
+                .accessibilityLabel(isGettingStartedExpanded ? L("Collapse Getting Started") : L("Expand Getting Started"))
 
                 if isGettingStartedExpanded {
                     Group {
                         GettingStartedRow(
-                            title: "Set up your Business",
+                            title: L("Set up your Business"),
                             icon: "building.2",
                             isComplete: businessStore.profile.isSetupComplete,
                             action: { businessSetupDestination = .business }
                         )
                         GettingStartedRow(
-                            title: "Set up your hourly rates",
+                            title: L("Set up your hourly rates"),
                             icon: "dollarsign",
                             isComplete: !businessStore.hourlyRates.isEmpty,
                             action: { businessSetupDestination = .hourlyRates }
                         )
                         GettingStartedRow(
-                            title: "Create your first estimate",
+                            title: L("Create your first estimate"),
                             icon: "doc",
                             isComplete: !estimates.isEmpty,
                             action: beginQuickEstimate
                         )
                         GettingStartedRow(
-                            title: "Send it to a client",
+                            title: L("Send it to a client"),
                             icon: "paperplane",
                             isComplete: estimates.contains { estimate in
                                 ["sent", "viewed", "delivered", "accepted", "approved", "won"]
@@ -208,7 +208,7 @@ struct DashboardHomeView: View {
 
     private var quickCreateSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Quick create")
+            Text(L("Quick create"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -222,24 +222,24 @@ struct DashboardHomeView: View {
                 spacing: 8
             ) {
                 HomeQuickAction(
-                    title: "Estimate",
+                    title: L("Estimate"),
                     icon: "doc.text.fill",
                     titleSize: 11.7,
                     action: beginQuickEstimate
                 )
                 HomeQuickAction(
-                    title: "Invoice",
+                    title: L("Invoice"),
                     icon: "doc.plaintext.fill",
                     titleSize: 11.7,
                     action: { beginQuickAction(.invoice) }
                 )
                 HomeQuickAction(
-                    title: "Project",
+                    title: L("Project"),
                     icon: "folder.fill.badge.plus",
                     action: { showNewProject = true }
                 )
                 HomeQuickAction(
-                    title: "Render",
+                    title: L("Render"),
                     icon: "camera.fill",
                     action: { beginQuickAction(.render) }
                 )
@@ -268,7 +268,7 @@ struct DashboardHomeView: View {
 
     private var estimatesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Estimates", action: onOpenProjects)
+            sectionHeader(L("Estimates"), action: onOpenProjects)
 
             VStack(spacing: 10) {
                 ForEach(HomeEstimateStatus.allCases, id: \.self) { status in
@@ -288,7 +288,7 @@ struct DashboardHomeView: View {
     private var invoicesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Invoices")
+                Text(L("Invoices"))
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
@@ -301,7 +301,7 @@ struct DashboardHomeView: View {
             VStack(spacing: 10) {
                 HapticNavigationLink(destination: InvoicesView(initialTab: "Draft")) {
                     HomeStatusRow(
-                        title: "Draft",
+                        title: L("Draft"),
                         count: invoiceCount(for: "Draft"),
                         icon: "doc.text"
                     )
@@ -310,7 +310,7 @@ struct DashboardHomeView: View {
 
                 HapticNavigationLink(destination: InvoicesView(initialTab: "Sent")) {
                     HomeStatusRow(
-                        title: "Sent",
+                        title: L("Sent"),
                         count: invoiceCount(for: "Sent"),
                         icon: "paperplane"
                     )
@@ -319,7 +319,7 @@ struct DashboardHomeView: View {
 
                 HapticNavigationLink(destination: InvoicesView(initialTab: "Paid")) {
                     HomeStatusRow(
-                        title: "Paid",
+                        title: L("Paid"),
                         count: invoiceCount(for: "Paid"),
                         icon: "checkmark.circle"
                     )
@@ -331,7 +331,7 @@ struct DashboardHomeView: View {
 
     private func sectionHeader(_ title: String, action: (() -> Void)? = nil) -> some View {
         HStack {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(AppGray.ink)
             Spacer()
@@ -345,7 +345,7 @@ struct DashboardHomeView: View {
     }
 
     private var viewAllLabel: some View {
-        Text("View all")
+        Text(L("View all"))
             .font(.system(size: 15, weight: .regular, design: .rounded))
             .foregroundColor(AppGray.secondary)
     }
@@ -361,7 +361,7 @@ struct SupportContactSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("Help & Support")
+                Text(L("Help & Support"))
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
 
@@ -377,10 +377,10 @@ struct SupportContactSheet: View {
                         .overlay(Circle().strokeBorder(Color.black.opacity(0.07), lineWidth: 0.5).allowsHitTesting(false))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Close support")
+                .accessibilityLabel(L("Close support"))
             }
 
-            Text("Feel free to contact us for any concerns or support needed, and we will respond within 24 hours.")
+            Text(L("Feel free to contact us for any concerns or support needed, and we will respond within 24 hours."))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(AppGray.itemText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -402,7 +402,7 @@ struct SupportContactSheet: View {
                 HStack(spacing: 10) {
                     Image(systemName: "envelope.fill")
                         .font(.system(size: 16, weight: .semibold))
-                    Text("Send Email")
+                    Text(L("Send Email"))
                         .font(.system(size: 16, weight: .semibold))
                 }
                 .foregroundStyle(Color.white)
@@ -426,7 +426,7 @@ struct SupportContactSheet: View {
             }
         }
         .alert(
-            "Can’t send email",
+            L("Can’t send email"),
             isPresented: Binding(
                 get: { unavailableMessage != nil },
                 set: { if !$0 { unavailableMessage = nil } }
@@ -440,7 +440,7 @@ struct SupportContactSheet: View {
 
     private func openSupportEmail() {
         guard MFMailComposeViewController.canSendMail() else {
-            unavailableMessage = "Mail isn’t configured on this device."
+            unavailableMessage = L("Mail isn’t configured on this device.")
             return
         }
         showMailComposer = true
@@ -502,7 +502,7 @@ private struct GettingStartedRow: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppGray.secondary)
                     .frame(width: 20)
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppGray.ink)
                 Spacer()
@@ -534,9 +534,9 @@ private enum HomeEstimateStatus: CaseIterable {
 
     var title: String {
         switch self {
-        case .draft: return "Draft"
-        case .sent: return "Sent"
-        case .approved: return "Approved"
+        case .draft: return L("Draft")
+        case .sent: return L("Sent")
+        case .approved: return L("Approved")
         }
     }
 
@@ -576,7 +576,7 @@ private struct HomeQuickAction: View {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(brandBlue)
 
-                Text(title)
+                Text(L(title))
                     .font(.system(size: titleSize, weight: .medium))
                     .foregroundColor(AppGray.ink)
                     .lineLimit(1)
@@ -609,7 +609,7 @@ private struct HomeStatusRow: View {
                 .foregroundColor(AppGray.secondary)
                 .frame(width: 24)
 
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(AppGray.ink)
 

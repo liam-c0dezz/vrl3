@@ -29,7 +29,7 @@ struct InvoicesView: View {
             
             // MARK: - Title
             HStack {
-                Text("Invoices")
+                Text(L("Invoices"))
                     .font(.system(size: 32, weight: .bold))
                 Spacer()
             }
@@ -59,11 +59,11 @@ struct InvoicesView: View {
                     VStack(spacing: 16) {
                         Spacer().frame(height: 60)
 
-                        Text("You have no \(selectedTab.lowercased()) invoices.")
+                        Text(L("You have no %@ invoices.", L(selectedTab).lowercased()))
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(AppGray.ink)
 
-                        Text("Open a project to create an invoice so every invoice stays connected to one job.")
+                        Text(L("Open a project to create an invoice so every invoice stays connected to one job."))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(AppGray.secondary)
                             .multilineTextAlignment(.center)

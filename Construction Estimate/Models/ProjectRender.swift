@@ -113,9 +113,9 @@ private enum ProjectRenderError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidPhoto:
-            return "That photo could not be prepared. Choose another photo and try again."
+            return L("That photo could not be prepared. Choose another photo and try again.")
         case .invalidResponse:
-            return "The render could not be loaded. Please try again."
+            return L("The render could not be loaded. Please try again.")
         case .service(let message):
             return message
         }
@@ -314,7 +314,7 @@ final class ProjectRenderStore {
             }
             if isRecoverableTimeout(error) {
                 throw ProjectRenderError.service(
-                    "The render is taking longer than expected. Check the project render page in a moment."
+                    L("The render is taking longer than expected. Check the project render page in a moment.")
                 )
             }
             throw error
@@ -334,13 +334,13 @@ final class ProjectRenderStore {
             let safeMessage: String
             switch serverError?.code {
             case "consent_required":
-                safeMessage = "Allow AI features in Privacy & Permissions to create a render."
+                safeMessage = L("Allow AI features in Privacy & Permissions to create a render.")
             case "rate_limited", "quota_exceeded":
-                safeMessage = "You've reached the current AI usage limit. Try again later."
+                safeMessage = L("You've reached the current AI usage limit. Try again later.")
             case "missing_photo", "invalid_photo", "photo_too_large", "invalid_prompt":
-                safeMessage = serverError?.error ?? "Check the photo and description, then try again."
+                safeMessage = serverError?.error ?? L("Check the photo and description, then try again.")
             default:
-                safeMessage = "The render couldn't be completed. Please try again."
+                safeMessage = L("The render couldn't be completed. Please try again.")
             }
             throw ProjectRenderError.service(safeMessage)
         }

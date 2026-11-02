@@ -79,7 +79,7 @@ struct TopNavBar: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .bold))
-                    Text("New")
+                    Text(L("New"))
                         .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -154,7 +154,7 @@ private struct ProjectSearchSheet: View {
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(AppGray.secondary)
-                        TextField("Search project title", text: $query)
+                        TextField(L("Search project title"), text: $query)
                             .font(.system(size: 16))
                             .foregroundColor(AppGray.ink)
                             .textInputAutocapitalization(.words)
@@ -169,12 +169,12 @@ private struct ProjectSearchSheet: View {
                     )
 
                     if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text("Type a project title to search.")
+                        Text(L("Type a project title to search."))
                             .font(.system(size: 14))
                             .foregroundColor(AppGray.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else if matches.isEmpty {
-                        Text("No matching projects.")
+                        Text(L("No matching projects."))
                             .font(.system(size: 14))
                             .foregroundColor(AppGray.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -219,13 +219,13 @@ private struct ProjectSearchSheet: View {
 
     private var navigationHeader: some View {
         ZStack {
-            Text("Search projects")
+            Text(L("Search projects"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
             HStack {
                 HapticButton { dismiss() } label: {
-                    Text("Cancel")
+                    Text(L("Cancel"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppGray.ink)
                         .padding(.horizontal, 14)

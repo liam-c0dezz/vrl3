@@ -45,15 +45,15 @@ enum AIAttachmentPreparationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedType:
-            "Choose an MP3, M4A, WAV, WebM, MP4, MOV, or M4V file."
+            L("Choose an MP3, M4A, WAV, WebM, MP4, MOV, or M4V file.")
         case .fileTooLarge:
-            "Choose an attachment smaller than 25 MB."
+            L("Choose an attachment smaller than 25 MB.")
         case .videoTooLong:
-            "Choose a video that is 60 seconds or shorter."
+            L("Choose a video that is 60 seconds or shorter.")
         case .unreadable:
-            "That attachment couldn't be read. Try another file."
+            L("That attachment couldn't be read. Try another file.")
         case .noUsableVideoContent:
-            "EasyBid couldn't extract usable frames or audio from that video."
+            L("EasyBid couldn't extract usable frames or audio from that video.")
         }
     }
 }
@@ -96,7 +96,7 @@ enum AIAttachmentPreparer {
         }
         return PreparedAIAttachment(
             kind: .audio,
-            displayName: "Audio attached",
+            displayName: L("Audio attached"),
             mimeType: mimeType,
             attachmentData: data,
             videoFramesJPEG: [],
@@ -149,7 +149,7 @@ enum AIAttachmentPreparer {
 
         return PreparedAIAttachment(
             kind: .video,
-            displayName: "Video attached",
+            displayName: L("Video attached"),
             mimeType: audio == nil ? nil : "audio/mp4",
             attachmentData: nil,
             videoFramesJPEG: frames,

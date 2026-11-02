@@ -3,14 +3,14 @@
 //  Construction Estimate
 //
 //  Compact EN / ES pill switch. The highlighted knob springs between the two
-//  labels with a matched-geometry slide; tapping anywhere flips the language.
+//  labels with a matched-geometry slide; tapping anywhere flips the language
+//  for the whole app.
 //
 
 import SwiftUI
 
 struct LanguageToggle: View {
-    @Binding var language: AppLanguage
-    /// Use the dark-on-light palette (questionnaire pages) instead of the
+    /// Use the dark-on-light palette (white screens) instead of the
     /// light-on-gradient palette.
     var usesLightBackground = false
     var scale: CGFloat = 1
@@ -18,19 +18,23 @@ struct LanguageToggle: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var knobNamespace
 
+    private var store: LanguageStore { LanguageStore.shared }
+
     var body: some View {
+        let language = store.current
+
         Button {
             withAnimation(
                 reduceMotion
                     ? .easeInOut(duration: 0.15)
                     : .spring(response: 0.38, dampingFraction: 0.72)
             ) {
-                language = language.toggled
+                store.setLanguage(language.toggled)
             }
         } label: {
             HStack(spacing: 0) {
                 ForEach(AppLanguage.allCases) { option in
-                    Text(option.shortLabel)
+                    Text(verbatim: option.shortLabel)
                         .font(.system(size: 12.5 * scale, weight: .bold, design: .rounded))
                         .foregroundStyle(labelColor(isSelected: option == language))
                         .frame(width: 34 * scale, height: 26 * scale)
@@ -52,9 +56,9 @@ struct LanguageToggle: View {
         .buttonStyle(LanguageTogglePressStyle())
         .sensoryFeedback(.selection, trigger: language)
         .animation(.easeInOut(duration: 0.25), value: usesLightBackground)
-        .accessibilityLabel(language("Language"))
+        .accessibilityLabel(L("Language"))
         .accessibilityValue(language.nativeName)
-        .accessibilityHint(language("Switch language"))
+        .accessibilityHint(L("Switch language"))
     }
 
     private var trackColor: Color {
@@ -88,14 +92,12 @@ private struct LanguageTogglePressStyle: ButtonStyle {
 }
 
 #Preview {
-    @Previewable @State var language: AppLanguage = .english
-
     VStack(spacing: 24) {
-        LanguageToggle(language: $language)
+        LanguageToggle()
             .padding()
             .background(AppBrand.verticalGradient)
-        LanguageToggle(language: $language, usesLightBackground: true)
+        LanguageToggle(usesLightBackground: true)
             .padding()
-        Text(language("Welcome to EasyBid"))
+        Text(L("Welcome to EasyBid"))
     }
 }

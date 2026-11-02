@@ -31,7 +31,6 @@ struct OnboardingView: View {
     @State private var questionnaireAnswers: [Int: String] = [:]
     @State private var paywallErrorMessage = ""
     @State private var isShowingPaywallError = false
-    @AppStorage(AppLanguage.storageKey) private var language: AppLanguage = .deviceDefault
 
     private let pages = Array(OnboardingPage.all.dropFirst())
     private var pageCount: Int { pages.count + OnboardingQuestion.all.count + 4 }
@@ -138,16 +137,14 @@ struct OnboardingView: View {
                 currentPage: selectedPage,
                 pageCount: pageCount,
                 usesLightBackground: isQuestionnairePage,
-                language: $language,
                 onBack: retreat
             )
         }
         .animation(.easeInOut(duration: 0.25), value: selectedPage)
-        .environment(\.appLanguage, language)
-        .alert(language("Paywall unavailable"), isPresented: $isShowingPaywallError) {
-            Button("OK", role: .cancel) {}
+        .alert(L("Paywall unavailable"), isPresented: $isShowingPaywallError) {
+            Button(L("OK"), role: .cancel) {}
         } message: {
-            Text(language(paywallErrorMessage))
+            Text(L(paywallErrorMessage))
         }
     }
 
@@ -182,7 +179,6 @@ struct OnboardingView: View {
 }
 
 private struct AppleAuthOnboardingPage: View {
-    @Environment(\.appLanguage) private var lang
     private enum EmailAuthenticationMode: String, Identifiable {
         case signUp
         case signIn
@@ -210,14 +206,14 @@ private struct AppleAuthOnboardingPage: View {
 
             VStack(spacing: 0) {
                 VStack(spacing: 0) {
-                    Text(lang("Welcome to EasyBid"))
+                    Text(L("Welcome to EasyBid"))
                         .font(.system(size: 31 * designScale, weight: .bold))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text(lang("Sign in to save your estimates, clients, and\ninvoices securely across devices."))
+                    Text(L("Sign in to save your estimates, clients, and\ninvoices securely across devices."))
                         .font(
                             .system(
                                 size: 17.6 * designScale,
@@ -240,7 +236,7 @@ private struct AppleAuthOnboardingPage: View {
                         .padding(.top, 34 * designScale)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
-                        .accessibilityLabel(lang("Rated 4.9 stars"))
+                        .accessibilityLabel(L("Rated 4.9 stars"))
                 }
                 .padding(.horizontal, 34 * designScale)
                 .padding(
@@ -264,7 +260,7 @@ private struct AppleAuthOnboardingPage: View {
                 VStack(spacing: 12 * designScale) {
 
                     if let errorMessage {
-                        Text(lang(errorMessage))
+                        Text(L(errorMessage))
                             .font(
                                 .system(
                                     size: 13 * designScale,
@@ -307,7 +303,7 @@ private struct AppleAuthOnboardingPage: View {
                                                 )
                                             )
                                             .offset(y: -1.5 * designScale)
-                                        Text(lang("Continue with Apple"))
+                                        Text(L("Continue with Apple"))
                                     }
                                     .font(
                                         .system(
@@ -325,7 +321,7 @@ private struct AppleAuthOnboardingPage: View {
                     Button {
                         emailAuthenticationMode = .signUp
                     } label: {
-                        Text(lang("Continue with Email"))
+                        Text(L("Continue with Email"))
                             .font(
                                 .system(
                                     size: 16 * designScale,
@@ -348,9 +344,9 @@ private struct AppleAuthOnboardingPage: View {
                         emailAuthenticationMode = .signIn
                     } label: {
                         HStack(spacing: 0) {
-                            Text(lang("Already have an account? "))
+                            Text(L("Already have an account? "))
                                 .fontWeight(.regular)
-                            Text(lang("Log in"))
+                            Text(L("Log in"))
                                 .fontWeight(.semibold)
                         }
                     }
@@ -382,16 +378,16 @@ private struct AppleAuthOnboardingPage: View {
     }
 
     private var legalAgreementText: AttributedString {
-        var agreement = AttributedString(lang("By signing up, you agree to the "))
+        var agreement = AttributedString(L("By signing up, you agree to the "))
 
-        var privacyPolicy = AttributedString(lang("Privacy Policy"))
+        var privacyPolicy = AttributedString(L("Privacy Policy"))
         privacyPolicy.inlinePresentationIntent = .stronglyEmphasized
         privacyPolicy.link = PrivacyResources.policyURL
         agreement.append(privacyPolicy)
 
-        agreement.append(AttributedString(lang(" and ")))
+        agreement.append(AttributedString(L(" and ")))
 
-        var termsOfUse = AttributedString(lang("Terms of Use"))
+        var termsOfUse = AttributedString(L("Terms of Use"))
         termsOfUse.inlinePresentationIntent = .stronglyEmphasized
         termsOfUse.link = PrivacyResources.termsURL
         agreement.append(termsOfUse)
@@ -559,7 +555,6 @@ private struct WelcomeTestimonialRow: View {
 }
 
 private struct WelcomeTestimonialCard: View {
-    @Environment(\.appLanguage) private var lang
     let testimonial: WelcomeTestimonial
     let scale: CGFloat
 
@@ -575,11 +570,11 @@ private struct WelcomeTestimonialCard: View {
                 }
 
             VStack(alignment: .leading, spacing: 4 * scale) {
-                Text(lang(testimonial.quote))
+                Text(L(testimonial.quote))
                     .font(.system(size: 12.65 * scale, weight: .medium, design: .rounded))
                     .lineLimit(2)
 
-                Text(lang(testimonial.author))
+                Text(L(testimonial.author))
                     .font(.system(size: 10.45 * scale, weight: .regular, design: .rounded))
                     .foregroundStyle(AppBrand.dark.opacity(0.68))
                     .lineLimit(1)
@@ -716,7 +711,7 @@ private struct PhoneAuthOnboardingPage: View {
                     .padding(.top, 25)
 
                     if let errorMessage {
-                        Text(errorMessage)
+                        Text(L(errorMessage))
                             .font(.system(size: 13, weight: .regular, design: .rounded))
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
@@ -725,7 +720,7 @@ private struct PhoneAuthOnboardingPage: View {
 
                     if step == .code {
                         HStack(spacing: 18) {
-                            Button("Change number") {
+                            Button(L("Change number")) {
                                 errorMessage = nil
                                 verificationCode = ""
                                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -735,7 +730,7 @@ private struct PhoneAuthOnboardingPage: View {
                             }
                             .onboardingTapHaptic()
 
-                            Button("Resend code", action: resendCode)
+                            Button(L("Resend code"), action: resendCode)
                                 .disabled(isSubmitting)
                                 .onboardingTapHaptic()
                         }
@@ -744,7 +739,7 @@ private struct PhoneAuthOnboardingPage: View {
                         .padding(.top, 14)
                     }
 
-                    Text("Standard message and data rates may apply.")
+                    Text(L("Standard message and data rates may apply."))
                         .font(.system(size: 12, weight: .regular, design: .rounded))
                         .foregroundStyle(AppGray.secondary)
                         .padding(.top, 12)
@@ -787,7 +782,7 @@ private struct PhoneAuthOnboardingPage: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") {
+                Button(L("Done")) {
                     focusedField = nil
                 }
                 .onboardingTapHaptic()
@@ -938,7 +933,6 @@ private struct PhoneAuthOnboardingPage: View {
 }
 
 private struct ZipCodeOnboardingPage: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
     let onComplete: (String) -> Void
 
@@ -985,12 +979,12 @@ private struct ZipCodeOnboardingPage: View {
 
                 VStack(spacing: 0) {
                     VStack(spacing: 16) {
-                        Text(lang("What's your ZIP code?"))
+                        Text(L("What's your ZIP code?"))
                             .font(.system(size: 23.74, weight: .medium, design: .rounded))
                             .foregroundStyle(AppGray.ink)
                             .multilineTextAlignment(.center)
 
-                        Text(lang("We'll use it to find accurate material pricing and local costs near you."))
+                        Text(L("We'll use it to find accurate material pricing and local costs near you."))
                             .font(.system(size: 16.37, weight: .regular, design: .rounded))
                             .foregroundStyle(AppGray.itemText.opacity(0.78))
                             .multilineTextAlignment(.center)
@@ -1019,7 +1013,7 @@ private struct ZipCodeOnboardingPage: View {
                             .padding(.horizontal, 12)
 
                         if let errorMessage {
-                            Text(errorMessage)
+                            Text(L(errorMessage))
                                 .font(.system(size: 13, weight: .regular, design: .rounded))
                                 .foregroundStyle(.red)
                                 .multilineTextAlignment(.center)
@@ -1034,7 +1028,7 @@ private struct ZipCodeOnboardingPage: View {
                                     .tint(.white)
                             } else {
                                 HStack(spacing: 8) {
-                                    Text(lang("Continue"))
+                                    Text(L("Continue"))
                                     Image(systemName: "arrow.right")
                                         .font(.system(size: 14, weight: .semibold))
                                 }
@@ -1098,7 +1092,6 @@ private struct ZipCodeOnboardingPage: View {
 }
 
 private struct LocalActivityOnboardingPage: View {
-    @Environment(\.appLanguage) private var lang
     let zipCode: String
     let isActive: Bool
     let onComplete: () -> Void
@@ -1142,13 +1135,13 @@ private struct LocalActivityOnboardingPage: View {
 
                 VStack(spacing: 0) {
                     VStack(spacing: 14) {
-                        Text(lang.format("Join contractors using EasyBid in %@", displayedZipCode))
+                        Text(L("Join contractors using EasyBid in %@", displayedZipCode))
                             .font(.system(size: 23.74, weight: .medium, design: .rounded))
                             .foregroundStyle(AppGray.ink)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(lang("Start sending faster, more competitive estimates with local pricing."))
+                        Text(L("Start sending faster, more competitive estimates with local pricing."))
                             .font(.system(size: 16.37, weight: .regular, design: .rounded))
                             .foregroundStyle(AppGray.itemText.opacity(0.78))
                             .multilineTextAlignment(.center)
@@ -1161,7 +1154,7 @@ private struct LocalActivityOnboardingPage: View {
 
                     Button(action: onComplete) {
                         HStack(spacing: 8) {
-                            Text(lang("Continue"))
+                            Text(L("Continue"))
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 14, weight: .semibold))
                         }
@@ -1188,7 +1181,6 @@ private struct LocalActivityOnboardingPage: View {
 }
 
 private struct LocalActivityGraphicVisual: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
 
     @State private var graphProgress: CGFloat = 0
@@ -1322,7 +1314,7 @@ private struct LocalActivityGraphicVisual: View {
                         glowOpacity: 0
                     )
 
-                    Text(lang("With EasyBid"))
+                    Text(L("With EasyBid"))
                         .font(.system(size: 13.75, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
@@ -1332,7 +1324,7 @@ private struct LocalActivityGraphicVisual: View {
                             y: graphGeometry.size.height * 0.16
                         )
 
-                    Text(lang("Time & Money Saved"))
+                    Text(L("Time & Money Saved"))
                         .font(.system(size: 23.74, weight: .medium, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.22), radius: 2.5, y: 1)
@@ -1343,7 +1335,7 @@ private struct LocalActivityGraphicVisual: View {
                             y: -17
                         )
 
-                    Text(lang("Traditional Estimating"))
+                    Text(L("Traditional Estimating"))
                         .font(.system(size: 13.75, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
@@ -1354,7 +1346,7 @@ private struct LocalActivityGraphicVisual: View {
                             y: graphGeometry.size.height * 0.67
                         )
 
-                    Text(lang("Start"))
+                    Text(L("Start"))
                         .font(.system(size: 13.2, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
@@ -1364,7 +1356,7 @@ private struct LocalActivityGraphicVisual: View {
                             y: graphGeometry.size.height * 0.94
                         )
 
-                    Text(lang("3 Months"))
+                    Text(L("3 Months"))
                         .font(.system(size: 13.2, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
@@ -1373,7 +1365,7 @@ private struct LocalActivityGraphicVisual: View {
                             y: graphGeometry.size.height * 0.94
                         )
 
-                    Text(lang("6 Months"))
+                    Text(L("6 Months"))
                         .font(.system(size: 13.2, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
@@ -1628,7 +1620,6 @@ private struct OnboardingQuestion: Identifiable {
 }
 
 private struct OnboardingQuestionPage: View {
-    @Environment(\.appLanguage) private var lang
     let question: OnboardingQuestion
     @Binding var selection: String?
     let onContinue: () -> Void
@@ -1653,10 +1644,10 @@ private struct OnboardingQuestionPage: View {
                 )
 
                 VStack(alignment: .center, spacing: 4 * designScale) {
-                    Text(lang(question.title))
+                    Text(L(question.title))
                         .foregroundStyle(navy)
 
-                    Text(lang(question.highlightedTitle))
+                    Text(L(question.highlightedTitle))
                         .foregroundStyle(accent)
                 }
                 .font(
@@ -1681,7 +1672,7 @@ private struct OnboardingQuestionPage: View {
                             }
                         } label: {
                             HStack(spacing: 12 * designScale) {
-                                Text(lang(option))
+                                Text(L(option))
                                     .font(.system(size: 17 * designScale, weight: selection == option ? .semibold : .medium, design: .rounded))
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1743,7 +1734,7 @@ private struct OnboardingQuestionPage: View {
 
                 Button(action: onContinue) {
                     HStack(spacing: 8) {
-                        Text(lang("Continue"))
+                        Text(L("Continue"))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 14, weight: .semibold))
                     }
@@ -1777,7 +1768,6 @@ private struct OnboardingQuestionPage: View {
 }
 
 private struct EstimatorBuildOnboardingPage: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
     let onContinue: () -> Void
 
@@ -1848,7 +1838,7 @@ private struct EstimatorBuildOnboardingPage: View {
                 .zIndex(1)
 
                 VStack(spacing: 0) {
-                    Text(lang("Building your custom estimator"))
+                    Text(L("Building your custom estimator"))
                         .font(.system(size: 23.74, weight: .medium, design: .rounded))
                         .foregroundStyle(AppGray.ink)
                         .multilineTextAlignment(.center)
@@ -1866,7 +1856,7 @@ private struct EstimatorBuildOnboardingPage: View {
 
                     Button(action: onContinue) {
                         HStack(spacing: 8) {
-                            Text(lang("Get Started"))
+                            Text(L("Get Started"))
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 14, weight: .semibold))
                         }
@@ -1970,7 +1960,6 @@ private struct ToolCarouselRow: View {
 }
 
 private struct EstimatorBuildChecklist: View {
-    @Environment(\.appLanguage) private var lang
     let progress: Int
 
     var body: some View {
@@ -1994,7 +1983,7 @@ private struct EstimatorBuildChecklist: View {
     }
 
     private func checklistRow(_ title: String, isReached: Bool) -> some View {
-        Text(lang(title))
+        Text(L(title))
             .font(.system(size: 18.7, weight: .medium, design: .rounded))
             .foregroundStyle(isReached ? AppGray.ink : AppGray.muted)
             .multilineTextAlignment(.center)
@@ -2030,11 +2019,9 @@ private struct ToolCarouselTile: View {
 }
 
 private struct OnboardingTopNavigation: View {
-    @Environment(\.appLanguage) private var lang
     let currentPage: Int
     let pageCount: Int
     let usesLightBackground: Bool
-    @Binding var language: AppLanguage
     let onBack: () -> Void
 
     var body: some View {
@@ -2052,7 +2039,7 @@ private struct OnboardingTopNavigation: View {
                     }
                     .buttonStyle(.plain)
                     .onboardingTapHaptic()
-                    .accessibilityLabel(lang("Previous onboarding page"))
+                    .accessibilityLabel(L("Previous onboarding page"))
 
                     GeometryReader { progressGeometry in
                         let progress = CGFloat(currentPage + 1) / CGFloat(max(pageCount, 1))
@@ -2073,10 +2060,9 @@ private struct OnboardingTopNavigation: View {
                     }
                     .frame(height: 5.75 * designScale)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(lang.format("Page %ld of %ld", currentPage + 1, pageCount))
+                    .accessibilityLabel(L("Page %ld of %ld", currentPage + 1, pageCount))
 
                     LanguageToggle(
-                        language: $language,
                         usesLightBackground: usesLightBackground,
                         scale: designScale
                     )
@@ -2092,7 +2078,6 @@ private struct OnboardingTopNavigation: View {
 }
 
 private struct OnboardingPageView: View {
-    @Environment(\.appLanguage) private var lang
     let page: OnboardingPage
     let isActive: Bool
     let onNext: () -> Void
@@ -2201,7 +2186,7 @@ private struct OnboardingPageView: View {
 
                     Button(action: onNext) {
                         HStack(spacing: 8) {
-                            Text(lang(page.isLast ? "Get started" : "Next"))
+                            Text(L(page.isLast ? "Get started" : "Next"))
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 14, weight: .semibold))
                         }
@@ -2216,7 +2201,7 @@ private struct OnboardingPageView: View {
                     .buttonStyle(.plain)
                     .onboardingTapHaptic()
                     .zIndex(2)
-                    .accessibilityLabel(lang(page.isLast ? "Finish onboarding" : "Next onboarding page"))
+                    .accessibilityLabel(L(page.isLast ? "Finish onboarding" : "Next onboarding page"))
                 }
                 .padding(.horizontal, 42)
                 .padding(.top, lowerPanelTopPadding)
@@ -2230,14 +2215,14 @@ private struct OnboardingPageView: View {
 
     private var pageCopy: some View {
         VStack(alignment: .center, spacing: 14) {
-            Text(lang(page.title))
+            Text(L(page.title))
                 .font(.system(size: 23.74, weight: .medium, design: .rounded))
                 .foregroundStyle(AppGray.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle = page.subtitle {
-                Text(lang(subtitle))
+                Text(L(subtitle))
                     .font(.system(size: 16.37, weight: .regular, design: .rounded))
                     .foregroundStyle(AppGray.itemText.opacity(0.78))
                     .multilineTextAlignment(.center)
@@ -2250,7 +2235,6 @@ private struct OnboardingPageView: View {
 }
 
 private struct OnboardingArtworkPlaceholder: View {
-    @Environment(\.appLanguage) private var lang
     let kind: PlaceholderKind
     let isActive: Bool
     let visibleCardHeight: CGFloat
@@ -2308,11 +2292,11 @@ private struct OnboardingArtworkPlaceholder: View {
                     }
 
                 VStack(spacing: 7) {
-                    Text("EasyBid")
+                    Text(L("EasyBid"))
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
 
-                    Text(lang("QUOTE  •  WIN  •  GROW"))
+                    Text(L("QUOTE  •  WIN  •  GROW"))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .tracking(1.6)
                         .foregroundStyle(.white.opacity(0.72))
@@ -2569,7 +2553,6 @@ private struct AnimatedOnboardingPhotoAnalysis: View {
 }
 
 private struct PhotoPriceCallout: View {
-    @Environment(\.appLanguage) private var lang
     let title: String
     let amount: Int
     let isVisible: Bool
@@ -2579,7 +2562,7 @@ private struct PhotoPriceCallout: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(lang(title))
+            Text(L(title))
                 .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                 .foregroundStyle(AppGray.ink)
                 .lineLimit(1)
@@ -2628,7 +2611,6 @@ private struct PhotoPriceCallout: View {
 }
 
 private struct AnimatedOnboardingEstimateCard: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
 
     @State private var revealStep = 0
@@ -2645,7 +2627,7 @@ private struct AnimatedOnboardingEstimateCard: View {
                 .frame(height: 12)
 
             VStack(alignment: .leading, spacing: 19) {
-                Text(lang("Bathroom Remodel\n(1 job)"))
+                Text(L("Bathroom Remodel\n(1 job)"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2654,7 +2636,7 @@ private struct AnimatedOnboardingEstimateCard: View {
                     Circle()
                         .stroke(AppGray.secondary, lineWidth: 1)
                         .frame(width: 10, height: 10)
-                    Text(lang("Draft"))
+                    Text(L("Draft"))
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(AppGray.secondary)
                 }
@@ -2689,7 +2671,7 @@ private struct AnimatedOnboardingEstimateCard: View {
             }
 
             HStack {
-                Text(lang("Recommended Quote"))
+                Text(L("Recommended Quote"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AppGray.itemText)
                 Spacer()
@@ -2710,10 +2692,10 @@ private struct AnimatedOnboardingEstimateCard: View {
                 .opacity(revealStep >= 5 ? 1 : 0)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(lang("What's not included"))
+                Text(L("What's not included"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppGray.itemText)
-                Text(lang("Permits unless explicitly listed\nHidden water or mold damage"))
+                Text(L("Permits unless explicitly listed\nHidden water or mold damage"))
                     .font(.system(size: 12.5))
                     .foregroundStyle(AppGray.secondary)
                     .lineSpacing(2)
@@ -2748,7 +2730,7 @@ private struct AnimatedOnboardingEstimateCard: View {
 
     private func estimateRow(_ row: EstimatePreviewRow, step: Int) -> some View {
         HStack {
-            Text(lang(row.label))
+            Text(L(row.label))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(AppGray.itemText)
             Spacer()
@@ -2768,7 +2750,6 @@ private struct AnimatedOnboardingEstimateCard: View {
 }
 
 private struct AnimatedOnboardingMaterialsCard: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
 
     @State private var revealStep = 0
@@ -2799,7 +2780,7 @@ private struct AnimatedOnboardingMaterialsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
-                Text(lang("Tankless Water Heater Installation\n(1 job)"))
+                Text(L("Tankless Water Heater Installation\n(1 job)"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2808,7 +2789,7 @@ private struct AnimatedOnboardingMaterialsCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
                             .font(.system(size: 8, weight: .semibold))
-                        Text(lang("Add"))
+                        Text(L("Add"))
                             .font(.system(size: 10.5, weight: .medium))
                     }
                     .foregroundStyle(AppGray.secondary)
@@ -2819,7 +2800,7 @@ private struct AnimatedOnboardingMaterialsCard: View {
                             .strokeBorder(AppGray.border, lineWidth: 1)
                     }
 
-                    Text(lang("8 items"))
+                    Text(L("8 items"))
                         .font(.system(size: 10.5))
                         .foregroundStyle(AppGray.secondary)
                 }
@@ -2869,7 +2850,7 @@ private struct AnimatedOnboardingMaterialsCard: View {
     private func materialRow(_ row: MaterialPreviewRow, step: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Text(lang(row.name))
+                Text(L(row.name))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(AppGray.itemText)
                     .lineLimit(2)
@@ -2900,13 +2881,13 @@ private struct AnimatedOnboardingMaterialsCard: View {
                         .strokeBorder(AppGray.border, lineWidth: 1)
                 }
 
-                Text(lang("each"))
+                Text(L("each"))
                     .font(.system(size: 10.5))
                     .foregroundStyle(AppGray.secondary)
 
                 Spacer()
 
-                Text(lang("Edit Line"))
+                Text(L("Edit Line"))
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(AppGray.secondary)
                     .padding(.horizontal, 8)
@@ -2925,7 +2906,6 @@ private struct AnimatedOnboardingMaterialsCard: View {
 }
 
 private struct AnimatedOnboardingInvoiceCard: View {
-    @Environment(\.appLanguage) private var lang
     let isActive: Bool
 
     @State private var revealStep = 0
@@ -2998,10 +2978,10 @@ private struct AnimatedOnboardingInvoiceCard: View {
     private var invoiceHeader: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Mesa Ridge Remodeling")
+                Text(L("Mesa Ridge Remodeling"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppGray.ink)
-                Text("Albuquerque, NM")
+                Text(L("Albuquerque, NM"))
                     .foregroundStyle(AppGray.secondary)
                 Text("(505) 555-1234")
                     .foregroundStyle(AppGray.secondary)
@@ -3014,7 +2994,7 @@ private struct AnimatedOnboardingInvoiceCard: View {
                 Text("#10024")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(AppGray.ink)
-                Text(lang("June 29, 2025"))
+                Text(L("June 29, 2025"))
                     .font(.system(size: 12.5))
                     .foregroundStyle(AppGray.secondary)
             }
@@ -3027,26 +3007,26 @@ private struct AnimatedOnboardingInvoiceCard: View {
     private var billingDetails: some View {
         HStack(alignment: .top, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(lang("Bill To"))
+                Text(L("Bill To"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(AppGray.itemText)
-                Text("John Smith")
+                Text(L("John Smith"))
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(AppGray.itemText)
-                Text("123 Mesa View Dr.")
-                Text("Albuquerque, NM 87110")
+                Text(L("123 Mesa View Dr."))
+                Text(L("Albuquerque, NM 87110"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(lang("Service Address"))
+                Text(L("Service Address"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(AppGray.itemText)
-                Text("John Smith")
+                Text(L("John Smith"))
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(AppGray.itemText)
-                Text("123 Mesa View Dr.")
-                Text("Albuquerque, NM 87110")
+                Text(L("123 Mesa View Dr."))
+                Text(L("Albuquerque, NM 87110"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -3058,11 +3038,11 @@ private struct AnimatedOnboardingInvoiceCard: View {
 
     private var invoiceTableHeader: some View {
         HStack {
-            Text(lang("Description"))
+            Text(L("Description"))
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(lang("Qty"))
+            Text(L("Qty"))
                 .frame(width: 28)
-            Text(lang("Amount"))
+            Text(L("Amount"))
                 .frame(width: 60, alignment: .trailing)
         }
         .font(.system(size: 12, weight: .semibold))
@@ -3073,7 +3053,7 @@ private struct AnimatedOnboardingInvoiceCard: View {
 
     private func invoiceRow(_ row: InvoicePreviewRow, step: Int) -> some View {
         HStack(alignment: .top) {
-            Text(lang(row.description))
+            Text(L(row.description))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(2)
             Text(row.quantity)
@@ -3257,7 +3237,6 @@ private extension View {
 
 /// Shared by onboarding and live estimate generation.
 struct EstimatorProgressRing: View {
-    @Environment(\.appLanguage) private var lang
     let progress: Int
     let foreground: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -3279,7 +3258,7 @@ struct EstimatorProgressRing: View {
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: progress)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(lang("Progress"))
-        .accessibilityValue(lang.format("%ld percent", progress))
+        .accessibilityLabel(L("Progress"))
+        .accessibilityValue(L("%ld percent", progress))
     }
 }

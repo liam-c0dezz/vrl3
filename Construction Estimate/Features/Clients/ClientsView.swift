@@ -15,7 +15,7 @@ struct ClientsView: View {
             TopNavBar(onNewTapped: { showNewClient = true })
 
             HStack {
-                Text("Clients")
+                Text(L("Clients"))
                     .font(.system(size: 32, weight: .bold))
                 Spacer()
             }
@@ -138,42 +138,42 @@ struct NewClientSheet: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        card("Full name") {
-                            TextField("Name", text: $name)
+                        card(L("Full name")) {
+                            TextField(L("Name"), text: $name)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
-                        card("Company") {
-                            TextField("Company name", text: $company)
+                        card(L("Company")) {
+                            TextField(L("Company name"), text: $company)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
-                        card("Email") {
-                            TextField("Email address", text: $email)
+                        card(L("Email")) {
+                            TextField(L("Email address"), text: $email)
                                 .keyboardType(.emailAddress)
                                 .autocapitalization(.none)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
-                        card("Phone") {
-                            TextField("Phone number", text: $phone)
+                        card(L("Phone")) {
+                            TextField(L("Phone number"), text: $phone)
                                 .keyboardType(.phonePad)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
-                        card("Address") {
-                            TextField("Address", text: $address)
+                        card(L("Address")) {
+                            TextField(L("Address"), text: $address)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
-                        card("Referral source") {
-                            TextField("Referral source", text: $referralSource)
+                        card(L("Referral source")) {
+                            TextField(L("Referral source"), text: $referralSource)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppGray.secondary)
                         }
 
                         HapticButton(action: saveClient) {
-                            Text("Save")
+                            Text(L("Save"))
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -190,7 +190,7 @@ struct NewClientSheet: View {
             }
             .background(Color.white.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .confirmationDialog("Client Options", isPresented: $showingDeleteOptions) {
+            .confirmationDialog(L("Client Options"), isPresented: $showingDeleteOptions) {
                 HapticButton("Delete Client", role: .destructive) {
                     onDelete?()
                     dismiss()
@@ -202,7 +202,7 @@ struct NewClientSheet: View {
 
     private var navigationHeader: some View {
         ZStack {
-            Text(client == nil ? "New Client" : "Edit Client")
+            Text(client == nil ? L("New Client") : L("Edit Client"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppGray.ink)
 
@@ -239,7 +239,7 @@ struct NewClientSheet: View {
         let savedClient = Client(
             id: client?.id ?? UUID(),
             organizationId: client?.organizationId,
-            name: name.isEmpty ? "Unnamed Client" : name,
+            name: name.isEmpty ? L("Unnamed Client") : name,
             company: company,
             email: email,
             phone: phone,
@@ -256,7 +256,7 @@ struct NewClientSheet: View {
         @ViewBuilder _ content: () -> Content,
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(AppGray.textDark)
             content()
@@ -313,7 +313,7 @@ struct ClientPickerSheet: View {
                 .padding(.bottom, 20)
 
             HStack {
-                Text("Select Client")
+                Text(L("Select Client"))
                     .font(.system(size: 20, weight: .bold))
                 Spacer()
             }
@@ -373,7 +373,7 @@ struct ClientPickerSheet: View {
                                     .font(.system(size: 18))
                                     .foregroundColor(brandBlue)
                             }
-                            Text("New Client")
+                            Text(L("New Client"))
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(brandBlue)
                             Spacer()

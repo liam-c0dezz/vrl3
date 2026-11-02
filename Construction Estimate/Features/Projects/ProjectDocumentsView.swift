@@ -85,9 +85,9 @@ struct ProjectDocumentsView: View {
             } else {
                 VStack(spacing: 12) {
                     Spacer().frame(height: 60)
-                    Text("Save this project first")
+                    Text(L("Save this project first"))
                         .font(.system(size: 20, weight: .bold))
-                    Text("Documents are stored securely inside a specific project.")
+                    Text(L("Documents are stored securely inside a specific project."))
                         .font(.system(size: 15))
                         .foregroundColor(AppGray.secondary)
                         .multilineTextAlignment(.center)
@@ -121,10 +121,10 @@ struct ProjectDocumentsView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer().frame(height: 60)
-            Text("No documents yet")
+            Text(L("No documents yet"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(AppGray.ink)
-            Text("Attach photos, permits, contracts, and files\nto keep this project organized.")
+            Text(L("Attach photos, permits, contracts, and files\nto keep this project organized."))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(AppGray.secondary)
                 .multilineTextAlignment(.center)
@@ -136,7 +136,7 @@ struct ProjectDocumentsView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Add document")
+                    Text(L("Add document"))
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -153,10 +153,10 @@ struct ProjectDocumentsView: View {
     private var documentHeader: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Documents")
+                Text(L("Documents"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                Text("Photos, permits, contracts,\nand project files")
+                Text(L("Photos, permits, contracts,\nand project files"))
                     .font(.system(size: 15))
                     .foregroundColor(AppGray.secondary)
             }
@@ -223,7 +223,7 @@ struct ProjectDocumentsView: View {
                     Image(systemName: "plus")
                         .font(.system(size: 13, weight: .semibold))
                 }
-                Text(store.isUploading ? "Uploading" : "Add document")
+                Text(store.isUploading ? L("Uploading") : L("Add document"))
                     .font(.system(size: 14, weight: .semibold))
             }
             .foregroundColor(.white)

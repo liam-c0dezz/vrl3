@@ -11,7 +11,7 @@ private enum InvoiceMetadataDate: String, Identifiable {
     case due
 
     var id: String { rawValue }
-    var title: String { self == .issued ? "Issued" : "Due" }
+    var title: String { self == .issued ? L("Issued") : L("Due") }
 }
 
 struct InvoiceDetailView: View {
@@ -115,11 +115,11 @@ struct InvoiceDetailView: View {
             )
         }
         .sheet(isPresented: $showingDiscountEditor) {
-            InvoiceAmountEditor(title: "Discount", value: $invoice.discount, suffix: "$", maximum: invoice.subtotal)
+            InvoiceAmountEditor(title: L("Discount"), value: $invoice.discount, suffix: "$", maximum: invoice.subtotal)
                 .presentationDetents([.height(300)])
         }
         .sheet(isPresented: $showingTaxEditor) {
-            InvoiceAmountEditor(title: "Tax", value: $invoice.taxPercent, suffix: "%", maximum: 100)
+            InvoiceAmountEditor(title: L("Tax"), value: $invoice.taxPercent, suffix: "%", maximum: 100)
                 .presentationDetents([.height(300)])
         }
         .sheet(isPresented: $showingPaymentMethodPicker) {
@@ -151,14 +151,14 @@ struct InvoiceDetailView: View {
                 }
             }
         }
-        .alert("Client required", isPresented: $clientRequiredMessage) {
+        .alert(L("Client required"), isPresented: $clientRequiredMessage) {
             HapticButton("Choose client") { showClientPicker = true }
             HapticButton("Cancel", role: .cancel) {}
         } message: {
-            Text("Select a client before previewing or sending this invoice.")
+            Text(L("Select a client before previewing or sending this invoice."))
         }
         .alert(
-            "Subscription unavailable",
+            L("Subscription unavailable"),
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: { if !$0 { subscriptionError = nil } }
@@ -166,16 +166,16 @@ struct InvoiceDetailView: View {
         ) {
             HapticButton("OK", role: .cancel) {}
         } message: {
-            Text(subscriptionError ?? "Please try again.")
+            Text(subscriptionError ?? L("Please try again."))
         }
-        .confirmationDialog("Invoice Options", isPresented: $showingInvoiceOptions, titleVisibility: .visible) {
+        .confirmationDialog(L("Invoice Options"), isPresented: $showingInvoiceOptions, titleVisibility: .visible) {
             HapticButton("Delete Invoice", role: .destructive) {
                 InvoiceStore.shared.delete(invoice.id)
                 dismiss()
             }
             HapticButton("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes this invoice.")
+            Text(L("This permanently deletes this invoice."))
         }
         .sheet(isPresented: $showSendSheet) {
             DocumentSendSheet(
@@ -243,7 +243,7 @@ struct InvoiceDetailView: View {
 
     private var navBar: some View {
         ZStack {
-            Text("Invoice")
+            Text(L("Invoice"))
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity, alignment: .center)
 
@@ -287,7 +287,7 @@ struct InvoiceDetailView: View {
                         selectedView = tab
                     }
                 }) {
-                    Text(tab)
+                    Text(L(tab))
                         .font(.system(
                             size: 15,
                             weight: tab == "Client view" ? .medium : (selectedView == tab ? .semibold : .regular)
@@ -311,11 +311,11 @@ struct InvoiceDetailView: View {
 
     private var invoiceContent: some View {
         VStack(spacing: 20) {
-            invoiceSection(title: "Company name") {
+            invoiceSection(title: L("Company name")) {
                 companyNameCard
             }
 
-            invoiceSection(title: "Client") {
+            invoiceSection(title: L("Client")) {
                 if let client = selectedClient {
                     clientInfoCard(client: client)
                 } else {
@@ -323,7 +323,7 @@ struct InvoiceDetailView: View {
                 }
             }
 
-            invoiceSection(title: "Job Details") {
+            invoiceSection(title: L("Job Details")) {
                 invoiceFormCard
             }
 
@@ -353,9 +353,9 @@ struct InvoiceDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Before & after")
+                        Text(L("Before & after"))
                             .font(.system(size: 18, weight: .semibold))
-                        Text("Add the accepted project render to this invoice.")
+                        Text(L("Add the accepted project render to this invoice."))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -367,9 +367,9 @@ struct InvoiceDetailView: View {
 
                     Toggle(isOn: $invoice.includeRender) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Include with invoice")
+                            Text(L("Include with invoice"))
                                 .font(.system(size: 15, weight: .semibold))
-                            Text("Your client will see both images.")
+                            Text(L("Your client will see both images."))
                                 .font(.system(size: 12))
                                 .foregroundColor(AppGray.secondary)
                         }
@@ -381,7 +381,7 @@ struct InvoiceDetailView: View {
                 } else if acceptedRender != nil {
                     VStack(spacing: 10) {
                         ProgressView()
-                        Text("Render attached — loading preview…")
+                        Text(L("Render attached — loading preview…"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -391,7 +391,7 @@ struct InvoiceDetailView: View {
                     HapticButton(action: beginRenderCreation) {
                         HStack(spacing: 9) {
                             Image(systemName: "sparkles")
-                            Text("Create a project render")
+                            Text(L("Create a project render"))
                         }
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(brandBlue)
@@ -439,7 +439,7 @@ struct InvoiceDetailView: View {
     private var companyNameCard: some View {
         ZStack(alignment: .leading) {
             if invoice.companyName.isEmpty {
-                Text("Add company name")
+                Text(L("Add company name"))
                     .font(.system(size: 16))
                     .fontWeight(.regular)
                     .foregroundColor(AppGray.muted)
@@ -495,7 +495,7 @@ struct InvoiceDetailView: View {
                     .foregroundColor(AppGray.secondary)
                     .rotationEffect(.degrees(90))
             }
-            .confirmationDialog("Client", isPresented: $showingClientMenu, titleVisibility: .hidden) {
+            .confirmationDialog(L("Client"), isPresented: $showingClientMenu, titleVisibility: .hidden) {
                 HapticButton("Change client") { showClientPicker = true }
                 HapticButton("Remove client", role: .destructive) {
                     selectedClient = nil
@@ -515,7 +515,7 @@ struct InvoiceDetailView: View {
                 Image(systemName: "person.fill")
                     .font(.system(size: 18))
                     .foregroundColor(AppGray.ink)
-                Text("Add Client")
+                Text(L("Add Client"))
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(AppGray.ink)
             }
@@ -533,7 +533,7 @@ struct InvoiceDetailView: View {
     private var invoiceFormCard: some View {
         VStack(spacing: 16) {
             // Title field
-            TextField("Title", text: $invoice.title)
+            TextField(L("Title"), text: $invoice.title)
                 .font(.system(size: 16))
                 .foregroundColor(AppGray.ink)
                 .frame(maxWidth: .infinity)
@@ -544,10 +544,10 @@ struct InvoiceDetailView: View {
             // Description with selection-aware formatting toolbar
             VStack(spacing: 0) {
                 HStack(spacing: 16) {
-                    formattingButton("bold", label: "Bold") { descriptionEditor.toggleBold() }
-                    formattingButton("italic", label: "Italic") { descriptionEditor.toggleItalic() }
-                    formattingButton("list.bullet", label: "Bulleted list") { descriptionEditor.toggleBullets() }
-                    formattingButton("list.number", label: "Numbered list") { descriptionEditor.toggleNumbering() }
+                    formattingButton("bold", label: L("Bold")) { descriptionEditor.toggleBold() }
+                    formattingButton("italic", label: L("Italic")) { descriptionEditor.toggleItalic() }
+                    formattingButton("list.bullet", label: L("Bulleted list")) { descriptionEditor.toggleBullets() }
+                    formattingButton("list.number", label: L("Numbered list")) { descriptionEditor.toggleNumbering() }
                     Spacer()
                 }
                 .padding(.horizontal, 14)
@@ -559,7 +559,7 @@ struct InvoiceDetailView: View {
 
                 ZStack(alignment: .topLeading) {
                     if InvoiceRichText.isEmpty(invoice.description) {
-                        Text("Enter description")
+                        Text(L("Enter description"))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(AppGray.muted)
                             .padding(.horizontal, 14)
@@ -593,7 +593,7 @@ struct InvoiceDetailView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L(label))
     }
 
     // MARK: - Invoice dates and number
@@ -601,9 +601,9 @@ struct InvoiceDetailView: View {
     private var invoiceMetadataCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
-                metadataHeader("Issued")
-                metadataHeader("Due")
-                metadataHeader("Invoice #")
+                metadataHeader(L("Issued"))
+                metadataHeader(L("Due"))
+                metadataHeader(L("Invoice #"))
             }
 
             HStack(spacing: 0) {
@@ -611,7 +611,7 @@ struct InvoiceDetailView: View {
                 metadataDivider
                 metadataDateButton(.due, date: metadataDateBinding(for: .due).wrappedValue)
                 metadataDivider
-                TextField("Number", text: $invoice.invoiceNumber)
+                TextField(L("Number"), text: $invoice.invoiceNumber)
                     .font(.system(size: 16))
                     .foregroundColor(AppGray.ink)
                     .padding(.horizontal, 14)
@@ -628,7 +628,7 @@ struct InvoiceDetailView: View {
     }
 
     private func metadataHeader(_ title: String) -> some View {
-        Text(title)
+        Text(L(title))
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(AppGray.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -637,7 +637,7 @@ struct InvoiceDetailView: View {
 
     private func metadataDateButton(_ field: InvoiceMetadataDate, date: Date) -> some View {
         HapticButton { editingMetadataDate = field } label: {
-            Text(date.formatted(date: .numeric, time: .omitted))
+            Text(date.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(appLocale)))
                 .font(.system(size: 16))
                 .foregroundColor(AppGray.ink)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -676,7 +676,7 @@ struct InvoiceDetailView: View {
     private var lineItemsSection: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("Invoice items")
+                Text(L("Invoice items"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(AppGray.ink)
                 Spacer()
@@ -757,7 +757,7 @@ struct InvoiceDetailView: View {
         VStack(spacing: 0) {
             // Subtotal
             HStack {
-                Text("Subtotal")
+                Text(L("Subtotal"))
                     .font(.system(size: 16, weight: .medium))
                 Spacer()
                 Text("$ \(String(format: "%.2f", invoice.subtotal))")
@@ -773,7 +773,7 @@ struct InvoiceDetailView: View {
 
             // Discount
             HStack {
-                Text("Discount")
+                Text(L("Discount"))
                     .font(.system(size: 16))
                 Spacer()
                 HapticButton(invoice.discount > 0 ? formattedCurrency(invoice.discount) : "Add", action: { showingDiscountEditor = true }).font(.system(size: 14, weight: .medium))
@@ -789,7 +789,7 @@ struct InvoiceDetailView: View {
 
             // Tax
             HStack {
-                Text("Tax")
+                Text(L("Tax"))
                     .font(.system(size: 16))
                 Spacer()
                 HapticButton(invoice.taxPercent > 0 ? formattedPercent(invoice.taxPercent) : "Add", action: { showingTaxEditor = true }).font(.system(size: 14, weight: .medium))
@@ -811,7 +811,7 @@ struct InvoiceDetailView: View {
 
             // Total
             HStack {
-                Text("Balance due")
+                Text(L("Balance due"))
                     .font(.system(size: 20, weight: .semibold))
                 Spacer()
                 Text(invoice.formattedTotal)
@@ -829,7 +829,7 @@ struct InvoiceDetailView: View {
     // MARK: - Payment methods
 
     private var paymentMethodsSection: some View {
-        invoiceSection(title: "Payment methods") {
+        invoiceSection(title: L("Payment methods")) {
             VStack(alignment: .leading, spacing: 14) {
                 ForEach($invoice.paymentMethods) { $method in
                     HStack(spacing: 12) {
@@ -843,12 +843,12 @@ struct InvoiceDetailView: View {
                                 .background(AppGray.ink)
                                 .clipShape(Circle())
                         }
-                        Text(method.name)
+                        Text(L(method.name))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(AppGray.ink)
                             .frame(width: 92, alignment: .leading)
                         Divider().frame(height: 28)
-                        TextField("Enter details", text: $method.details)
+                        TextField(L("Enter details"), text: $method.details)
                             .font(.system(size: 15))
                             .foregroundColor(AppGray.ink)
                     }
@@ -863,7 +863,7 @@ struct InvoiceDetailView: View {
                             .frame(width: 27, height: 27)
                             .background(brandBlue)
                             .clipShape(Circle())
-                        Text("Add payment method")
+                        Text(L("Add payment method"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(AppGray.ink)
                         Spacer()
@@ -879,7 +879,7 @@ struct InvoiceDetailView: View {
     // MARK: - Attachments
 
     private var attachmentsSection: some View {
-        invoiceSection(title: "Attachments") {
+        invoiceSection(title: L("Attachments")) {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(invoice.attachments, id: \.self) { name in
                     HStack {
@@ -905,7 +905,7 @@ struct InvoiceDetailView: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 18))
                             .foregroundColor(brandBlue)
-                        Text("Add files")
+                        Text(L("Add files"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(brandBlue)
                     }
@@ -922,7 +922,7 @@ struct InvoiceDetailView: View {
                 if documentStore.isUploading {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text("Uploading attachment…")
+                        Text(L("Uploading attachment…"))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                     }
@@ -941,7 +941,7 @@ struct InvoiceDetailView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(L(title))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(AppGray.ink)
             content()
@@ -956,7 +956,7 @@ struct InvoiceDetailView: View {
             termsDraft = invoice.termsAndConditions
             showTermsSheet = true
         }) {
-            Text("Add terms & conditions")
+            Text(L("Add terms & conditions"))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(brandBlue)
                 .frame(maxWidth: .infinity)
@@ -974,7 +974,7 @@ struct InvoiceDetailView: View {
 
     private var clientContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("This is how your client will see the invoice when you send it.")
+            Text(L("This is how your client will see the invoice when you send it."))
                 .font(.system(size: 13))
                 .foregroundColor(AppGray.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1007,7 +1007,7 @@ struct InvoiceDetailView: View {
                     beginSendingInvoice()
                 }
             }) {
-                Text(deletingLineItems ? "Delete (\(selectedLineItemIDs.count) line item\(selectedLineItemIDs.count == 1 ? "" : "s"))?" : "Preview & Send")
+                Text(deletingLineItems ? (selectedLineItemIDs.count == 1 ? L("Delete (1 line item)?") : L("Delete (%@ line items)?", "\(selectedLineItemIDs.count)")) : L("Preview & Send"))
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -1061,6 +1061,7 @@ struct InvoiceDetailView: View {
 
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = appLocale
         formatter.dateStyle = .medium
         return formatter.string(from: date)
     }
@@ -1071,8 +1072,8 @@ private struct InvoiceBeforeAfterView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            imageCard(images.before, label: "BEFORE")
-            imageCard(images.after, label: "AFTER")
+            imageCard(images.before, label: L("BEFORE"))
+            imageCard(images.after, label: L("AFTER"))
         }
     }
 
@@ -1085,7 +1086,7 @@ private struct InvoiceBeforeAfterView: View {
                 .frame(height: 154)
                 .clipped()
 
-            Text(label)
+            Text(L(label))
                 .font(.system(size: 10, weight: .bold))
                 .tracking(0.6)
                 .foregroundColor(.white)
@@ -1119,7 +1120,7 @@ private struct InvoiceDatePickerSheet: View {
                 .tint(brandBlue)
                 .padding(.horizontal, 14)
                 .padding(.top, 4)
-                .navigationTitle(title)
+                .navigationTitle(L(title))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
@@ -1155,7 +1156,7 @@ private struct InvoiceAmountEditor: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Enter \(title.lowercased())")
+                Text(L("Enter %@", "\(title.lowercased())"))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(AppGray.ink)
                 HStack {
@@ -1173,7 +1174,7 @@ private struct InvoiceAmountEditor: View {
             }
             .padding(20)
             .background(AppGray.bgPale.ignoresSafeArea())
-            .navigationTitle(title)
+            .navigationTitle(L(title))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { HapticButton("Cancel") { dismiss() } }
@@ -1210,7 +1211,7 @@ private struct PaymentMethodPicker: View {
                         Image(systemName: paymentIcon(method))
                             .foregroundColor(brandBlue)
                             .frame(width: 28)
-                        Text(method)
+                        Text(L(method))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(AppGray.ink)
                         Spacer()
@@ -1221,7 +1222,7 @@ private struct PaymentMethodPicker: View {
                     .padding(.vertical, 5)
                 }
             }
-            .navigationTitle("Payment method")
+            .navigationTitle(L("Payment method"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { HapticButton("Cancel") { dismiss() } } }
         }
@@ -1252,7 +1253,7 @@ private struct TermsSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Terms & Conditions")
+                Text(L("Terms & Conditions"))
                     .font(.system(size: 17, weight: .semibold))
                 Spacer()
                 HapticButton("Done") {
@@ -1263,7 +1264,7 @@ private struct TermsSheet: View {
                 .foregroundColor(brandBlue)
             }
 
-            TextField("Enter your terms and conditions...", text: $draft, axis: .vertical)
+            TextField(L("Enter your terms and conditions..."), text: $draft, axis: .vertical)
                 .focused($focused)
                 .lineLimit(5...12)
                 .font(.system(size: 15))
@@ -1304,6 +1305,7 @@ struct InvoicePreviewView: View {
 
     private var dateText: String {
         let f = DateFormatter()
+        f.locale = appLocale
         f.dateStyle = .medium
         return f.string(from: invoice.createdAt)
     }
@@ -1345,7 +1347,7 @@ struct InvoicePreviewView: View {
     private var renderBlock: some View {
         if let renderImages {
             VStack(alignment: .leading, spacing: 10) {
-                Text("PROJECT VISUALIZATION")
+                Text(L("PROJECT VISUALIZATION"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)
@@ -1365,7 +1367,7 @@ struct InvoicePreviewView: View {
                     .scaledToFit()
                     .frame(maxWidth: 150, maxHeight: 56, alignment: .leading)
             } else {
-                Text("INVOICE")
+                Text(L("INVOICE"))
                     .font(.system(size: 24, weight: .heavy))
                     .foregroundColor(.black)
             }
@@ -1374,7 +1376,7 @@ struct InvoicePreviewView: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 if logo != nil {
-                    Text("INVOICE")
+                    Text(L("INVOICE"))
                         .font(.system(size: 12, weight: .semibold))
                         .tracking(1.5)
                         .foregroundColor(labelGray)
@@ -1395,12 +1397,12 @@ struct InvoicePreviewView: View {
     private var billToRow: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("BILL TO")
+                Text(L("BILL TO"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)
                 if let client {
-                    Text(client.name.isEmpty ? "Client" : client.name)
+                    Text(client.name.isEmpty ? L("Client") : client.name)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.black)
                     if !client.company.isEmpty { previewLine(client.company) }
@@ -1408,7 +1410,7 @@ struct InvoicePreviewView: View {
                     if !client.email.isEmpty { previewLine(client.email) }
                     if !client.phone.isEmpty { previewLine(client.phone) }
                 } else {
-                    Text("No client selected")
+                    Text(L("No client selected"))
                         .font(.system(size: 14))
                         .foregroundColor(labelGray)
                 }
@@ -1417,11 +1419,11 @@ struct InvoicePreviewView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text("DUE")
+                Text(L("DUE"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)
-                Text(invoice.dueDate)
+                Text(L(invoice.dueDate))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(rowText)
             }
@@ -1461,12 +1463,12 @@ struct InvoicePreviewView: View {
     private var lineItemsTable: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("DESCRIPTION")
+                Text(L("DESCRIPTION"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)
                 Spacer()
-                Text("AMOUNT")
+                Text(L("AMOUNT"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)
@@ -1500,22 +1502,22 @@ struct InvoicePreviewView: View {
 
     private var totals: some View {
         VStack(spacing: 8) {
-            totalRow("Subtotal", invoice.formattedSubtotal, bold: false)
+            totalRow(L("Subtotal"), invoice.formattedSubtotal, bold: false)
             if invoice.discountAmount > 0 {
-                totalRow("Discount", "−\(currency(invoice.discountAmount))", bold: false)
+                totalRow(L("Discount"), "−\(currency(invoice.discountAmount))", bold: false)
             }
             if invoice.taxAmount > 0 {
-                totalRow("Tax (\(Int(invoice.taxPercent.rounded()))%)", currency(invoice.taxAmount), bold: false)
+                totalRow(L("Tax (%@%%)", "\(Int(invoice.taxPercent.rounded()))"), currency(invoice.taxAmount), bold: false)
             }
             Divider()
                 .padding(.vertical, 2)
-            totalRow("Total", invoice.formattedTotal, bold: true)
+            totalRow(L("Total"), invoice.formattedTotal, bold: true)
         }
     }
 
     private func totalRow(_ label: String, _ value: String, bold: Bool) -> some View {
         HStack {
-            Text(label)
+            Text(L(label))
                 .font(.system(size: bold ? 17 : 14, weight: bold ? .bold : .regular))
                 .foregroundColor(bold ? .black : rowText)
             Spacer()
@@ -1531,7 +1533,7 @@ struct InvoicePreviewView: View {
     private var termsBlock: some View {
         if !invoice.termsAndConditions.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("TERMS & CONDITIONS")
+                Text(L("TERMS & CONDITIONS"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(labelGray)

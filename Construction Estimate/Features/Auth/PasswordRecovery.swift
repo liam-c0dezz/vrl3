@@ -34,20 +34,20 @@ struct ForgotPasswordView: View {
                     Image(systemName: "envelope.badge.fill")
                         .font(.system(size: 38))
                         .foregroundStyle(AppBrand.accent)
-                    Text("Check your email")
+                    Text(L("Check your email"))
                         .font(.system(size: 24, weight: .bold))
                     Text(
-                        "If an EasyBid account exists for that email, a password-reset link is on its way. The link can be used only once and may expire."
+                        L("If an EasyBid account exists for that email, a password-reset link is on its way. The link can be used only once and may expire.")
                     )
                     .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Done") { dismiss() }
+                    Button(L("Done")) { dismiss() }
                         .buttonStyle(PrimaryAuthButtonStyle())
                 } else {
-                    Text("Enter your account email and we'll send a secure reset link.")
+                    Text(L("Enter your account email and we'll send a secure reset link."))
                         .foregroundStyle(.secondary)
 
-                    TextField("Email", text: $email)
+                    TextField(L("Email"), text: $email)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
                         .textContentType(.emailAddress)
@@ -55,7 +55,7 @@ struct ForgotPasswordView: View {
                         .authFieldStyle()
 
                     if let errorMessage {
-                        Text(errorMessage)
+                        Text(L(errorMessage))
                             .font(.system(size: 13))
                             .foregroundStyle(.red)
                     }
@@ -66,7 +66,7 @@ struct ForgotPasswordView: View {
                         if isSubmitting {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Send Reset Link")
+                            Text(L("Send Reset Link"))
                         }
                     }
                     .buttonStyle(PrimaryAuthButtonStyle())
@@ -75,11 +75,11 @@ struct ForgotPasswordView: View {
                 }
             }
             .padding(24)
-            .navigationTitle("Forgot Password")
+            .navigationTitle(L("Forgot Password"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("Cancel")) { dismiss() }
                 }
             }
         }
@@ -127,26 +127,26 @@ struct PasswordResetView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Choose a new password")
+                Text(L("Choose a new password"))
                     .font(.system(size: 26, weight: .bold))
-                Text("Use at least 8 characters with both a letter and a number.")
+                Text(L("Use at least 8 characters with both a letter and a number."))
                     .foregroundStyle(.secondary)
 
-                SecureField("New password", text: $password)
+                SecureField(L("New password"), text: $password)
                     .textContentType(.newPassword)
                     .authFieldStyle()
 
-                SecureField("Confirm new password", text: $confirmation)
+                SecureField(L("Confirm new password"), text: $confirmation)
                     .textContentType(.newPassword)
                     .authFieldStyle()
 
                 if !confirmation.isEmpty && password != confirmation {
-                    Text("Passwords do not match.")
+                    Text(L("Passwords do not match."))
                         .font(.system(size: 13))
                         .foregroundStyle(.red)
                 }
                 if let errorMessage {
-                    Text(errorMessage)
+                    Text(L(errorMessage))
                         .font(.system(size: 13))
                         .foregroundStyle(.red)
                 }
@@ -157,7 +157,7 @@ struct PasswordResetView: View {
                     if isSubmitting {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Update Password")
+                        Text(L("Update Password"))
                     }
                 }
                 .buttonStyle(PrimaryAuthButtonStyle())
@@ -166,11 +166,11 @@ struct PasswordResetView: View {
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("Reset Password")
+            .navigationTitle(L("Reset Password"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         Task {
                             try? await supabase.auth.signOut(scope: .local)
                             authStore.completePasswordRecovery()

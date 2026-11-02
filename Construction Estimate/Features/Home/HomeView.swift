@@ -63,7 +63,7 @@ struct HomeView: View {
                 
                 // MARK: - "Projects" Title
                 HStack {
-                    Text("Projects")
+                    Text(L("Projects"))
                         .font(.system(size: 32, weight: .bold))
                     Spacer()
                 }
@@ -139,7 +139,7 @@ struct FilterTabButton: View {
     var body: some View {
         HapticButton(action: action) {
             HStack(spacing: 6) {
-                Text(title)
+                Text(L(title))
                     .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
                     .foregroundColor(isSelected ? AppBrand.accent : AppGray.secondary)
                 
@@ -187,11 +187,11 @@ struct NextStepsBanner: View {
             }
             
             VStack(alignment: .leading, spacing: 2) {
-                Text("Next steps")
+                Text(L("Next steps"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.black)
                 
-                Text("Complete your onboarding")
+                Text(L("Complete your onboarding"))
                     .font(.system(size: 14))
                     .foregroundColor(AppGray.secondary)
             }
@@ -237,7 +237,7 @@ struct ProjectCardView: View {
                         .rotationEffect(.degrees(90))
                         .frame(width: 28, height: 28)
                 }
-                .confirmationDialog("Project Options", isPresented: $showDeleteConfirm) {
+                .confirmationDialog(L("Project Options"), isPresented: $showDeleteConfirm) {
                     HapticButton("Delete Project", role: .destructive) { onDelete?() }
                     HapticButton("Cancel", role: .cancel) {}
                 }
@@ -257,8 +257,8 @@ struct ProjectCardView: View {
             // Tags row
             FlowLayout(spacing: 8) {
                 TagPill(icon: "circle.dotted", text: project.workflowStatus)
-                TagPill(icon: "person", text: project.clientName ?? "Client")
-                AddressTagPill(text: project.address ?? "Address")
+                TagPill(icon: "person", text: project.clientName ?? L("Client"))
+                AddressTagPill(text: project.address ?? L("Address"))
             }
             
             // Assignee row
@@ -266,7 +266,7 @@ struct ProjectCardView: View {
                 Image(systemName: "person.crop.circle.badge.xmark")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(AppGray.secondary)
-                Text(project.assignee ?? "No assignee")
+                Text(project.assignee ?? L("No assignee"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(AppGray.secondary)
             }
@@ -296,7 +296,7 @@ struct TagPill: View {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(AppGray.secondary)
-            Text(text)
+            Text(L(text))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppGray.secondary)
         }
@@ -317,7 +317,7 @@ struct AddressTagPill: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Text(text)
+            Text(L(text))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppGray.secondary)
         }
@@ -396,7 +396,7 @@ struct BottomTabBar: View {
                     VStack(spacing: 4) {
                         Image(systemName: tabs[index].icon)
                             .font(.system(size: 20))
-                        Text(tabs[index].label)
+                        Text(L(tabs[index].label))
                             .font(.system(size: 11, weight: selectedIndex == index ? .semibold : .regular))
                     }
                     .foregroundColor(selectedIndex == index ? brandBlue : AppGray.ink)

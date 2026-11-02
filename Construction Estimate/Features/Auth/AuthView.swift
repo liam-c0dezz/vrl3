@@ -19,7 +19,7 @@ private enum AccountDeletionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .incomplete:
-            return "Account deletion did not complete. Your account is still active."
+            return L("Account deletion did not complete. Your account is still active.")
         case let .server(message):
             return message
         }
@@ -69,7 +69,7 @@ private final class AppleAccountDeletionAuthorizer: NSObject,
             finish(
                 with: .failure(
                     AccountDeletionError.server(
-                        "Apple did not return a confirmation code. Please try again."
+                        L("Apple did not return a confirmation code. Please try again.")
                     )
                 )
             )
@@ -189,7 +189,7 @@ final class AuthStore {
             let message = (try? JSONDecoder().decode(
                 AccountDeletionServerError.self,
                 from: data
-            ))?.error ?? "Account deletion failed. Your account is still active."
+            ))?.error ?? L("Account deletion failed. Your account is still active.")
             throw AccountDeletionError.server(message)
         }
 
@@ -359,28 +359,28 @@ struct AuthenticationView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("Construction Estimate")
+                        Text(L("Construction Estimate"))
                             .font(.system(size: 29, weight: .bold))
                             .foregroundColor(AppGray.ink)
-                        Text(isCreatingAccount ? "Create your account" : "Welcome back")
+                        Text(isCreatingAccount ? L("Create your account") : L("Welcome back"))
                             .font(.system(size: 16))
                             .foregroundColor(AppGray.secondary)
                     }
 
                     VStack(spacing: 12) {
-                        TextField("Email", text: $email)
+                        TextField(L("Email"), text: $email)
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
                             .textContentType(.emailAddress)
                             .autocorrectionDisabled()
                             .authFieldStyle()
 
-                        SecureField("Password", text: $password)
+                        SecureField(L("Password"), text: $password)
                             .textContentType(isCreatingAccount ? .newPassword : .password)
                             .authFieldStyle()
 
                         if isCreatingAccount {
-                            Text("Use at least 8 characters with a letter and a number.")
+                            Text(L("Use at least 8 characters with a letter and a number."))
                                 .font(.system(size: 12))
                                 .foregroundStyle(AppGray.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -388,7 +388,7 @@ struct AuthenticationView: View {
                     }
 
                     if let message {
-                        Text(message)
+                        Text(L(message))
                             .font(.system(size: 13))
                             .foregroundColor(.red)
                     }
@@ -398,7 +398,7 @@ struct AuthenticationView: View {
                             if isSubmitting {
                                 ProgressView().tint(.white)
                             } else {
-                                Text(isCreatingAccount ? "Create Account" : "Sign In")
+                                Text(isCreatingAccount ? L("Create Account") : L("Sign In"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                         }
@@ -412,7 +412,7 @@ struct AuthenticationView: View {
                     .disabled(!canSubmit)
 
                     if !isCreatingAccount {
-                        Button("Forgot password?") {
+                        Button(L("Forgot password?")) {
                             showForgotPassword = true
                         }
                         .font(.system(size: 14, weight: .semibold))
@@ -422,7 +422,7 @@ struct AuthenticationView: View {
 
                     HStack {
                         Rectangle().fill(AppGray.border).frame(height: 1)
-                        Text("or")
+                        Text(L("or"))
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
                         Rectangle().fill(AppGray.border).frame(height: 1)
@@ -442,23 +442,23 @@ struct AuthenticationView: View {
 
                     HStack(spacing: 16) {
                         if let policyURL = PrivacyResources.policyURL {
-                            Link("Privacy Policy", destination: policyURL)
+                            Link(L("Privacy Policy"), destination: policyURL)
                         }
-                        Link("Terms of Use", destination: PrivacyResources.termsURL)
+                        Link(L("Terms of Use"), destination: PrivacyResources.termsURL)
                     }
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(brandBlue)
                     .frame(maxWidth: .infinity)
 
                     if isCreatingAccount {
-                        Text("By creating an account, you agree to the Privacy Policy and Terms of Use.")
+                        Text(L("By creating an account, you agree to the Privacy Policy and Terms of Use."))
                             .font(.system(size: 12))
                             .foregroundStyle(AppGray.secondary)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                     }
 
-                    Button(isCreatingAccount ? "Already have an account? Sign in" : "Need an account? Create one") {
+                    Button(isCreatingAccount ? L("Already have an account? Sign in") : L("Need an account? Create one")) {
                         isCreatingAccount.toggle()
                         message = nil
                     }
@@ -503,7 +503,7 @@ struct AuthenticationView: View {
                         onAuthenticated()
                         dismiss()
                     } else {
-                        message = "Check your email to confirm your account, then sign in."
+                        message = L("Check your email to confirm your account, then sign in.")
                     }
                 } else {
                     let session = try await supabase.auth.signIn(
@@ -600,34 +600,34 @@ struct DeleteAccountView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 30))
                             .foregroundColor(.red)
-                        Text("Delete your account permanently")
+                        Text(L("Delete your account permanently"))
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(AppGray.ink)
                         Text(
-                            "This removes your company workspace, clients, projects, estimates, invoices, chat history stored on this device, and uploaded project files. This cannot be undone."
+                            L("This removes your company workspace, clients, projects, estimates, invoices, chat history stored on this device, and uploaded project files. This cannot be undone.")
                         )
                         .font(.system(size: 15))
                         .foregroundColor(AppGray.secondary)
                     }
 
                     Text(
-                        "Apple subscriptions are managed separately. To cancel: open iPhone Settings, tap your name, choose Subscriptions, select EasyBid, then tap Cancel Subscription."
+                        L("Apple subscriptions are managed separately. To cancel: open iPhone Settings, tap your name, choose Subscriptions, select EasyBid, then tap Cancel Subscription.")
                     )
                     .font(.system(size: 14))
                     .foregroundColor(AppGray.secondary)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Type DELETE to confirm")
+                        Text(L("Type DELETE to confirm"))
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(AppGray.ink)
-                        TextField("DELETE", text: $confirmation)
+                        TextField(L("DELETE"), text: $confirmation)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .authFieldStyle()
                     }
 
                     if let errorMessage {
-                        Text(errorMessage)
+                        Text(L(errorMessage))
                             .font(.system(size: 13))
                             .foregroundColor(.red)
                     }
@@ -642,7 +642,7 @@ struct DeleteAccountView: View {
                     } else {
                         if usesApple {
                             Text(
-                                "Apple will ask you to confirm so EasyBid can revoke its account access before deletion."
+                                L("Apple will ask you to confirm so EasyBid can revoke its account access before deletion.")
                             )
                             .font(.system(size: 13))
                             .foregroundColor(AppGray.secondary)
@@ -659,7 +659,7 @@ struct DeleteAccountView: View {
                                 if isDeleting || isConfirmingWithApple {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text("Delete My Account")
+                                    Text(L("Delete My Account"))
                                         .font(.system(size: 16, weight: .semibold))
                                 }
                             }
@@ -678,11 +678,11 @@ struct DeleteAccountView: View {
                 .padding(24)
             }
             .background(Color.white.ignoresSafeArea())
-            .navigationTitle("Delete Account")
+            .navigationTitle(L("Delete Account"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("Cancel")) { dismiss() }
                         .disabled(isDeleting)
                 }
             }
@@ -718,7 +718,7 @@ struct DeleteAccountView: View {
             case let .failure(error):
                 if let authorizationError = error as? ASAuthorizationError,
                    authorizationError.code == .canceled {
-                    errorMessage = "Apple confirmation was canceled."
+                    errorMessage = L("Apple confirmation was canceled.")
                 } else if let deletionError = error as? AccountDeletionError {
                     errorMessage = deletionError.localizedDescription
                 } else {
@@ -744,7 +744,7 @@ struct DeleteAccountView: View {
             if let deletionError = error as? AccountDeletionError {
                 errorMessage = deletionError.localizedDescription
             } else {
-                errorMessage = "Account deletion couldn't be completed. Please try again."
+                errorMessage = L("Account deletion couldn't be completed. Please try again.")
             }
             isDeleting = false
         }

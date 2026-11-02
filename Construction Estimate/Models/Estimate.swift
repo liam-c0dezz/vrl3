@@ -166,7 +166,8 @@ struct Estimate: Identifiable, Codable {
 
     var shortDate: String {
         let f = DateFormatter()
-        f.dateFormat = "MMM d"
+        f.locale = appLocale
+        f.setLocalizedDateFormatFromTemplate("MMM d")
         return f.string(from: createdAt)
     }
 

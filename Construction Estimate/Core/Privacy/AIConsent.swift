@@ -62,7 +62,7 @@ final class AIConsentStore {
             status = record.isGranted ? .granted : .denied
         } catch {
             status = .unknown
-            errorMessage = "AI permission couldn't be loaded. Please try again."
+            errorMessage = L("AI permission couldn't be loaded. Please try again.")
         }
     }
 
@@ -108,7 +108,7 @@ final class AIConsentStore {
             status = granted ? .granted : .denied
             return true
         } catch {
-            errorMessage = "AI permission couldn't be updated. Please try again."
+            errorMessage = L("AI permission couldn't be updated. Please try again.")
             return false
         }
     }
@@ -135,21 +135,21 @@ struct AIConsentPromptView: View {
                     .font(.system(size: 34, weight: .semibold))
                     .foregroundStyle(AppBrand.accent)
 
-                Text("Use AI assistance")
+                Text(L("Use AI assistance"))
                     .font(.system(size: 25, weight: .bold))
 
                 Text(
-                    "When you use AI Chat or Renders, EasyBid sends your messages, relevant project information, and any photos, video frames, or audio you intentionally attach to OpenAI to produce an answer, estimate, or project visualization."
+                    L("When you use AI Chat or Renders, EasyBid sends your messages, relevant project information, and any photos, video frames, or audio you intentionally attach to OpenAI to produce an answer, estimate, or project visualization.")
                 )
                 .font(.system(size: 16))
                 .foregroundStyle(.secondary)
 
-                Text("Review AI results before using them in a customer estimate, invoice, or render.")
+                Text(L("Review AI results before using them in a customer estimate, invoice, or render."))
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
 
                 if let errorMessage = consentStore.errorMessage {
-                    Text(errorMessage)
+                    Text(L(errorMessage))
                         .font(.system(size: 13))
                         .foregroundStyle(.red)
                 }
@@ -167,7 +167,7 @@ struct AIConsentPromptView: View {
                         if consentStore.isSaving {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Allow AI Features")
+                            Text(L("Allow AI Features"))
                         }
                     }
                     .font(.system(size: 16, weight: .semibold))
@@ -179,7 +179,7 @@ struct AIConsentPromptView: View {
                 }
                 .disabled(consentStore.isSaving)
 
-                Button("Not Now") {
+                Button(L("Not Now")) {
                     Task {
                         if await consentStore.setConsent(granted: false) {
                             dismiss()
@@ -192,15 +192,15 @@ struct AIConsentPromptView: View {
 
                 HStack(spacing: 14) {
                     if let policyURL = PrivacyResources.policyURL {
-                        Link("Privacy Policy", destination: policyURL)
+                        Link(L("Privacy Policy"), destination: policyURL)
                     }
-                    Link("Terms of Use", destination: PrivacyResources.termsURL)
+                    Link(L("Terms of Use"), destination: PrivacyResources.termsURL)
                 }
                 .font(.system(size: 13, weight: .medium))
                 .frame(maxWidth: .infinity)
             }
             .padding(24)
-            .navigationTitle("AI Permission")
+            .navigationTitle(L("AI Permission"))
             .navigationBarTitleDisplayMode(.inline)
         }
         .interactiveDismissDisabled(consentStore.status == .unknown)
