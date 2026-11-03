@@ -46,7 +46,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				LiveWalkthroughView.swift,
+				Features/Chat/LiveWalkthroughView.swift,
 			);
 			target = FFD1C8262F84A0FD00B0893F /* Construction Estimate */;
 		};
@@ -245,6 +245,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				es,
 				Base,
 			);
 			mainGroup = FFD1C81E2F84A0FD00B0893F;

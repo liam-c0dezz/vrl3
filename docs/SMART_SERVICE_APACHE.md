@@ -97,9 +97,9 @@ Added:
 - `supabase/functions/smart-service-apache/engine.test.ts` — eight unit tests.
 - `supabase/migrations/20261001034640_smart_service_apache.sql`.
 - `supabase/migrations/20261001041827_smart_service_apache_indexed_search.sql`.
-- `Construction Estimate/SmartServiceApacheView.swift` — separate scope/photo/markup preview screen.
-- `Construction Estimate/ApacheEstimator-LICENSE.txt`.
-- `Construction Estimate/ApacheEstimator-NOTICE.txt`.
+- `Construction Estimate/Features/Estimator/SmartServiceApacheView.swift` — separate scope/photo/markup preview screen.
+- `Construction Estimate/Resources/ApacheEstimator-LICENSE.txt`.
+- `Construction Estimate/Resources/ApacheEstimator-NOTICE.txt`.
 - `third_party/ddc-openconstructionestimate/LICENSE-CODE.txt`.
 - `third_party/ddc-openconstructionestimate/NOTICE`.
 - `third_party/ddc-openconstructionestimate/node-manifest.json`.
@@ -108,7 +108,7 @@ Added:
 - `docs/SMART_SERVICE_APACHE.md` — this implementation record.
 
 Changed:
-- `Construction Estimate/ProjectDetailView.swift` — separate Apache button, presentation state and sheet. Existing Smart Service routing is preserved.
+- `Construction Estimate/Features/Projects/ProjectDetailView.swift` — separate Apache button, presentation state and sheet. Existing Smart Service routing is preserved.
 
 The repository already contained many unrelated modifications. They were not reverted or included as this task's changes. No commit or app-store release was made. Existing deployed `smart-service` version 78 and `smart-service-v7` version 19 were verified unchanged; both retain code SHA `81716ce39a5633df16c549a1f59b8f1bf62036c2e00ef61116ffd6f425ba3dea`.
 
