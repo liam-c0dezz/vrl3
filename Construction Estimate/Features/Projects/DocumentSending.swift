@@ -357,6 +357,12 @@ struct DocumentSendSheet: View {
                     try await EstimatePortalService.confirmSent(reviewURL: url)
                 }
                 if case .estimate(let estimate) = styledDocument { onEstimateSent?(estimate) }
+                switch document {
+                case .estimate(let estimate):
+                    RetentionCenter.shared.record(.estimateSent(amount: estimate.total))
+                case .invoice(let invoice):
+                    RetentionCenter.shared.record(.invoiceSent(amount: invoice.total))
+                }
                 onSent()
                 dismiss()
             } catch {

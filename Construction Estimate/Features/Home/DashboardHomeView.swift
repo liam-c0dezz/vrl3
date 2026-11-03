@@ -14,6 +14,12 @@ struct DashboardHomeView: View {
     @State private var subscriptionError: String?
 
     private let brandBlue = AppBrand.accent
+    private var retention: RetentionCenter { RetentionCenter.shared }
+
+    /// This week's recap; on a quiet Monday, last week's.
+    private var weeklyRecap: WeeklyRecap {
+        retention.thisWeek.isEmpty ? retention.lastWeek : retention.thisWeek
+    }
 
     private var estimates: [Estimate] {
         projectStore.projects.compactMap(\.estimate)
@@ -44,16 +50,40 @@ struct DashboardHomeView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
+                        if retention.isTrialEndingSoon {
+                            TrialEndingBanner()
+                        }
                         if gettingStartedCompletedCount < 4 {
                             gettingStartedSection
                         }
+                        if !estimates.isEmpty {
+                            StreakCard()
+                        }
                         quickCreateSection
+                        if !weeklyRecap.isEmpty {
+                            WeeklyRecapCard(recap: weeklyRecap)
+                        }
                         estimatesSection
                         invoicesSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 140)
                 }
+        }
+        .task(id: estimates.count + invoiceStore.invoices.count) {
+            // Projects load after launch; recompute the streak once they arrive.
+            RetentionCenter.shared.refresh()
+        }
+        .onChange(of: AppRouter.shared.pending, initial: true) { _, route in
+            switch route {
+            case .newEstimate?:
+                AppRouter.shared.pending = nil
+                showNewProject = true
+            case .home?, .recap?:
+                AppRouter.shared.pending = nil
+            default:
+                break
+            }
         }
         .fullScreenCover(isPresented: $showNewProject) {
             NavigationStack {

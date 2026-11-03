@@ -23,6 +23,7 @@ Construction Estimate/            iOS app sources (Xcode synchronized folder)
 │   ├── Home/                     Dashboard, project list, notifications
 │   ├── Projects/                 Project detail, documents, renders, sending
 │   ├── Chat/                     AI estimate chat, photo/voice inputs
+│   ├── Retention/                Notifications, streaks, recap, review prompt, Live Activity
 │   ├── Invoices/                 Invoice list, editor, rich text
 │   ├── Clients/                  Client list & pickers
 │   ├── Settings/                 Settings & business setup
@@ -30,6 +31,8 @@ Construction Estimate/            iOS app sources (Xcode synchronized folder)
 ├── Resources/                    Bundled JSON/PNG, licenses, privacy manifest
 ├── Info.plist
 └── Construction_Estimate.entitlements
+Shared/                           Code compiled into both the app and the widget
+EasyBidWidget/                    Widget extension (home/Lock Screen widget, Live Activity)
 Construction EstimateTests/       Unit tests
 Construction EstimateUITests/     UI tests
 Media.xcassets/                   App icon and image assets
@@ -46,6 +49,12 @@ The app target uses Xcode's synchronized folder groups, so any file added under
 `Construction Estimate/` is picked up automatically — no project file edits
 needed. `Features/Chat/LiveWalkthroughView.swift` is intentionally excluded from
 the target (see the exception set in the project file).
+
+## Retention
+
+Push notifications, weekly streaks with streak freezes, the home-screen
+widget, Live Activities, lifecycle email and win-back are described in
+[docs/RETENTION.md](docs/RETENTION.md), including the few one-time setup steps.
 
 ## Language
 

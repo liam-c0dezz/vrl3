@@ -3862,9 +3862,11 @@ private struct EstimateGenerationProgressView: View {
         .task(id: isComplete) {
             if isComplete {
                 progress = 100
+                EstimateLiveActivity.finish(success: true)
                 return
             }
             progress = 0
+            EstimateLiveActivity.start()
             let start = ContinuousClock.now
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .milliseconds(500)) }
@@ -3872,7 +3874,12 @@ private struct EstimateGenerationProgressView: View {
                 let elapsed = start.duration(to: .now).components
                 let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
                 progress = min(95, Int(96 * (1 - exp(-seconds / 22))))
+                EstimateLiveActivity.update(progress: progress)
             }
+        }
+        .onDisappear {
+            // Leaving before completion (cancel or error) ends the activity.
+            if !isComplete { EstimateLiveActivity.finish(success: false) }
         }
     }
 }

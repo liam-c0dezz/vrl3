@@ -6,6 +6,7 @@
 
 import SwiftUI
 import Observation
+import StoreKit
 
 /// Lets pushed screens (e.g. a project) hide the floating bottom nav.
 @Observable final class TabBarVisibility {
@@ -16,6 +17,8 @@ struct ContentView: View {
     @State private var selectedTabIndex: Int = 0
     @State private var tabBar = TabBarVisibility()
     @State private var showSupport = false
+    @Environment(\.requestReview) private var requestReview
+    private var retention: RetentionCenter { RetentionCenter.shared }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -66,6 +69,31 @@ struct ContentView: View {
                 }
                 .ignoresSafeArea(.container, edges: .bottom)
             }
+        }
+        .onChange(of: AppRouter.shared.pending, initial: true) { _, route in
+            // Routes handled on Home need the Home tab; the top bar handles the rest.
+            switch route {
+            case .home?, .recap?, .newEstimate?:
+                selectedTabIndex = 0
+                tabBar.isHidden = false
+            default:
+                break
+            }
+        }
+        .onChange(of: retention.shouldRequestReview) { _, shouldAsk in
+            guard shouldAsk else { return }
+            retention.shouldRequestReview = false
+            requestReview()
+        }
+        .sheet(isPresented: Binding(
+            get: { retention.shouldOfferNotifications },
+            set: { if !$0 { retention.shouldOfferNotifications = false } }
+        )) {
+            NotificationPrePromptSheet()
+                .presentationDetents([.height(430)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
+                .presentationBackground(Color.white)
         }
         .sheet(isPresented: $showSupport) {
             SupportContactSheet()

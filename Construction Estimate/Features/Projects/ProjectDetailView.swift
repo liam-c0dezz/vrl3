@@ -1539,6 +1539,9 @@ private struct PaymentEditorSheet: View {
         Task {
             do {
                 try await paymentStore.save(payment)
+                if editingPayment == nil {
+                    RetentionCenter.shared.record(.paymentRecorded(amount: enteredAmount))
+                }
                 dismiss()
             } catch {
                 saveError = SafeErrorMessages.data(error, action: "payment save")
