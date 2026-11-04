@@ -137,7 +137,7 @@ struct Invoice: Identifiable, Codable {
             invoiceNumber: "INV-\(10000 + number)",
             title: "",
             description: "",
-            items: [InvoiceLineItem(title: L("First Item"), quantity: 1, unitPrice: 0, unit: "EA")],
+            items: [],
             discount: 0,
             taxPercent: defaults.salesTaxPercent,
             status: "Draft",

@@ -165,55 +165,6 @@ struct FilterTabButton: View {
     }
 }
 
-// MARK: - Next Steps Banner
-struct NextStepsBanner: View {
-    var body: some View {
-        HStack(spacing: 14) {
-            // Circular progress
-            ZStack {
-                Circle()
-                    .stroke(AppGray.badge, lineWidth: 4)
-                    .frame(width: 50, height: 50)
-                
-                Circle()
-                    .trim(from: 0, to: 0.2) // 1/5
-                    .stroke(AppBrand.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 50, height: 50)
-                    .rotationEffect(.degrees(-90))
-                
-                Text("1/5")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.black)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L("Next steps"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.black)
-                
-                Text(L("Complete your onboarding"))
-                    .font(.system(size: 14))
-                    .foregroundColor(AppGray.secondary)
-            }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(AppGray.muted)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(AppBrand.accent.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppBrand.accent.opacity(0.2), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Project Card View
 struct ProjectCardView: View {
     let project: Project
