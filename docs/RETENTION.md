@@ -38,6 +38,8 @@ Everything is in English and Spanish and follows the in-app language switch.
    ```
    The team ID (`5WLL25W3WQ`) and bundle ID are already filled in. Until this is
    set, client-activity pushes are skipped and everything else keeps working.
+   Keep the `.p8` file out of the repository (`.gitignore` blocks `*.p8`) and
+   store it only as this secret; anyone with it can send pushes as your app.
 4. **Xcode:** open the project and build. Automatic signing registers the Push
    Notifications and App Groups capabilities and the new
    `EasyBidWidgetExtension` target. No manual capability clicks are needed.
