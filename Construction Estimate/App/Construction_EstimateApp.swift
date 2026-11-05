@@ -10,6 +10,8 @@ import UIKit
 
 @main
 struct Construction_EstimateApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @State private var authStore: AuthStore
 
     init() {
@@ -26,7 +28,18 @@ struct Construction_EstimateApp: App {
             .preferredColorScheme(.light)
             .environment(authStore)
             .swipeDownToDismissKeyboard()
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active, authStore.session != nil {
+                    RetentionCenter.shared.refresh()
+                }
+            }
             .onOpenURL { url in
+                // Widget, Live Activity and notification deep links.
+                if url.scheme?.lowercased() == SupabaseConfig.authCallbackURL.scheme?.lowercased(),
+                   let route = AppRoute(host: url.host) {
+                    AppRouter.shared.pending = route
+                    return
+                }
                 let allowedHosts = Set(["auth-callback", "reset-password"])
                 guard
                     url.scheme?.lowercased() ==

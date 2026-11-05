@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E1B0A00E2FF1000100A00001 /* EasyBidWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E1B0A0012FF1000100A00001 /* EasyBidWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C0D3A0012FF0000100A00001 /* SuperwallKit in Frameworks */ = {isa = PBXBuildFile; productRef = C0D3A0032FF0000100A00001 /* SuperwallKit */; };
 		FF31884C2F86D8C200D7F231 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = FF31884B2F86D8C200D7F231 /* Auth */; };
 		FF31884E2F86D8C200D7F231 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = FF31884D2F86D8C200D7F231 /* Functions */; };
@@ -18,6 +19,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		E1B0A00C2FF1000100A00001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FFD1C81F2F84A0FD00B0893F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1B0A0052FF1000100A00001;
+			remoteInfo = EasyBidWidgetExtension;
+		};
 		FFD1C8352F84A0FD00B0893F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FFD1C81F2F84A0FD00B0893F /* Project object */;
@@ -34,7 +42,22 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		E1B0A00F2FF1000100A00001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E1B0A00E2FF1000100A00001 /* EasyBidWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		E1B0A0012FF1000100A00001 /* EasyBidWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EasyBidWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF31885A2F86F6BE00D7F231 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		FFD1C8272F84A0FD00B0893F /* Construction Estimate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Construction Estimate.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FFD1C8342F84A0FD00B0893F /* Construction EstimateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Construction EstimateTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,6 +65,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E1B0A0042FF1000100A00001 /* Exceptions for "EasyBidWidget" folder in "EasyBidWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E1B0A0052FF1000100A00001 /* EasyBidWidgetExtension */;
+		};
 		C0D3A0102FF0000100A00001 /* Exceptions for "Construction Estimate" folder in "Construction Estimate" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -53,6 +83,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		E1B0A0022FF1000100A00001 /* EasyBidWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E1B0A0042FF1000100A00001 /* Exceptions for "EasyBidWidget" folder in "EasyBidWidgetExtension" target */,
+			);
+			path = EasyBidWidget;
+			sourceTree = "<group>";
+		};
+		E1B0A0032FF1000100A00001 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		FFD1C8292F84A0FD00B0893F /* Construction Estimate */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -74,6 +117,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		E1B0A0072FF1000100A00001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FFD1C8242F84A0FD00B0893F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,6 +167,8 @@
 			children = (
 				FF31885A2F86F6BE00D7F231 /* Media.xcassets */,
 				FFD1C8292F84A0FD00B0893F /* Construction Estimate */,
+				E1B0A0032FF1000100A00001 /* Shared */,
+				E1B0A0022FF1000100A00001 /* EasyBidWidget */,
 				FFD1C8372F84A0FD00B0893F /* Construction EstimateTests */,
 				FFD1C8412F84A0FD00B0893F /* Construction EstimateUITests */,
 				FFB2E0D32FC4DBD000191578 /* Frameworks */,
@@ -130,6 +182,7 @@
 				FFD1C8272F84A0FD00B0893F /* Construction Estimate.app */,
 				FFD1C8342F84A0FD00B0893F /* Construction EstimateTests.xctest */,
 				FFD1C83E2F84A0FD00B0893F /* Construction EstimateUITests.xctest */,
+				E1B0A0012FF1000100A00001 /* EasyBidWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -137,6 +190,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		E1B0A0052FF1000100A00001 /* EasyBidWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1B0A0092FF1000100A00001 /* Build configuration list for PBXNativeTarget "EasyBidWidgetExtension" */;
+			buildPhases = (
+				E1B0A0062FF1000100A00001 /* Sources */,
+				E1B0A0072FF1000100A00001 /* Frameworks */,
+				E1B0A0082FF1000100A00001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E1B0A0022FF1000100A00001 /* EasyBidWidget */,
+				E1B0A0032FF1000100A00001 /* Shared */,
+			);
+			name = EasyBidWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = EasyBidWidgetExtension;
+			productReference = E1B0A0012FF1000100A00001 /* EasyBidWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		FFD1C8262F84A0FD00B0893F /* Construction Estimate */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FFD1C8482F84A0FD00B0893F /* Build configuration list for PBXNativeTarget "Construction Estimate" */;
@@ -144,13 +220,16 @@
 				FFD1C8232F84A0FD00B0893F /* Sources */,
 				FFD1C8242F84A0FD00B0893F /* Frameworks */,
 				FFD1C8252F84A0FD00B0893F /* Resources */,
+				E1B0A00F2FF1000100A00001 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E1B0A00D2FF1000100A00001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FFD1C8292F84A0FD00B0893F /* Construction Estimate */,
+				E1B0A0032FF1000100A00001 /* Shared */,
 			);
 			name = "Construction Estimate";
 			packageProductDependencies = (
@@ -222,6 +301,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					E1B0A0052FF1000100A00001 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
 					FFD1C8262F84A0FD00B0893F = {
 						CreatedOnToolsVersion = 26.0.1;
 						SystemCapabilities = {
@@ -260,6 +342,7 @@
 			projectRoot = "";
 			targets = (
 				FFD1C8262F84A0FD00B0893F /* Construction Estimate */,
+				E1B0A0052FF1000100A00001 /* EasyBidWidgetExtension */,
 				FFD1C8332F84A0FD00B0893F /* Construction EstimateTests */,
 				FFD1C83D2F84A0FD00B0893F /* Construction EstimateUITests */,
 			);
@@ -267,6 +350,13 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		E1B0A0082FF1000100A00001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FFD1C8252F84A0FD00B0893F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -292,6 +382,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		E1B0A0062FF1000100A00001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FFD1C8232F84A0FD00B0893F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -316,6 +413,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		E1B0A00D2FF1000100A00001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1B0A0052FF1000100A00001 /* EasyBidWidgetExtension */;
+			targetProxy = E1B0A00C2FF1000100A00001 /* PBXContainerItemProxy */;
+		};
 		FFD1C8362F84A0FD00B0893F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FFD1C8262F84A0FD00B0893F /* Construction Estimate */;
@@ -329,6 +431,68 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		E1B0A00A2FF1000100A00001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = EasyBidWidget/EasyBidWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 11;
+				DEVELOPMENT_TEAM = 5WLL25W3WQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EasyBidWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EasyBid;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.constructionestimate.Construction-Estimate.EasyBidWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		E1B0A00B2FF1000100A00001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = EasyBidWidget/EasyBidWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 11;
+				DEVELOPMENT_TEAM = 5WLL25W3WQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EasyBidWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EasyBid;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.constructionestimate.Construction-Estimate.EasyBidWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		FFD1C8462F84A0FD00B0893F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -621,6 +785,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		E1B0A0092FF1000100A00001 /* Build configuration list for PBXNativeTarget "EasyBidWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1B0A00A2FF1000100A00001 /* Debug */,
+				E1B0A00B2FF1000100A00001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FFD1C8222F84A0FD00B0893F /* Build configuration list for PBXProject "Construction Estimate" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

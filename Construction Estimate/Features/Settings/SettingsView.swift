@@ -114,6 +114,12 @@ struct SettingsView: View {
                     )
                 }
 
+                Section(L("Notifications")) {
+                    NavigationLink(L("Reminders and quiet hours")) {
+                        NotificationSettingsView()
+                    }
+                }
+
                 Section(L("Privacy & Support")) {
                     NavigationLink(L("Privacy & Permissions")) {
                         PrivacyCenterView()

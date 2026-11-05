@@ -152,6 +152,9 @@ enum SuperwallService {
                 outcome = .declined
             }
 
+            if outcome == .purchased {
+                RetentionCenter.shared.subscriptionStarted()
+            }
             if PremiumAccessPolicy.decision(after: outcome) == .allow {
                 action()
             }
@@ -204,6 +207,9 @@ enum SuperwallService {
                 outcome = .declined
             }
 
+            if outcome == .purchased {
+                RetentionCenter.shared.subscriptionStarted()
+            }
             if PremiumAccessPolicy.decision(after: outcome) == .allow {
                 onComplete()
             }

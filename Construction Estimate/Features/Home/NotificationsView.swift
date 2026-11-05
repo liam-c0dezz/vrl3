@@ -109,6 +109,7 @@ final class NotificationStore {
 
             notifications = rows.map(makeNotification).sorted { $0.date > $1.date }
             lastError = nil
+            celebrateNewApprovals()
         } catch {
             lastError = SafeErrorMessages.data(error, action: "notification update")
         }
@@ -174,6 +175,19 @@ final class NotificationStore {
                 date: NotificationDate.parse(row.first_viewed_at)
             )
         }
+    }
+
+    /// A fresh client approval is the best moment to ask for a review.
+    private func celebrateNewApprovals() {
+        let key = "celebratedEstimateApprovals"
+        var celebrated = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        let fresh = notifications.filter {
+            $0.eventType == "approved" && !celebrated.contains($0.id) && $0.date.timeIntervalSinceNow > -2 * 86_400
+        }
+        guard !fresh.isEmpty else { return }
+        celebrated.formUnion(fresh.map(\.id))
+        UserDefaults.standard.set(Array(celebrated), forKey: key)
+        RetentionCenter.shared.clientApprovedEstimate()
     }
 
     private func persistReadIDs() {

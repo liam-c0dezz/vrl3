@@ -477,7 +477,7 @@ struct RenderCreationView: View {
             if !render.isAccepted {
                 requestSectionLabel(L("Request an edit"))
 
-                TextField(L("Try “Use white oak cabinets and brass hardware”"), text: $prompt, axis: .vertical)
+                TextField(L("Describe the change you want"), text: $prompt, axis: .vertical)
                     .focused($promptFocused)
                     .font(.system(size: 15))
                     .lineLimit(1)

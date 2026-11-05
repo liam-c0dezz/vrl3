@@ -45,9 +45,7 @@ struct ProjectDetailView: View {
     @State private var selectedTab: ProjectDetailTab = .dashboard
     @State private var projectTitle: String = ""
     @FocusState private var projectTitleFocused: Bool
-    @State private var estimateDescription: String = ""
     @State private var estimatePrice: String = ""
-    @State private var estimateExpanded: Bool = true
     @State private var projectAddress: String = ""
     @State private var projectAssignee: String = ""
     @State private var editingProjectMetadata: ProjectMetadataField?
@@ -66,6 +64,7 @@ struct ProjectDetailView: View {
     @State private var draftProjectNumber = "PRJ-\(Int.random(in: 10000...99999))"
     @State private var hasPersistedDraft = false
     @State private var saveError: String?
+    @State private var showDeleteProjectConfirm = false
     /// Live Supabase rows for the active estimate, shared across the Overview
     /// and Materials tabs so the numbers stay in sync and don't refetch on
     /// every tab switch.
@@ -124,6 +123,13 @@ struct ProjectDetailView: View {
             estimateChatSessionId: estimateChatSessionId ?? project?.estimateChatSessionId,
             estimate: confirmedEstimate ?? project?.estimate
         )
+    }
+
+    private func deleteProject() {
+        guard let project else { return }
+        ProjectStore.shared.delete(project)
+        tabBar.isHidden = false
+        dismiss()
     }
 
     func buildAndSave() {
@@ -236,7 +242,7 @@ struct ProjectDetailView: View {
                     showEstimateChat = true
                 }
             } catch {
-                saveError = SafeErrorMessages.data(error, action: "project deletion")
+                saveError = SafeErrorMessages.data(error, action: "project save")
             }
         }
     }
@@ -291,13 +297,43 @@ struct ProjectDetailView: View {
                 Spacer()
 
                 // Three-dot menu
-                HapticButton(action: {}) {
+                Menu {
+                    Button {
+                        editingProjectMetadata = .address
+                    } label: {
+                        Label(L("Edit address"), systemImage: "mappin.and.ellipse")
+                    }
+                    Button {
+                        editingProjectMetadata = .assignee
+                    } label: {
+                        Label(L("Edit assignee"), systemImage: "person.crop.circle")
+                    }
+                    if !isNewProject {
+                        Divider()
+                        Button(role: .destructive) {
+                            showDeleteProjectConfirm = true
+                        } label: {
+                            Label(L("Delete Project"), systemImage: "trash")
+                        }
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.black)
                         .frame(width: 44, height: 44)
                         .background(AppGray.pill)
                         .clipShape(Circle())
+                }
+                .accessibilityLabel(L("Project Options"))
+                .confirmationDialog(
+                    L("Delete this project?"),
+                    isPresented: $showDeleteProjectConfirm,
+                    titleVisibility: .visible
+                ) {
+                    Button(L("Delete Project"), role: .destructive) { deleteProject() }
+                    Button(L("Cancel"), role: .cancel) {}
+                } message: {
+                    Text(L("This permanently deletes the project and everything in it."))
                 }
 
                 // Save / + button
@@ -314,7 +350,28 @@ struct ProjectDetailView: View {
                         .clipShape(Capsule())
                     }
                 } else {
-                    HapticButton(action: {}) {
+                    Menu {
+                        Button {
+                            openEstimateChat(createNewSession: true)
+                        } label: {
+                            Label(L("New Estimate"), systemImage: "doc.text")
+                        }
+                        Button {
+                            selectedTab = .invoices
+                        } label: {
+                            Label(L("Create Invoice"), systemImage: "doc.plaintext")
+                        }
+                        Button {
+                            selectedTab = .render
+                        } label: {
+                            Label(L("Create Render"), systemImage: "camera")
+                        }
+                        Button {
+                            selectedTab = .documents
+                        } label: {
+                            Label(L("Add document"), systemImage: "folder")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
@@ -322,6 +379,7 @@ struct ProjectDetailView: View {
                             .background(AppBrand.accent)
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel(L("Add to project"))
                 }
             }
             .padding(.horizontal, 20)
@@ -1539,6 +1597,9 @@ private struct PaymentEditorSheet: View {
         Task {
             do {
                 try await paymentStore.save(payment)
+                if editingPayment == nil {
+                    RetentionCenter.shared.record(.paymentRecorded(amount: enteredAmount))
+                }
                 dismiss()
             } catch {
                 saveError = SafeErrorMessages.data(error, action: "payment save")
@@ -1706,69 +1767,6 @@ private struct DashboardNextStepRow: View {
                 Rectangle()
                     .fill(AppGray.badge)
                     .frame(height: 0.7)
-            }
-        }
-    }
-}
-
-// MARK: - New Estimate Card (empty state for new projects)
-struct NewEstimateCard: View {
-    let hasSession: Bool
-    let onCreateEstimate: () -> Void
-    let onViewEstimate: () -> Void
-
-    private let brandBlue = AppBrand.accent
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer().frame(height: 60)
-
-            Text(L("AI-powered estimates"))
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(AppGray.ink)
-                .multilineTextAlignment(.center)
-
-            Text(L("Quickly create detailed, professional proposals and impress your customers with speed and accuracy."))
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(AppGray.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 60)
-                .padding(.bottom, 8)
-
-            if hasSession {
-                HapticButton(action: onViewEstimate) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.system(size: 13, weight: .regular))
-                        Text(L("View estimate"))
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(AppGray.secondary)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(AppGray.border, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-            } else {
-                HapticButton(action: onCreateEstimate) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(L("Create estimate"))
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .frame(minWidth: 180)
-                    .background(AppGray.ink)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }
@@ -2500,7 +2498,7 @@ private struct PlanSectionEditorSheet: View {
                 Text(L("Phase title"))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppGray.ink)
-                TextField(L("Example: Removal and disposal"), text: $title)
+                TextField(L("Phase title"), text: $title)
                     .font(.system(size: 16, weight: .medium))
                     .padding(14)
                     .background(Color.white)
@@ -3375,365 +3373,6 @@ struct RecommendedQuoteRow: View {
     }
 }
 
-// MARK: - Itemized Estimate Detail View
-struct ItemizedEstimateView: View {
-    let estimate: Estimate
-    var onViewChat: (() -> Void)? = nil
-    @Environment(\.dismiss) private var dismiss
-    @State private var expandedCategories: Set<UUID> = []
-    @State private var allCollapsed: Bool = false
-
-    private let brandBlue = AppBrand.accent
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Nav bar
-            HStack(spacing: 14) {
-                HapticButton(action: { dismiss() }) {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
-                        .frame(width: 44, height: 44)
-                        .background(AppGray.badge)
-                        .clipShape(Circle())
-                }
-                Spacer()
-                HapticButton(action: {}) {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
-                        .frame(width: 44, height: 44)
-                        .background(AppGray.badge)
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-
-            // Header
-            VStack(alignment: .leading, spacing: 8) {
-                Text(estimate.estimateNumber)
-                    .font(.system(size: 13))
-                    .foregroundColor(AppGray.secondary)
-                Text(estimate.title)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.black)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-
-            // Toolbar
-            HStack {
-                HapticButton(action: {
-                    allCollapsed.toggle()
-                    if allCollapsed {
-                        expandedCategories = []
-                    } else {
-                        expandedCategories = Set(estimate.categories.map(\.id))
-                    }
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: allCollapsed ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12))
-                        Text(allCollapsed ? L("Expand all") : L("Collapse all"))
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(AppGray.secondary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
-
-            Divider()
-
-            // Categories
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(estimate.categories) { category in
-                        EstimateCategorySection(
-                            category: category,
-                            isExpanded: expandedCategories.contains(category.id),
-                            onToggle: {
-                                if expandedCategories.contains(category.id) {
-                                    expandedCategories.remove(category.id)
-                                } else {
-                                    expandedCategories.insert(category.id)
-                                }
-                            }
-                        )
-                    }
-
-                    EstimateExtrasView(estimate: estimate)
-                }
-                .padding(.bottom, 120)
-            }
-
-            Spacer()
-        }
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 0) {
-                Divider()
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Total with markup"))
-                            .font(.system(size: 12))
-                            .foregroundColor(AppGray.secondary)
-                        Text(estimate.formattedTotal)
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(brandBlue)
-                    }
-                    Spacer()
-                    if let onViewChat {
-                        HapticButton(action: onViewChat) {
-                            HStack(spacing: 6) {
-                                Text(L("View chat"))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .semibold))
-                            }
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 14)
-                            .background(
-                                AppBrand.accent
-                            )
-                            .clipShape(Capsule())
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(Color(UIColor.systemBackground))
-            }
-        }
-        .background(Color.white)
-        .onAppear {
-            // Start with all expanded
-            expandedCategories = Set(estimate.categories.map(\.id))
-        }
-    }
-}
-
-// MARK: - Estimate Category Section
-private struct EstimateCategorySection: View {
-    let category: EstimateCategory
-    let isExpanded: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Category header
-            HapticButton(action: onToggle) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(category.name)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-                        Text(L("%@ items", category.items.count.formatted()))
-                            .font(.system(size: 13))
-                            .foregroundColor(AppGray.secondary)
-                    }
-                    Spacer()
-                    Text(formatCurrency(category.subtotal))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppGray.muted)
-                        .padding(.leading, 8)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(isExpanded ? AppGray.bgSubtle : Color.white)
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            // Expanded line items
-            if isExpanded {
-                VStack(spacing: 0) {
-                    ForEach(category.items) { item in
-                        VStack(spacing: 0) {
-                            Divider().padding(.leading, 20)
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(item.name)
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundColor(.black)
-                                    if item.unitPrice != 0 {
-                                        Text("\(formatQty(item.quantity)) x \(formatCurrency(item.unitPrice)) / \(item.unitLabel)")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(AppGray.subtle)
-                                    }
-                                    if let url = sourceURLValue(item.source) {
-                                        Link(destination: url) {
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "arrow.up.right.square")
-                                                    .font(.system(size: 11, weight: .semibold))
-                                                Text(L("Visit site"))
-                                                    .font(.system(size: 12, weight: .medium))
-                                            }
-                                            .foregroundColor(AppBrand.accent)
-                                            .padding(.top, 2)
-                                        }
-                                    }
-                                }
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 4) {
-                                    Text(formatCurrency(item.total))
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.black)
-                                    if let source = item.source, !source.isEmpty {
-                                        Text(source)
-                                            .font(.system(size: 11, weight: .medium))
-                                            .foregroundColor(AppGray.secondary)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 3)
-                                            .background(Color.white)
-                                            .clipShape(Capsule())
-                                            .overlay(
-                                                Capsule()
-                                                    .strokeBorder(AppGray.border, lineWidth: 1)
-                                            )
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                        }
-                    }
-                }
-                .background(AppGray.bgSubtle)
-            }
-
-            Divider()
-        }
-    }
-
-    private func formatCurrency(_ value: Double) -> String {
-        guard value != 0 else { return "N/A" }
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.minimumFractionDigits = 2
-        f.maximumFractionDigits = 2
-        return f.string(from: NSNumber(value: value)) ?? "N/A"
-    }
-
-    private func formatQty(_ value: Double) -> String {
-        value == value.rounded() ? String(Int(value)) : value.formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private func sourceURLValue(_ source: String?) -> URL? {
-        guard let s = source, !s.isEmpty else { return nil }
-        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
-            let range = NSRange(s.startIndex..., in: s)
-            if let match = detector.firstMatch(in: s, range: range), let url = match.url {
-                return url
-            }
-        }
-        return nil
-    }
-}
-
-// MARK: - Estimate Card
-struct EstimateCard: View {
-    @Binding var estimateDescription: String
-    @Binding var estimatePrice: String
-    @Binding var isExpanded: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header row
-            HapticButton(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.75, blendDuration: 0)) {
-                    isExpanded.toggle()
-                }
-            }) {
-                HStack {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(AppBrand.accent)
-                    
-                    Text(L("Estimate"))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                    
-                    Spacer()
-                    
-                    if !estimatePrice.isEmpty {
-                        Text("$\(estimatePrice)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(AppBrand.accent)
-                    }
-                    
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppGray.muted)
-                }
-            }
-            .buttonStyle(.plain)
-            
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 14) {
-                    // Description
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(L("Description"))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(AppGray.secondary)
-                        
-                        TextField(L("Describe the job..."), text: $estimateDescription, axis: .vertical)
-                            .font(.system(size: 15))
-                            .lineLimit(3...6)
-                            .padding(12)
-                            .background(AppGray.bgFaint)
-                            .cornerRadius(10)
-                    }
-                    
-                    // Price
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(L("Price"))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(AppGray.secondary)
-                        
-                        HStack {
-                            Text("$")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(AppGray.secondary)
-                            
-                            TextField("0.00", text: $estimatePrice)
-                                .font(.system(size: 16))
-                                .keyboardType(.decimalPad)
-                        }
-                        .padding(12)
-                        .background(AppGray.bgFaint)
-                        .cornerRadius(10)
-                    }
-                    
-                    // Create with Handoff AI - green gradient pill
-                    HapticButton(action: {}) {
-                        Text(L("Create with Handoff AI"))
-                            .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            AppBrand.accent
-                        )
-                        .clipShape(Capsule())
-                    }
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
-            }
-        }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-    }
-}
-
 // MARK: - Invoices Tab Content
 struct InvoicesTabContent: View {
     let projectId: UUID?
@@ -3906,86 +3545,6 @@ struct InvoicesTabContent: View {
     }
 }
 
-// MARK: - Create Invoice Card (empty state)
-struct CreateInvoiceCard: View {
-    let hasEstimate: Bool
-    let onCreateFromEstimate: () -> Void
-    let onBlank: () -> Void
-
-    private let brandBlue = AppBrand.accent
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer().frame(height: 28)
-
-            // Title + subtitle
-            VStack(spacing: 10) {
-                Text(L("Create an invoice"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.black)
-                    .multilineTextAlignment(.center)
-
-                Text(hasEstimate
-                     ? L("Turn your estimate into an itemized\ninvoice and send it to your client\nto get paid.")
-                     : L("Bill your client for completed work\nand collect payment."))
-                    .font(.system(size: 15))
-                    .foregroundColor(AppGray.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 28)
-
-            // Actions
-            if hasEstimate {
-                HapticButton(action: onCreateFromEstimate) {
-                    Text(L("Create from estimate"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(brandBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(.horizontal, 20)
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                HapticButton(action: onBlank) {
-                    Text(L("Start blank"))
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(AppGray.secondary)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 8)
-            } else {
-                HapticButton(action: onBlank) {
-                    Text(L("Create invoice"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(AppGray.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(AppGray.border, lineWidth: 1)
-                        )
-                        .padding(.horizontal, 50)
-                        .padding(.bottom, 10)
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Spacer().frame(height: 12)
-            }
-        }
-        .background(Color.white)
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-    }
-}
-
 // MARK: - Invoice Summary Card (list row)
 struct InvoiceSummaryCard: View {
     let invoice: Invoice
@@ -4077,69 +3636,6 @@ struct DetailTagPill: View {
     }
 }
 
-// MARK: - Job Context Card (for new projects)
-struct JobContextCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(L("Add job context"))
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(AppBrand.accent)
-                
-                Spacer()
-                
-                HapticButton(action: {}) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AppGray.secondary)
-                }
-            }
-            
-            Text(L("Better context in → better estimates out"))
-                .font(.system(size: 14))
-                .foregroundColor(AppGray.secondary)
-            
-            // Action items. Recording and live walkthroughs are intentionally
-            // not offered in the first release.
-            VStack(alignment: .leading, spacing: 18) {
-                JobContextRow(icon: "photo", text: L("Attach job photos"))
-                JobContextRow(icon: "arrow.up.doc", text: L("Upload project files"))
-            }
-        }
-        .padding(20)
-        .background(AppBrand.accent.opacity(0.05))
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(AppBrand.accent.opacity(0.15), lineWidth: 1)
-        )
-    }
-}
-
-struct JobContextRow: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(.black)
-                .frame(width: 24)
-            
-            Text(L(text))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.black)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(AppGray.muted)
-        }
-    }
-}
-
 // MARK: - Client Details Card
 struct ClientDetailsCard: View {
     let client: Client
@@ -4213,204 +3709,6 @@ struct ClientDetailsCard: View {
     }
 }
 
-// MARK: - Add Client Card (for new projects)
-struct AddClientCard: View {
-    let selectedClient: Client?
-    let onTap: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let client = selectedClient {
-                // Selected state — show client row + change button
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(AppGray.badge)
-                            .frame(width: 44, height: 44)
-                        Text(client.initials)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(AppGray.secondary)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(client.name)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-                        if !client.company.isEmpty {
-                            Text(client.company)
-                                .font(.system(size: 13))
-                                .foregroundColor(AppGray.secondary)
-                        } else if !client.phone.isEmpty {
-                            Text(client.phone)
-                                .font(.system(size: 13))
-                                .foregroundColor(AppGray.secondary)
-                        }
-                    }
-                    Spacer()
-                    HapticButton(action: onTap) {
-                        Text(L("Change"))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(Color.clear)
-                            .overlay(
-                                Capsule()
-                                    .strokeBorder(AppGray.borderStrong, lineWidth: 1.5)
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(20)
-            } else {
-                // Empty state — centered icon, title, subtitle, stroke button
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 28)
-
-                    // Title + subtitle
-                    VStack(spacing: 10) {
-                        Text(L("Add a client"))
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.center)
-
-                        Text(L("Add client information to keep track of\nwho you are working with\nand stay organized"))
-                            .font(.system(size: 15))
-                            .foregroundColor(AppGray.secondary)
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(2)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
-
-                    // Stroke button
-                    HapticButton(action: onTap) {
-                        Text(L("Add client"))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(AppGray.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.clear)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(AppGray.border, lineWidth: 1)
-                            )
-                            .padding(.horizontal, 50)
-                            .padding(.bottom, 10)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    Spacer().frame(height: 20)
-                }
-            }
-        }
-        .background(Color.white)
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-    }
-}
-
-struct ClientInputField: View {
-    let icon: String
-    let placeholder: String
-    @Binding var text: String
-    var keyboard: UIKeyboardType = .default
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 15))
-                .foregroundColor(AppGray.secondary)
-                .frame(width: 20)
-            TextField(placeholder, text: $text)
-                .font(.system(size: 15))
-                .keyboardType(keyboard)
-        }
-        .padding(12)
-        .background(AppGray.bgFaint)
-        .cornerRadius(10)
-    }
-}
-
-// MARK: - Add Contact Sheet
-struct AddContactSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var name: String = ""
-    @State private var phone: String = ""
-    @State private var email: String = ""
-    @State private var company: String = ""
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Avatar
-                        ZStack {
-                            Circle()
-                                .fill(AppGray.badge)
-                                .frame(width: 80, height: 80)
-                            
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(AppGray.borderStrong)
-                        }
-                        .padding(.top, 20)
-                        
-                        // Form Fields
-                        VStack(spacing: 16) {
-                            ContactField(label: L("Name"), text: $name, icon: "person")
-                            ContactField(label: L("Phone"), text: $phone, icon: "phone")
-                            ContactField(label: L("Email"), text: $email, icon: "envelope")
-                            ContactField(label: L("Company"), text: $company, icon: "building.2")
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
-            }
-            .navigationTitle(L("Add Client"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HapticButton("Cancel") { dismiss() }
-                        .foregroundColor(AppGray.secondary)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HapticButton("Save") { dismiss() }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(AppBrand.accent)
-                }
-            }
-        }
-    }
-}
-
-struct ContactField: View {
-    let label: String
-    @Binding var text: String
-    let icon: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(AppGray.secondary)
-                .frame(width: 24)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L(label))
-                    .font(.system(size: 12))
-                    .foregroundColor(AppGray.secondary)
-                
-                TextField(label, text: $text)
-                    .font(.system(size: 16))
-            }
-        }
-        .padding(14)
-        .background(AppGray.bgFaint)
-        .cornerRadius(12)
-    }
-}
-
 // MARK: - Materials Tab Content
 
 /// One row from Supabase's `estimate_items` table.
@@ -4427,455 +3725,6 @@ struct EstimateItemRow: Identifiable, Codable {
     let url: String?
     var description: String?
     let on_hand: Bool
-}
-
-struct MaterialsTabContent: View {
-    let estimate: Estimate
-    @Binding var rows: [EstimateItemRow]?
-
-    private var supabaseRows: [EstimateItemRow]? {
-        get { rows }
-    }
-    @State private var loadError: String? = nil
-    @State private var editingPriceIndex: Int? = nil
-    @State private var editingPriceText: String = ""
-    @State private var showingPriceEdit: Bool = false
-
-    private let titleText = AppGray.ink
-    private let rowText = AppGray.itemText
-    private let labelGray = AppGray.secondary
-
-    private func formatted(_ value: Double) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.minimumFractionDigits = 2
-        f.maximumFractionDigits = 2
-        return f.string(from: NSNumber(value: value)) ?? "$0.00"
-    }
-
-    private func formattedQty(_ value: Double) -> String {
-        value == value.rounded() ? String(Int(value)) : value.formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private var materials: [EstimateLineItem] {
-        if let rows = supabaseRows, !rows.isEmpty {
-            return rows.map { r in
-                EstimateLineItem(
-                    name: r.name,
-                    quantity: r.quantity,
-                    unitLabel: r.unit_label ?? "ea",
-                    unitPrice: r.unit_price,
-                    total: r.total,
-                    source: r.source,
-                    url: r.url,
-                    description: r.description,
-                    onHand: r.on_hand
-                )
-            }
-        }
-        return estimate.materials
-    }
-    private var subtotal: Double {
-        if let rows = supabaseRows, !rows.isEmpty {
-            return materials.reduce(0) { $0 + $1.total }
-        }
-        return estimate.materialsSubtotal
-    }
-    private var onHandCount: Int { materials.filter { $0.onHand }.count }
-
-    private func adjustQty(at index: Int, delta: Double) async {
-        guard var current = rows, current.indices.contains(index) else { return }
-        let newQty = max(0, current[index].quantity + delta)
-        let newTotal = newQty * current[index].unit_price
-        let rowId = current[index].id
-
-        struct ItemPatch: Encodable { let quantity: Double; let total: Double }
-        do {
-            let saved: EstimateItemRow = try await supabase
-                .from("estimate_items")
-                .update(ItemPatch(quantity: newQty, total: newTotal))
-                .eq("id", value: rowId)
-                .select()
-                .single()
-                .execute()
-                .value
-            current[index] = saved
-            await MainActor.run {
-                self.rows = current
-                self.loadError = nil
-            }
-        } catch {
-            await MainActor.run {
-                self.loadError = SafeErrorMessages.data(error, action: "material change")
-            }
-        }
-    }
-
-    private func saveItemEdit(at index: Int, updated: EstimateLineItem) async {
-        guard var current = rows, current.indices.contains(index) else { return }
-        let rowId = current[index].id
-
-        struct ItemPatch: Encodable {
-            let name: String
-            let quantity: Double
-            let unit_price: Double
-            let total: Double
-            let description: String?
-        }
-        do {
-            let saved: EstimateItemRow = try await supabase
-                .from("estimate_items")
-                .update(ItemPatch(
-                    name: updated.name,
-                    quantity: updated.quantity,
-                    unit_price: updated.unitPrice,
-                    total: updated.total,
-                    description: updated.description
-                ))
-                .eq("id", value: rowId)
-                .select()
-                .single()
-                .execute()
-                .value
-            current[index] = saved
-            await MainActor.run {
-                self.rows = current
-                self.loadError = nil
-            }
-        } catch {
-            await MainActor.run {
-                self.loadError = SafeErrorMessages.data(error, action: "material change")
-            }
-        }
-    }
-
-    private func editUnitPrice(at index: Int, newPrice: Double) async {
-        guard var current = rows, current.indices.contains(index) else { return }
-        let newTotal = newPrice * current[index].quantity
-        let rowId = current[index].id
-        struct PricePatch: Encodable { let unit_price: Double; let total: Double }
-        do {
-            let saved: EstimateItemRow = try await supabase
-                .from("estimate_items")
-                .update(PricePatch(unit_price: newPrice, total: newTotal))
-                .eq("id", value: rowId)
-                .select()
-                .single()
-                .execute()
-                .value
-            current[index] = saved
-            await MainActor.run {
-                self.rows = current
-                self.loadError = nil
-            }
-        } catch {
-            await MainActor.run {
-                self.loadError = SafeErrorMessages.data(error, action: "material change")
-            }
-        }
-    }
-
-    var body: some View {
-        if materials.isEmpty {
-            VStack(spacing: 16) {
-                Spacer().frame(height: 60)
-                Text(L("No materials on this estimate"))
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(AppGray.secondary)
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 0) {
-                // ── Header ──────────────────────────────────────────
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L("Materials"))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(labelGray)
-                    Text(estimate.title)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(titleText)
-                        .padding(.top, -2)
-                    HStack(spacing: 8) {
-                        headerButton(icon: "plus", label: L("Add")) {}
-                        Text(L("%@ items", materials.count.formatted()))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(labelGray)
-                    }
-                    .padding(.top, 6)
-                    if let loadError {
-                        Text(L(loadError))
-                            .font(.system(size: 12))
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
-                .padding(.bottom, 20)
-
-                Rectangle()
-                    .fill(AppGray.badge)
-                    .frame(height: 0.7)
-
-                // ── Material rows ───────────────────────────────────
-                VStack(spacing: 0) {
-                    ForEach(Array(materials.enumerated()), id: \.element.id) { idx, item in
-                        if idx > 0 {
-                            Rectangle()
-                                .fill(AppGray.badge)
-                                .frame(height: 0.7)
-                        }
-                        MaterialRow(
-                            item: item,
-                            qtyText: formattedQty(item.quantity),
-                            unitPriceText: formatted(item.unitPrice),
-                            totalText: formatted(item.total),
-                            onMinus: supabaseRows == nil ? nil : {
-                                _Concurrency.Task<Void, Never> { await adjustQty(at: idx, delta: -1) }
-                            },
-                            onPlus: supabaseRows == nil ? nil : {
-                                _Concurrency.Task<Void, Never> { await adjustQty(at: idx, delta: 1) }
-                            },
-                            onEditUnitPrice: supabaseRows == nil ? nil : {
-                                editingPriceText = String(format: "%.2f", item.unitPrice)
-                                editingPriceIndex = idx
-                                showingPriceEdit = true
-                            },
-                            onAdjustUnitPrice: supabaseRows == nil ? nil : { delta in
-                                let newPrice = max(0, item.unitPrice + delta)
-                                _Concurrency.Task<Void, Never> { await editUnitPrice(at: idx, newPrice: newPrice) }
-                            },
-                            onSaveItem: supabaseRows == nil ? nil : { updated in
-                                _Concurrency.Task<Void, Never> { await saveItemEdit(at: idx, updated: updated) }
-                            }
-                        )
-                    }
-                }
-
-                Rectangle()
-                    .fill(AppGray.badge)
-                    .frame(height: 0.7)
-
-                // ── Subtotal footer ─────────────────────────────────
-                HStack {
-                    Text(L("Subtotal"))
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(labelGray)
-                    Spacer()
-                    Text(formatted(subtotal))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 18)
-            }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
-            .alert(L("Edit Labor Rate"), isPresented: $showingPriceEdit) {
-                TextField("0.00", text: $editingPriceText)
-                    .keyboardType(.decimalPad)
-                HapticButton("Save") {
-                    let clean = editingPriceText
-                        .replacingOccurrences(of: "$", with: "")
-                        .replacingOccurrences(of: ",", with: "")
-                    if let price = Double(clean), let idx = editingPriceIndex {
-                        _Concurrency.Task<Void, Never> { await editUnitPrice(at: idx, newPrice: price) }
-                    }
-                    showingPriceEdit = false
-                }
-                HapticButton("Cancel", role: .cancel) { showingPriceEdit = false }
-            } message: {
-                Text(L("Enter the hourly rate"))
-            }
-
-            if onHandCount > 0 {
-                Text(L("%@ of %@ marked on hand", onHandCount.formatted(), materials.count.formatted()))
-                    .font(.system(size: 12))
-                    .foregroundColor(labelGray)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 4)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func headerButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
-        HapticButton(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                Text(L(label))
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .foregroundColor(labelGray)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(AppGray.border, lineWidth: 1)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-private struct MaterialRow: View {
-    let item: EstimateLineItem
-    let qtyText: String
-    let unitPriceText: String
-    let totalText: String
-    var onMinus: (() -> Void)? = nil
-    var onPlus: (() -> Void)? = nil
-    var onEditUnitPrice: (() -> Void)? = nil
-    var onAdjustUnitPrice: ((Double) -> Void)? = nil
-    var onSaveItem: ((EstimateLineItem) -> Void)? = nil
-
-    @State private var showEdit = false
-
-    private var isLabor: Bool {
-        let l = item.unitLabel.lowercased()
-        return l == "hr" || l == "hrs" || l == "hour" || l == "hours"
-    }
-
-    private var hasURL: Bool {
-        if let u = item.url, !u.isEmpty, URL(string: u) != nil { return true }
-        return false
-    }
-
-    private let rowText = AppGray.ink
-    private let subtleGray = AppGray.secondary
-    private let onHandGreen = Color(red: 0.20, green: 0.50, blue: 0.27)
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Top row: name on left, price/control on right
-            HStack(alignment: .firstTextBaseline) {
-                Text(item.name)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(rowText)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                if item.onHand {
-                    Text(L("On Hand"))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(onHandGreen)
-                } else if !isLabor {
-                    Text(unitPriceText)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(rowText)
-                }
-            }
-
-            // Bottom row: quantity stepper, labor rate / Order link
-            HStack(spacing: 10) {
-                quantityStepper
-                Spacer()
-                if isLabor && !item.onHand {
-                    laborRateControl
-                } else {
-                    HapticButton(action: { showEdit = true }) {
-                        Text(L("Edit Line"))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(AppGray.secondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .strokeBorder(AppGray.border, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .sheet(isPresented: $showEdit) {
-            MaterialEditSheet(item: item, onSave: { updated in
-                onSaveItem?(updated)
-                showEdit = false
-            })
-        }
-    }
-
-    private var laborRateControl: some View {
-        HStack(spacing: 0) {
-            HapticButton(action: { onAdjustUnitPrice?(-10) }) {
-                Image(systemName: "minus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppGray.secondary)
-                    .frame(width: 36)
-                    .frame(maxHeight: .infinity)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(onAdjustUnitPrice == nil)
-
-            HapticButton(action: { onEditUnitPrice?() }) {
-                HStack(spacing: 3) {
-                    Text(unitPriceText)
-                        .font(.system(size: 15, weight: .semibold))
-                    Text(L("/ hr"))
-                        .font(.system(size: 13))
-                }
-                .foregroundColor(rowText)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            HapticButton(action: { onAdjustUnitPrice?(10) }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppGray.secondary)
-                    .frame(width: 36)
-                    .frame(maxHeight: .infinity)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(onAdjustUnitPrice == nil)
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(AppGray.border, lineWidth: 1)
-        )
-    }
-
-    private var quantityStepper: some View {
-        HStack(spacing: 0) {
-            HapticButton(action: { onMinus?() }) {
-                Image(systemName: "minus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppGray.secondary)
-                    .frame(width: 30, height: 30)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(onMinus == nil)
-
-            Text(qtyText)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(AppGray.secondary)
-                .frame(minWidth: 32)
-
-            HapticButton(action: { onPlus?() }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppGray.secondary)
-                    .frame(width: 30, height: 30)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(onPlus == nil)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(AppGray.border, lineWidth: 1)
-        )
-    }
-
 }
 
 #Preview("Existing Project") {
