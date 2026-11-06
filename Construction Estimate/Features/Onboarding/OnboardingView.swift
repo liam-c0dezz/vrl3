@@ -2,8 +2,8 @@
 //  OnboardingView.swift
 //  Construction Estimate
 //
-//  Image-free onboarding wireframe. Replace the two provisional gradients in
-//  OnboardingPalette when the final color stops are available.
+//  Image-free onboarding. Shared gradients and motion live in
+//  OnboardingMotion.swift.
 //
 
 import SwiftUI
@@ -56,7 +56,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            OnboardingPalette.backgroundGradient
+            OnboardingBackdrop()
                 .ignoresSafeArea()
 
             if isQuestionnairePage {
@@ -104,6 +104,7 @@ struct OnboardingView: View {
                             get: { questionnaireAnswers[index] },
                             set: { questionnaireAnswers[index] = $0 }
                         ),
+                        isActive: selectedPage == pages.count + 3 + index,
                         onContinue: {
                             advance(from: pages.count + 3 + index)
                         }
@@ -212,6 +213,7 @@ private struct AppleAuthOnboardingPage: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
+                        .onboardingReveal(true, delay: 0.1)
 
                     Text(L("Sign in to save your estimates, clients, and\ninvoices securely across devices."))
                         .font(
@@ -227,6 +229,7 @@ private struct AppleAuthOnboardingPage: View {
                         .padding(.top, 15 * designScale)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
+                        .onboardingReveal(true, delay: 0.22)
 
                     Image("welcome 4.9 transparent")
                         .resizable()
@@ -237,6 +240,7 @@ private struct AppleAuthOnboardingPage: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
                         .accessibilityLabel(L("Rated 4.9 stars"))
+                        .onboardingReveal(true, delay: 0.34)
                 }
                 .padding(.horizontal, 34 * designScale)
                 .padding(
@@ -254,6 +258,7 @@ private struct AppleAuthOnboardingPage: View {
                     .frame(width: geometry.size.width, height: 188 * designScale)
                     .clipped()
                     .allowsHitTesting(false)
+                    .onboardingReveal(true, delay: 0.46)
 
                 Spacer(minLength: 12 * designScale)
 
@@ -288,7 +293,7 @@ private struct AppleAuthOnboardingPage: View {
                     .opacity(isSubmitting ? 0.72 : 1)
                     .overlay {
                         Capsule()
-                            .fill(.white)
+                            .fill(OnboardingInk.lightButton)
                             .overlay {
                                 if isSubmitting {
                                     ProgressView()
@@ -365,6 +370,7 @@ private struct AppleAuthOnboardingPage: View {
                 .padding(.horizontal, 32 * designScale)
                 .padding(.bottom, bottomPadding)
                 .frame(maxWidth: .infinity)
+                .onboardingReveal(true, delay: 0.58)
             }
         }
         .ignoresSafeArea(.container, edges: .bottom)
@@ -587,7 +593,7 @@ private struct WelcomeTestimonialCard: View {
         .foregroundStyle(AppBrand.dark)
         .background {
             RoundedRectangle(cornerRadius: 15.4 * scale, style: .continuous)
-                .fill(.white)
+                .fill(OnboardingInk.lightButton)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 15.4 * scale, style: .continuous)
@@ -674,11 +680,7 @@ private struct PhoneAuthOnboardingPage: View {
                     topTrailingRadius: 30
                 )
                 .fill(
-                    LinearGradient(
-                        colors: [.white, Color(hex: 0xF7F9FC)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                    OnboardingInk.panel
                 )
                 .shadow(color: .black.opacity(0.10), radius: 18, y: -4)
                 .frame(height: panelHeight + geometry.safeAreaInsets.bottom)
@@ -966,11 +968,7 @@ private struct ZipCodeOnboardingPage: View {
                     topTrailingRadius: 30
                 )
                 .fill(
-                    LinearGradient(
-                        colors: [.white, Color(hex: 0xF7F9FC)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                    OnboardingInk.panel
                 )
                 .shadow(color: .black.opacity(0.10), radius: 18, y: -4)
                 .frame(height: panelHeight)
@@ -984,12 +982,14 @@ private struct ZipCodeOnboardingPage: View {
                             .font(.system(size: 23.74, weight: .medium, design: .rounded))
                             .foregroundStyle(AppGray.ink)
                             .multilineTextAlignment(.center)
+                            .onboardingReveal(isActive, delay: 0.05)
 
                         Text(L("We'll use it to find accurate material pricing and local costs near you."))
                             .font(.system(size: 16.37, weight: .regular, design: .rounded))
                             .foregroundStyle(AppGray.itemText.opacity(0.78))
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
+                            .onboardingReveal(isActive, delay: 0.15)
                     }
                     .frame(maxWidth: .infinity)
 
@@ -1008,10 +1008,30 @@ private struct ZipCodeOnboardingPage: View {
                             .background(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay {
+                                // The border takes on the brand blues while the field is in use.
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .strokeBorder(AppGray.border, lineWidth: 1)
+                                    .strokeBorder(
+                                        isZipFieldFocused || normalizedZipCode.count == 5
+                                            ? AnyShapeStyle(OnboardingInk.progressOnLight)
+                                            : AnyShapeStyle(AppGray.border),
+                                        lineWidth: isZipFieldFocused ? 1.5 : 1
+                                    )
                             }
+                            .overlay(alignment: .trailing) {
+                                if normalizedZipCode.count == 5 {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(AppBrand.light)
+                                        .padding(.trailing, 14)
+                                        .transition(.scale(scale: 0.3).combined(with: .opacity))
+                                }
+                            }
+                            .shadow(color: AppBrand.light.opacity(isZipFieldFocused ? 0.12 : 0), radius: 10, y: 4)
+                            .scaleEffect(isZipFieldFocused ? 1.015 : 1)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isZipFieldFocused)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: normalizedZipCode.count == 5)
                             .padding(.horizontal, 12)
+                            .onboardingReveal(isActive, delay: 0.24)
 
                         if let errorMessage {
                             Text(L(errorMessage))
@@ -1030,22 +1050,15 @@ private struct ZipCodeOnboardingPage: View {
                             } else {
                                 HStack(spacing: 8) {
                                     Text(L("Continue"))
-                                    Image(systemName: "arrow.right")
-                                        .font(.system(size: 14, weight: .semibold))
+                                    OnboardingArrow()
                                 }
                             }
                         }
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 51.25)
-                        .background(canContinue ? AppGray.ink : AppGray.ink.opacity(0.35))
-                        .clipShape(Capsule())
-                        .shadow(color: AppGray.ink.opacity(canContinue ? 0.18 : 0), radius: 10, y: 5)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OnboardingPrimaryButtonStyle())
                     .disabled(!canContinue)
                     .onboardingTapHaptic()
+                    .onboardingReveal(isActive, delay: 0.3)
                 }
                 .padding(.horizontal, 36)
                 .padding(.top, 56)
@@ -1124,11 +1137,7 @@ private struct LocalActivityOnboardingPage: View {
                     topTrailingRadius: 34
                 )
                 .fill(
-                    LinearGradient(
-                        colors: [.white, Color(hex: 0xF7F9FC)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                    OnboardingInk.panel
                 )
                 .frame(height: panelHeight + geometry.safeAreaInsets.bottom)
                 .offset(y: geometry.safeAreaInsets.bottom)
@@ -1141,6 +1150,7 @@ private struct LocalActivityOnboardingPage: View {
                             .foregroundStyle(AppGray.ink)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
+                            .onboardingReveal(isActive, delay: 0.08)
 
                         Text(L("Start sending faster, more competitive estimates with local pricing."))
                             .font(.system(size: 16.37, weight: .regular, design: .rounded))
@@ -1148,6 +1158,7 @@ private struct LocalActivityOnboardingPage: View {
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
+                            .onboardingReveal(isActive, delay: 0.2)
                     }
                     .frame(maxWidth: .infinity)
 
@@ -1156,19 +1167,12 @@ private struct LocalActivityOnboardingPage: View {
                     Button(action: onComplete) {
                         HStack(spacing: 8) {
                             Text(L("Continue"))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
+                            OnboardingArrow()
                         }
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 51.25)
-                        .background(AppGray.ink)
-                        .clipShape(Capsule())
-                        .shadow(color: AppGray.ink.opacity(0.18), radius: 10, y: 5)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OnboardingPrimaryButtonStyle())
                     .onboardingTapHaptic()
+                    .onboardingReveal(isActive, delay: 0.32)
                 }
                 .padding(.horizontal, 42)
                 .padding(.top, panelTopPadding)
@@ -1625,6 +1629,7 @@ private struct OnboardingQuestion: Identifiable {
 private struct OnboardingQuestionPage: View {
     let question: OnboardingQuestion
     @Binding var selection: String?
+    var isActive: Bool = true
     let onContinue: () -> Void
 
     private let accent = AppBrand.light
@@ -1666,11 +1671,12 @@ private struct OnboardingQuestionPage: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 34 * designScale)
                 .offset(y: -25 * designScale)
+                .onboardingReveal(isActive, delay: 0.05)
 
                 VStack(spacing: 12 * designScale) {
-                    ForEach(question.options, id: \.self) { option in
+                    ForEach(Array(question.options.enumerated()), id: \.element) { index, option in
                         Button {
-                            withAnimation(.easeInOut(duration: 0.18)) {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
                                 selection = option
                             }
                         } label: {
@@ -1687,7 +1693,7 @@ private struct OnboardingQuestionPage: View {
                                         .frame(width: 21.25 * designScale, height: 21.25 * designScale)
                                         .background(.white)
                                         .clipShape(Circle())
-                                        .transition(.scale.combined(with: .opacity))
+                                        .transition(.scale(scale: 0.2).combined(with: .opacity))
                                 } else {
                                     Circle()
                                         .strokeBorder(AppGray.border.opacity(0.8), lineWidth: 1)
@@ -1700,8 +1706,8 @@ private struct OnboardingQuestionPage: View {
                             .frame(height: 56.375)
                             .background(
                                 selection == option
-                                    ? AppGray.ink
-                                    : .white
+                                    ? AnyShapeStyle(OnboardingInk.selectedOption)
+                                    : AnyShapeStyle(OnboardingInk.panel)
                             )
                             .clipShape(
                                 RoundedRectangle(
@@ -1720,8 +1726,10 @@ private struct OnboardingQuestionPage: View {
                                     )
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(OnboardingPressStyle())
                         .onboardingTapHaptic()
+                        // Answers cascade in one after another.
+                        .onboardingReveal(isActive, delay: 0.14 + Double(index) * 0.06)
                     }
                 }
                 .padding(.horizontal, 26 * designScale)
@@ -1738,26 +1746,14 @@ private struct OnboardingQuestionPage: View {
                 Button(action: onContinue) {
                     HStack(spacing: 8) {
                         Text(L("Continue"))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold))
+                        OnboardingArrow()
                     }
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56.375)
-                    .background(selection == nil ? AppGray.ink.opacity(0.35) : AppGray.ink)
-                    .clipShape(Capsule())
-                    .shadow(
-                        color: AppGray.ink.opacity(selection == nil ? 0 : 0.18),
-                        radius: 10,
-                        y: 5
-                    )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OnboardingPrimaryButtonStyle(height: 56.375))
                 .disabled(selection == nil)
                 .onboardingTapHaptic()
-                .animation(.easeInOut(duration: 0.2), value: selection)
                 .padding(.horizontal, 26 * designScale)
+                .onboardingReveal(isActive, delay: 0.45)
             }
             .padding(.bottom, bottomPadding)
             .frame(width: geometry.size.width, height: geometry.size.height)
@@ -1830,11 +1826,7 @@ private struct EstimatorBuildOnboardingPage: View {
                     topTrailingRadius: 34
                 )
                 .fill(
-                    LinearGradient(
-                        colors: [.white, Color(hex: 0xF7F9FC)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                    OnboardingInk.panel
                 )
                 .frame(height: lowerPanelHeight + geometry.safeAreaInsets.bottom)
                 .offset(y: geometry.safeAreaInsets.bottom)
@@ -1849,6 +1841,7 @@ private struct EstimatorBuildOnboardingPage: View {
                         .minimumScaleFactor(0.85)
                         .frame(maxWidth: .infinity)
                         .offset(y: -4)
+                        .onboardingReveal(isActive, delay: 0.08)
 
                     Spacer(minLength: 14)
 
@@ -1860,25 +1853,13 @@ private struct EstimatorBuildOnboardingPage: View {
                     Button(action: onContinue) {
                         HStack(spacing: 8) {
                             Text(L("Get Started"))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
+                            OnboardingArrow()
                         }
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 51.25)
-                        .background(isComplete ? AppGray.ink : AppGray.ink.opacity(0.35))
-                        .clipShape(Capsule())
-                        .shadow(
-                            color: AppGray.ink.opacity(isComplete ? 0.18 : 0),
-                            radius: 10,
-                            y: 5
-                        )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OnboardingPrimaryButtonStyle())
                     .disabled(!isComplete)
                     .onboardingTapHaptic()
-                    .animation(.easeInOut(duration: 0.3), value: isComplete)
+                    .onboardingReveal(isActive, delay: 0.3)
                 }
                 .padding(.horizontal, 42)
                 .padding(.top, lowerPanelTopPadding)
@@ -1997,6 +1978,10 @@ private struct EstimatorBuildChecklist: View {
                     .frame(width: 18, height: 18)
                     .offset(x: -26)
                     .opacity(isReached ? 1 : 0)
+                    // Each check springs in as its step completes.
+                    .scaleEffect(isReached ? 1 : 0.3)
+                    .rotationEffect(.degrees(isReached ? 0 : -25))
+                    .animation(.spring(response: 0.42, dampingFraction: 0.55), value: isReached)
             }
             .frame(maxWidth: .infinity, alignment: .center)
         .animation(.easeInOut(duration: 0.25), value: isReached)
@@ -2054,8 +2039,11 @@ private struct OnboardingTopNavigation: View {
                                     : AppBrand.dark.opacity(0.82)
                             )
                             .overlay(alignment: .leading) {
+                                // Gradient fill with a soft light travelling along it.
                                 Capsule()
-                                    .fill(usesLightBackground ? AppBrand.light : .white)
+                                    .fill(usesLightBackground ? OnboardingInk.progressOnLight : OnboardingInk.progressOnDark)
+                                    .overlay { OnboardingProgressShimmer() }
+                                    .clipShape(Capsule())
                                     .frame(width: progressGeometry.size.width * progress)
                             }
                             .animation(.easeInOut(duration: 0.55), value: currentPage)
@@ -2171,11 +2159,7 @@ private struct OnboardingPageView: View {
                     topTrailingRadius: 30
                 )
                 .fill(
-                    LinearGradient(
-                        colors: [.white, Color(hex: 0xF7F9FC)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                    OnboardingInk.panel
                 )
                 .shadow(color: .black.opacity(0.10), radius: 18, y: -4)
                 .frame(height: lowerPanelHeight + geometry.safeAreaInsets.bottom)
@@ -2190,19 +2174,12 @@ private struct OnboardingPageView: View {
                     Button(action: onNext) {
                         HStack(spacing: 8) {
                             Text(L(page.isLast ? "Get started" : "Next"))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
+                            OnboardingArrow()
                         }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 51.25)
-                        .background(AppGray.ink)
-                        .clipShape(Capsule())
-                        .shadow(color: AppGray.ink.opacity(0.18), radius: 10, y: 5)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OnboardingPrimaryButtonStyle())
                     .onboardingTapHaptic()
+                    .onboardingReveal(isActive, delay: 0.32)
                     .zIndex(2)
                     .accessibilityLabel(L(page.isLast ? "Finish onboarding" : "Next onboarding page"))
                 }
@@ -2223,6 +2200,7 @@ private struct OnboardingPageView: View {
                 .foregroundStyle(AppGray.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+                .onboardingReveal(isActive, delay: 0.08)
 
             if let subtitle = page.subtitle {
                 Text(L(subtitle))
@@ -2231,6 +2209,7 @@ private struct OnboardingPageView: View {
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onboardingReveal(isActive, delay: 0.2)
             }
         }
         .frame(maxWidth: .infinity)
@@ -2282,6 +2261,9 @@ private struct OnboardingArtworkPlaceholder: View {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .fill(AppBrand.verticalGradient)
 
+            OnboardingBackdrop()
+                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 54, weight: .medium))
@@ -2293,6 +2275,11 @@ private struct OnboardingArtworkPlaceholder: View {
                         Circle()
                             .strokeBorder(.white.opacity(0.28), lineWidth: 1)
                     }
+                    .background {
+                        OnboardingHalo()
+                            .frame(width: 118, height: 118)
+                    }
+                    .onboardingFloat()
 
                 VStack(spacing: 7) {
                     Text(L("EasyBid"))
@@ -3186,8 +3173,6 @@ private enum PlaceholderKind: Equatable {
 }
 
 private enum OnboardingPalette {
-    static let backgroundGradient = AppBrand.verticalGradient
-
     static let placeholderFill = Color(hex: 0xF1F4F7)
     static let placeholderLine = Color(hex: 0xC8D0D8)
 }
