@@ -41,7 +41,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .bezel{position:absolute;top:0;left:0;width:426px;height:898px;transform-origin:0 0;border-radius:66px;padding:12px;background:#0A0F17;box-shadow:0 50px 90px -45px rgba(11,46,90,.65),inset 0 0 0 2px #262F3D}
 
 /* ===== device canvas: 1 CSS px = 1 iOS point ===== */
-.dev{position:relative;width:402px;height:874px;border-radius:55px;overflow:hidden;background:#fff;color:var(--ink);font-family:var(--sf);font-size:17px;line-height:1.2;isolation:isolate}
+.dev{position:relative;width:402px;height:874px;border-radius:55px;overflow:clip;background:#fff;color:var(--ink);font-family:var(--sf);font-size:17px;line-height:1.2;isolation:isolate}
 :where(.dev button){font-family:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:126px;height:37px;border-radius:20px;background:#000;z-index:100}
 .sbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:center;padding:6px 34px 0 46px;font:600 17px var(--sf);z-index:99;pointer-events:none}
@@ -49,7 +49,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .sbar .r{display:flex;gap:6px;align-items:center}
 .home-ind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:3px;background:#000;z-index:99;pointer-events:none}
 .home-ind.white{background:#fff}
-.screen{position:absolute;inset:0}
+.screen{position:absolute;inset:0;overflow:clip}
 [data-t]{transition:opacity .2s}
 .switching [data-t]{opacity:0}
 .ic{display:inline-block;flex:none}
@@ -268,11 +268,8 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
-<style>
+<style id="newfx">
 /* ===== Onboarding motion + gradients (mirrors OnboardingMotion.swift) ===== */
-/* The phone screen never scrolls (a focused field must not shift it). */
-.dev,.screen{overflow:clip}
-
 /* 1. Brand blues as a slow drifting mesh */
 .grad{background:linear-gradient(#0B2E5A 0%,#0E3667 18%,#1D5297 52%,#347FE5 100%);overflow:clip}
 .grad::before{content:"";position:absolute;inset:-25%;pointer-events:none;
@@ -315,7 +312,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 
 /* 10–11. Estimator ring floats inside a slowly turning ring of light */
 .ring{animation:obFloat 5.2s ease-in-out infinite}
-.ring .halo{position:absolute;inset:-11px;border-radius:50%;pointer-events:none;
+.ring .halo{display:block;position:absolute;inset:-11px;border-radius:50%;pointer-events:none;
   background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.55) 12%,transparent 25%,rgba(255,255,255,.25) 50%,transparent 62%);
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1.5px));
           mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1.5px));
@@ -341,7 +338,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .checklist svg{transform:translateY(-50%) scale(.3) rotate(-25deg);transition:opacity .25s,transform .45s cubic-bezier(.3,1.7,.5,1)}
 .checklist div.on svg{transform:translateY(-50%) scale(1) rotate(0)}
 </style>
-</head>
+<style>.strip button.ba{border-style:dashed;margin-left:6px}i.halo,span.zipok{display:none}</style></head>
 <body>
 <div class="wrap">
   <nav class="strip" id="strip" aria-label="Jump to a screen"></nav>
@@ -505,8 +502,12 @@ function pageFeature(k){
   const radius=photo?30:20;
   const shadow=photo?"0 10px 22px rgba(11,46,90,.24)":"0 7px 18px rgba(11,46,90,.18)";
   const fade=photo?"":`<div class="fadeout" style="height:${pre+overlap}px;border-radius:0 0 ${radius}px ${radius}px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.42) ${pre*0.28}px,rgba(255,255,255,.88) ${pre*0.64}px,#fff ${pre}px,#fff)"></div>`;
+  // Like the app: the card's shadow stays above the panel, and the part of the card
+  // that runs under the panel fades out instead of showing its edge and shadow.
+  const mask=photo?"":`-webkit-mask-image:linear-gradient(#000,#000 ${visible+overlap*0.42}px,rgba(0,0,0,.45) ${visible+overlap*0.78}px,transparent);mask-image:linear-gradient(#000,#000 ${visible+overlap*0.42}px,rgba(0,0,0,.45) ${visible+overlap*0.78}px,transparent);`;
+  const shadowBox=photo?"":`<div aria-hidden="true" style="position:absolute;left:50%;transform:translateX(-50%);top:${top}px;width:${aw}px;height:${visible}px;border-radius:${radius}px;box-shadow:${shadow};z-index:0"></div>`;
   return `<div class="screen grad">
-    <div class="art ${photo?"photo":""}" style="top:${top}px;width:${aw}px;height:${ah}px;border-radius:${radius}px;box-shadow:${shadow}">${inner}${fade}</div>
+    ${shadowBox}<div class="art ${photo?"photo":""}" style="top:${top}px;width:${aw}px;height:${ah}px;border-radius:${radius}px;${photo?`box-shadow:${shadow};`:""}${mask}">${inner}${fade}</div>
     <div class="panel" style="height:${PANEL_H}px;border-radius:30px 30px 0 0"></div>
     ${copyBlock(`<p class="ttl">${t(title)}</p>`,`<p class="subt">${t(sub)}</p>`,t("Next"))}
     ${obNav(false)}</div>`;
@@ -790,10 +791,18 @@ function switchLang(){
 const JUMPS=[["Sign in","Inicio",0],["Photo","Foto",1],["Breakdown","Desglose",2],["Invoice","Factura",3],["ZIP","Código postal",4],["Local","Local",5],["Questions","Preguntas",6],["Build","Preparación",10]];
 function renderStrip(){
   const cur=S.ob>=6&&S.ob<=9?6:S.ob;
-  document.getElementById("strip").innerHTML=JUMPS.map(([en,es,i])=>`<button type="button" class="${cur===i?"on":""}" data-jump="${i}">${esc(lang==="es"?es:en)}</button>`).join("");
-  document.getElementById("hint").textContent=lang==="es"?"Vista previa interactiva del onboarding de EasyBid hecha a partir del código, con las nuevas animaciones y degradados. Toca los botones dentro del teléfono o salta a una pantalla.":"Interactive preview of the EasyBid onboarding, built from the app's code with the new animations and gradients. Tap the buttons inside the phone or jump to a screen.";
+  const after=!document.getElementById("newfx").disabled;
+  document.getElementById("strip").innerHTML=JUMPS.map(([en,es,i])=>`<button type="button" class="${cur===i?"on":""}" data-jump="${i}">${esc(lang==="es"?es:en)}</button>`).join("")
+    +`<button type="button" class="ba" data-ba="1" aria-pressed="${after}">${lang==="es"?(after?"Ver antes":"Ver después"):(after?"Show before":"Show after")}</button>`;
+  const rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("hint").textContent=(lang==="es"
+    ?(after?"Después: con las nuevas animaciones y degradados. ":"Antes: el onboarding como era. ")+"Toca los botones dentro del teléfono o salta a una pantalla."
+    :(after?"After: with the new animations and gradients. ":"Before: the onboarding as it was. ")+"Tap the buttons inside the phone or jump to a screen.")
+    +(rm?(lang==="es"?" Tu dispositivo tiene activado Reducir movimiento, así que las animaciones están en pausa, igual que en la app.":" Your device has Reduce Motion on, so the animations are paused, as they would be in the app."):"");
 }
 document.getElementById("strip").addEventListener("click",e=>{
+  const ba=e.target.closest("[data-ba]");
+  if(ba){ const st=document.getElementById("newfx"); st.disabled=!st.disabled; animKey=""; root.dataset.k=""; lastKey=""; render(); return; }
   const b=e.target.closest("[data-jump]"); if(!b) return;
   S.mode="onboarding"; S.overlay=null; S.ob=+b.dataset.jump; S.build=0; animKey=""; render();
 });
