@@ -114,8 +114,8 @@ private func walletMoney(_ value: Double) -> String {
 
 // MARK: - Balance card
 
-/// The hero card: a deep-blue glass slab with flowing particles behind the
-/// balance, which rolls up from zero when the screen appears.
+/// The hero card: a deep-blue gradient slab behind the balance, which rolls
+/// up from zero when the screen appears.
 struct WalletBalanceCard: View {
     let figures: WalletFigures
 
@@ -168,8 +168,11 @@ struct WalletBalanceCard: View {
         .padding(22)
         .background {
             ZStack {
-                OnboardingBackdrop()
-                FlowParticlesView(color: .white, opacity: 0.45, density: 0.9)
+                LinearGradient(
+                    colors: [Color(hex: 0x0B2E5A), Color(hex: 0x14427F), Color(hex: 0x2262B5), Color(hex: 0x347FE5)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                 LinearGradient(colors: [.white.opacity(0.10), .clear], startPoint: .top, endPoint: .center)
             }
         }

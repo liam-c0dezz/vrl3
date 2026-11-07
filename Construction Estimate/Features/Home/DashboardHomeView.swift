@@ -104,7 +104,7 @@ struct DashboardHomeView: View {
                 }
                 .scrollIndicators(.hidden)
         }
-        .background { LiquidGlassBackdrop().ignoresSafeArea() }
+        .background { PortalBackground().ignoresSafeArea() }
         .task(id: estimates.count + invoiceStore.invoices.count) {
             // Projects load after launch; recompute the streak once they arrive.
             RetentionCenter.shared.refresh()

@@ -58,8 +58,7 @@ struct GlassLogoReveal: View {
             let side = min(geometry.size.width * 0.58, 250)
 
             ZStack {
-                OnboardingBackdrop()
-                FlowParticlesView(color: .white, opacity: 0.35, density: 0.8)
+                InteractiveGradient(palette: .brand)
 
                 KeyframeAnimator(initialValue: reduceMotion ? Self.settled : Frame(), trigger: plays) { frame in
                     content(frame, side: side)
