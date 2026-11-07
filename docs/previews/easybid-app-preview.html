@@ -41,7 +41,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .bezel{position:absolute;top:0;left:0;width:426px;height:898px;transform-origin:0 0;border-radius:66px;padding:12px;background:#0A0F17;box-shadow:0 50px 90px -45px rgba(11,46,90,.65),inset 0 0 0 2px #262F3D}
 
 /* ===== device canvas: 1 CSS px = 1 iOS point ===== */
-.dev{position:relative;width:402px;height:874px;border-radius:55px;overflow:hidden;background:#fff;color:var(--ink);font-family:var(--sf);font-size:17px;line-height:1.2;isolation:isolate}
+.dev{position:relative;width:402px;height:874px;border-radius:55px;overflow:clip;background:#fff;color:var(--ink);font-family:var(--sf);font-size:17px;line-height:1.2;isolation:isolate}
 :where(.dev button){font-family:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:126px;height:37px;border-radius:20px;background:#000;z-index:100}
 .sbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:center;padding:6px 34px 0 46px;font:600 17px var(--sf);z-index:99;pointer-events:none}
@@ -49,7 +49,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .sbar .r{display:flex;gap:6px;align-items:center}
 .home-ind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:3px;background:#000;z-index:99;pointer-events:none}
 .home-ind.white{background:#fff}
-.screen{position:absolute;inset:0}
+.screen{position:absolute;inset:0;overflow:clip}
 [data-t]{transition:opacity .2s}
 .switching [data-t]{opacity:0}
 .ic{display:inline-block;flex:none}
@@ -431,8 +431,12 @@ function pageFeature(k){
   const radius=photo?30:20;
   const shadow=photo?"0 10px 22px rgba(11,46,90,.24)":"0 7px 18px rgba(11,46,90,.18)";
   const fade=photo?"":`<div class="fadeout" style="height:${pre+overlap}px;border-radius:0 0 ${radius}px ${radius}px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.42) ${pre*0.28}px,rgba(255,255,255,.88) ${pre*0.64}px,#fff ${pre}px,#fff)"></div>`;
+  // Like the app: the card's shadow stays above the panel, and the part of the card
+  // that runs under the panel fades out instead of showing its edge and shadow.
+  const mask=photo?"":`-webkit-mask-image:linear-gradient(#000,#000 ${visible+overlap*0.42}px,rgba(0,0,0,.45) ${visible+overlap*0.78}px,transparent);mask-image:linear-gradient(#000,#000 ${visible+overlap*0.42}px,rgba(0,0,0,.45) ${visible+overlap*0.78}px,transparent);`;
+  const shadowBox=photo?"":`<div aria-hidden="true" style="position:absolute;left:50%;transform:translateX(-50%);top:${top}px;width:${aw}px;height:${visible}px;border-radius:${radius}px;box-shadow:${shadow};z-index:0"></div>`;
   return `<div class="screen grad">
-    <div class="art ${photo?"photo":""}" style="top:${top}px;width:${aw}px;height:${ah}px;border-radius:${radius}px;box-shadow:${shadow}">${inner}${fade}</div>
+    ${shadowBox}<div class="art ${photo?"photo":""}" style="top:${top}px;width:${aw}px;height:${ah}px;border-radius:${radius}px;${photo?`box-shadow:${shadow};`:""}${mask}">${inner}${fade}</div>
     <div class="panel" style="height:${PANEL_H}px;border-radius:30px 30px 0 0"></div>
     ${copyBlock(`<p class="ttl">${t(title)}</p>`,`<p class="subt">${t(sub)}</p>`,t("Next"))}
     ${obNav(false)}</div>`;
