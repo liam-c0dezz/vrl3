@@ -76,13 +76,20 @@ struct InteractiveGradient: View {
             let frame = geometry.frame(in: .global)
             ZStack {
                 MeshGradient(width: 3, height: 3, points: meshPoints, colors: colors)
+                // A round glow of fixed size (it never stretches on tall
+                // screens) with a long, even falloff so there is no hard edge.
                 RadialGradient(
-                    colors: [glowColor.opacity(strength), glowColor.opacity(strength * 0.35), .clear],
+                    stops: [
+                        .init(color: glowColor.opacity(0.42 * strength), location: 0),
+                        .init(color: glowColor.opacity(0.26 * strength), location: 0.3),
+                        .init(color: glowColor.opacity(0.10 * strength), location: 0.58),
+                        .init(color: glowColor.opacity(0), location: 0.8),
+                    ],
                     center: focus,
                     startRadius: 0,
-                    endRadius: max(frame.width, frame.height) * 0.55
+                    endRadius: 260
                 )
-                .blendMode(palette == .brand ? .plusLighter : .normal)
+                .blendMode(palette == .brand ? .screen : .normal)
             }
             .onChange(of: point) { _, newPoint in follow(newPoint, in: frame) }
         }
@@ -106,15 +113,16 @@ struct InteractiveGradient: View {
 
     /// Hue slides from the brand blue toward a cooler cyan-blue across the screen.
     private var glowColor: Color {
-        let hue = 0.575 + 0.05 * Double(focus.x) - 0.015 * Double(focus.y)
+        // A gentle slide across the brand blues (about 208°–222°).
+        let hue = 0.578 + 0.04 * Double(focus.x)
         return palette == .brand
-            ? Color(hue: hue, saturation: 0.72, brightness: 0.95).opacity(0.55)
-            : Color(hue: hue, saturation: 0.45, brightness: 1).opacity(0.75)
+            ? Color(hue: hue, saturation: 0.78, brightness: 0.98)
+            : Color(hue: hue, saturation: 0.42, brightness: 1)
     }
 
     /// The middle of the mesh leans toward the touch.
     private var meshPoints: [SIMD2<Float>] {
-        let pull = Float(0.28 * strength)
+        let pull = Float(0.18 * strength)
         let cx = Float(0.5) + (Float(focus.x) - 0.5) * pull
         let cy = Float(0.5) + (Float(focus.y) - 0.5) * pull
         return [
@@ -131,16 +139,21 @@ struct InteractiveGradient: View {
                 x: min(max((newPoint.x - frame.minX) / frame.width, 0), 1),
                 y: min(max((newPoint.y - frame.minY) / frame.height, 0), 1)
             )
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
-                focus = target
-                strength = 1
+            if strength < 0.02 {
+                // First contact: the glow appears under the finger instead of
+                // sliding over from wherever it last was.
+                var placement = Transaction()
+                placement.disablesAnimations = true
+                withTransaction(placement) { focus = target }
+                withAnimation(.easeOut(duration: 0.35)) { strength = 1 }
+            } else {
+                // Tracking: a short, well-damped spring - close behind the
+                // finger, no wobble.
+                withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.88)) { focus = target }
             }
         } else {
-            // Let go: the glow fades and the colours drift back to rest.
-            withAnimation(.spring(response: 1.4, dampingFraction: 0.9)) {
-                strength = 0
-                focus = UnitPoint(x: 0.5, y: 0.45)
-            }
+            // Let go: the glow fades where it is; the colours settle back.
+            withAnimation(.easeOut(duration: 0.8)) { strength = 0 }
         }
     }
 }
@@ -149,18 +162,32 @@ extension View {
     /// Reports where a finger or pointer is over this view (global
     /// coordinates) without taking touches away from its buttons.
     func trackingGradientTouch(_ point: Binding<CGPoint?>) -> some View {
-        self
+        modifier(GradientTouchTracker(point: point))
+    }
+}
+
+/// Uses gesture state for touches, which resets by itself when the system
+/// cancels a touch (a scroll or sheet taking over), so the glow can never be
+/// left stuck on screen; pointers use hover.
+private struct GradientTouchTracker: ViewModifier {
+    @Binding var point: CGPoint?
+    @GestureState private var finger: CGPoint?
+    @State private var pointer: CGPoint?
+
+    func body(content: Content) -> some View {
+        content
             .simultaneousGesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                    .onChanged { point.wrappedValue = $0.location }
-                    .onEnded { _ in point.wrappedValue = nil }
+                    .updating($finger) { value, state, _ in state = value.location }
             )
             .onContinuousHover(coordinateSpace: .global) { phase in
                 switch phase {
-                case let .active(location): point.wrappedValue = location
-                case .ended: point.wrappedValue = nil
+                case let .active(location): pointer = location
+                case .ended: pointer = nil
                 }
             }
+            .onChange(of: finger) { _, _ in point = finger ?? pointer }
+            .onChange(of: pointer) { _, _ in point = finger ?? pointer }
     }
 }
 
