@@ -275,11 +275,9 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 60% at 20% 0%,rgba(255,255,255,.55),transparent 55%);opacity:.55}
 .press{transition:transform .32s cubic-bezier(.3,1.7,.45,1),filter .2s}
 .press:active{transform:scale(.94);filter:brightness(1.05);transition-duration:.09s}
-canvas.fp{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 
 /* Light glass backdrop for the portal */
 .appbg{background:linear-gradient(160deg,#DCE8F8 0%,#F2F6FC 38%,#E6EEF9 70%,#F7F9FC 100%)}
-.appbg::before{content:"";position:absolute;inset:-20%;pointer-events:none;background:radial-gradient(40% 28% at 25% 30%,rgba(191,213,243,.8),transparent 70%),radial-gradient(42% 30% at 80% 62%,rgba(207,224,247,.85),transparent 70%);animation:obMesh 34s ease-in-out infinite alternate}
 @keyframes obMesh{0%{transform:translate(0,0) scale(1)}33%{transform:translate(4%,-3%) scale(1.05)}66%{transform:translate(-4%,3%) scale(.98)}100%{transform:translate(2%,4%) scale(1.04)}}
 .topnav .circ{background:rgba(255,255,255,.45);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.55),0 8px 18px -12px rgba(11,46,90,.35)}
 .newbtn{background:linear-gradient(135deg,var(--accent),var(--light));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 20px -10px rgba(29,82,151,.6)}
@@ -297,9 +295,8 @@ canvas.fp{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 /* ===== Wallet dashboard ===== */
 .wbal{position:relative;border-radius:30px;overflow:clip;padding:22px;color:#fff;background:linear-gradient(150deg,#0B2E5A 0%,#14427F 45%,#2262B5 78%,#347FE5 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.18),0 26px 44px -22px rgba(11,46,90,.7);animation:walletIn .9s cubic-bezier(.25,1.35,.45,1) both}
-.wbal::before{content:"";position:absolute;inset:-30%;background:radial-gradient(35% 30% at 30% 40%,rgba(58,134,234,.55),transparent 70%),radial-gradient(40% 30% at 75% 70%,rgba(26,77,146,.6),transparent 70%);animation:obMesh 26s ease-in-out infinite alternate;pointer-events:none}
 .wbal::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent 45%);pointer-events:none}
-.wbal>*:not(canvas){position:relative;z-index:1}
+.wbal>*{position:relative;z-index:1}
 @keyframes walletIn{from{opacity:0;transform:translateY(40px) scale(.9) rotateX(14deg)}to{opacity:1;transform:none}}
 .wbal .hd{display:flex;align-items:center;justify-content:space-between;font:500 14px var(--rounded);color:rgba(255,255,255,.82)}
 .wbal .hd span{display:flex;gap:7px;align-items:center}
@@ -478,6 +475,16 @@ canvas.fp{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 .intro .skip{position:absolute;right:22px;top:66px;font:600 13px var(--rounded);color:rgba(255,255,255,.7);padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.12);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 .intro canvas{z-index:0}
 .intro .word,.intro .skip{z-index:1}
+
+/* Touch / cursor gradient: a glow follows the pointer, hue sliding across the brand blues */
+@property --gx{syntax:"<percentage>";inherits:true;initial-value:50%}
+@property --gy{syntax:"<percentage>";inherits:true;initial-value:45%}
+@property --ga{syntax:"<number>";inherits:true;initial-value:0}
+@property --gh{syntax:"<number>";inherits:true;initial-value:214}
+#dev{transition:--gx .55s cubic-bezier(.3,1.2,.5,1),--gy .55s cubic-bezier(.3,1.2,.5,1),--gh .55s ease,--ga .7s ease}
+.grad::before{inset:0;animation:none;transform:none;background:radial-gradient(60% 42% at var(--gx) var(--gy),hsla(var(--gh),82%,66%,calc(var(--ga) * .6)),hsla(var(--gh),80%,58%,calc(var(--ga) * .2)) 45%,transparent 75%);mix-blend-mode:plus-lighter}
+.grad.nobg::before{display:none}
+.screen[style="background:#fff"]::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 42% at var(--gx) var(--gy),hsla(var(--gh),90%,78%,calc(var(--ga) * .75)),hsla(var(--gh),85%,85%,calc(var(--ga) * .3)) 45%,transparent 75%)}
 </style>
 <style>.strip button.ba{border-style:dashed;margin-left:6px}i.halo,span.zipok{display:none}</style></head>
 <body>
@@ -712,7 +719,7 @@ function pageBuild(){
   const vh=Math.min(Math.max(H*0.405,290),340), vt=Math.max(82,SAFE_T+54), p=S.build, r=(156-8.5)/2, c=2*Math.PI*r;
   const rows=[[["hammer.fill","screwdriver.fill","tag.fill","spigot.fill","shower.fill"],-1,22],[["shower.fill","spigot.fill","tag.fill","screwdriver.fill","hammer.fill"],1,25],[["tag.fill","hammer.fill","shower.fill","screwdriver.fill","spigot.fill"],-1,28]];
   const toolRow=([icons,dir,sp])=>{const w=icons.length*116;return `<div class="row trow ${dir<0?"l":"r"}" style="--dur:${sp}s;--w:${w}px">${[...icons,...icons,...icons].map(i=>`<div class="tile">${S_(i,38)}</div>`).join("")}</div>`};
-  return `<div class="screen grad">
+  return `<div class="screen grad nobg">
     <div class="tools" style="top:${vt}px;height:${vh}px">${rows.map(toolRow).join("")}</div>
     <div class="ring" style="top:${vt+(vh-156)/2}px"><i class="halo"></i><i class="shock"></i><span class="sparks">${Array.from({length:14},(_,i)=>`<b style="--a:${i*360/14}deg;--d:${i%2?118:150}px"></b>`).join("")}</span><svg width="156" height="156" viewBox="0 0 156 156" style="transform:rotate(-90deg)"><circle cx="78" cy="78" r="${r}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8.5"/><circle id="arc" cx="78" cy="78" r="${r}" fill="none" stroke="#fff" stroke-width="8.5" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" style="transition:stroke-dashoffset .55s ease"/></svg><b id="pct">${p}%</b></div>
     <div class="panel" style="height:${PANEL_H}px;border-radius:34px 34px 0 0"></div>
@@ -793,7 +800,7 @@ function homeView(){
   const icon={pay:"arrow.down.left",paid:"checkmark",sent:"paperplane.fill",draft:"doc.text"};
   return `<div class="ptitle" style="top:132px">${t("Home")}</div>
    <div class="scrollv" style="top:186px"><div class="stack" style="gap:24px;padding:4px 20px 150px;perspective:900px">
-    <section class="wbal"><canvas class="fp" data-c="255,255,255" data-o=".45" data-d=".9"></canvas>
+    <section class="wbal">
       <div class="hd"><span>${S_("wallet.bifold.fill",16)}${t("Collected this month")}</span><span class="pill">${t("November")}</span></div>
       <div class="amt" data-roll="${WALLET.collected}">${whole(WALLET.collected)}</div>
       <div class="chg">${S_("arrow.up.right",11)}${F("%@ vs last month",(chg>=0?"+":"")+chg+"%")}</div>
@@ -910,7 +917,7 @@ function helpSheet(){
 }
 function renderApp(){
   let main=[homeView,projectsView,clientsView][S.tab]();
-  let html=`<div class="screen appbg"><canvas class="fp" data-c="52,127,229" data-o=".32" data-d=".55"></canvas>${topNav()}<div class="screen fade" style="z-index:1">${main}</div>
+  let html=`<div class="screen appbg">${topNav()}<div class="screen fade" style="z-index:1">${main}</div>
     <nav class="tabbar" aria-label="App tabs">${TABS.map(([ic,l],k)=>`<button type="button" class="${S.tab===k?"on":""}" data-act="tab" data-i="${k}">${S_(ic,22)}${t(l)}</button>`).join("")}</nav></div>`;
   if(S.project) html+=detailView();
   if(S.overlay==="settings") html+=settingsView();
@@ -1013,44 +1020,6 @@ fit(); render();
 </script>
 
 <script>
-/* ===== Flow particles (FlowParticlesView in LiquidGlass.swift; port of the fluid particles background) ===== */
-(function(){
-  const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const states=new WeakMap();
-  function setup(c){
-    const dpr=Math.min(window.devicePixelRatio||1,2), w=c.clientWidth, h=c.clientHeight;
-    if(!w||!h) return null;
-    c.width=w*dpr; c.height=h*dpr;
-    const ctx=c.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
-    const n=Math.round(Math.min(420,Math.max(60,w*h/900*(+c.dataset.d||1))));
-    const ps=Array.from({length:n},()=>spawn(w,h,true));
-    const st={ctx,w,h,ps,color:c.dataset.c||"255,255,255",op:+c.dataset.o||.5};
-    if(reduce) for(const p of ps) step(p,st,0,6);
-    states.set(c,st); return st;
-  }
-  function spawn(w,h,rand){const m=110+Math.random()*60;return{x:Math.random()*w,y:Math.random()*h,tx:0,ty:0,s:.6+Math.random()*1.2,life:rand?Math.random()*m:0,max:m}}
-  function step(p,st,t,sp){
-    const a=(Math.sin(p.x*.0042+t)+Math.cos(p.y*.0051-t*.8)+Math.sin((p.x+p.y)*.0023+t*.5))*Math.PI*.9;
-    let nx=p.x+Math.cos(a)*sp, ny=p.y+Math.sin(a)*sp, tx=nx-Math.cos(a)*9, ty=ny-Math.sin(a)*9;
-    if(nx<0||nx>st.w||ny<0||ny>st.h){nx=(nx+st.w)%st.w;ny=(ny+st.h)%st.h;tx=nx;ty=ny}
-    p.x=nx;p.y=ny;p.tx=tx;p.ty=ty;
-  }
-  function draw(st){
-    const {ctx}=st; ctx.clearRect(0,0,st.w,st.h); ctx.lineCap="round";
-    for(const p of st.ps){const f=Math.sin(Math.min(1,p.life/p.max)*Math.PI);ctx.strokeStyle=`rgba(${st.color},${st.op*f})`;ctx.lineWidth=p.s;ctx.beginPath();ctx.moveTo(p.tx,p.ty);ctx.lineTo(p.x,p.y);ctx.stroke()}
-  }
-  function frame(now){
-    const t=now/1000*.12;
-    document.querySelectorAll("canvas.fp").forEach(c=>{
-      let st=states.get(c); if(!st||st.w!==c.clientWidth||st.h!==c.clientHeight) st=setup(c); if(!st) return;
-      if(!reduce) for(const p of st.ps){step(p,st,t,1.6);p.life++;if(p.life>p.max)Object.assign(p,spawn(st.w,st.h,false))}
-      if(!reduce||!st.drawn){draw(st);st.drawn=true}
-    });
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-})();
-
 /* ===== Wallet: balance roll-up and chart scrubbing ===== */
 (function(){
   const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1840,24 +1809,20 @@ void main() {
 })();
 </script>
 <script>
-/* ===== Particles on every blue onboarding screen and the question backdrop ===== */
+/* ===== Touch / cursor gradient (InteractiveGradient in LiquidGlass.swift) ===== */
 (function(){
-  const root=document.getElementById("root");
-  function addParticles(){
-    const on=!document.getElementById("newfx").disabled;
-    root.querySelectorAll(".grad").forEach(g=>{
-      const c=g.querySelector(":scope>canvas.fp");
-      if(on&&!c) g.insertAdjacentHTML("afterbegin",'<canvas class="fp" data-c="255,255,255" data-o=".32" data-d=".7"></canvas>');
-      if(!on&&c) c.remove();
-    });
-    root.querySelectorAll('.screen[style="background:#fff"]').forEach(q=>{
-      const c=q.querySelector(":scope>canvas.fp");
-      if(on&&!c) q.insertAdjacentHTML("afterbegin",'<canvas class="fp" data-c="52,127,229" data-o=".3" data-d=".55"></canvas>');
-      if(!on&&c) c.remove();
-    });
-  }
-  new MutationObserver(addParticles).observe(root,{childList:true,subtree:true});
-  window.addParticles=addParticles;
+  const dev=document.getElementById("dev");
+  const move=e=>{
+    const r=dev.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+    dev.style.setProperty("--gx",(x*100).toFixed(1)+"%"); dev.style.setProperty("--gy",(y*100).toFixed(1)+"%");
+    dev.style.setProperty("--gh",(205+20*x-6*y).toFixed(1)); dev.style.setProperty("--ga","1");
+  };
+  const leave=()=>{dev.style.setProperty("--ga","0");dev.style.setProperty("--gx","50%");dev.style.setProperty("--gy","45%")};
+  dev.addEventListener("pointermove",move);
+  dev.addEventListener("pointerdown",move);
+  dev.addEventListener("pointerleave",leave);
+  dev.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")leave()});
+  dev.addEventListener("pointercancel",leave);
 })();
 
 /* ===== Opening: the EasyBid house revealed through Liquid Glass ===== */
@@ -1875,5 +1840,5 @@ function playIntro(){
   stop=GlassReveal.mountGlassReveal(el,{look:"dark",overrides:{background:"#0E3667",plateColor:"#1D5297",logoColor:"#ffffff",keepPlate:true,logoScale:.6,startZoom:2.3,hold:.9,tileSize:240},onDone:finish});
 }
 </script>
-<script>addParticles();playIntro();</script></body>
+<script>playIntro();</script></body>
 </html>
