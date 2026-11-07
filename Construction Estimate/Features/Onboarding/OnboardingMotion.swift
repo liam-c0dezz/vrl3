@@ -120,13 +120,14 @@ private struct OnboardingReveal: ViewModifier {
         let shown = isShown || reduceMotion
         content
             .opacity(shown ? 1 : 0)
-            .blur(radius: shown ? 0 : 6)
-            .offset(y: shown ? 0 : 14)
+            .blur(radius: shown ? 0 : 12)
+            .scaleEffect(shown ? 1 : 0.92, anchor: .bottom)
+            .offset(y: shown ? 0 : 34)
             .task(id: isActive) {
                 if isActive {
                     if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
                     guard !Task.isCancelled else { return }
-                    withAnimation(.spring(response: 0.7, dampingFraction: 0.86)) { isShown = true }
+                    withAnimation(.spring(response: 0.75, dampingFraction: 0.72)) { isShown = true }
                 } else {
                     try? await Task.sleep(for: .milliseconds(450))
                     guard !Task.isCancelled else { return }
@@ -184,8 +185,10 @@ struct OnboardingPrimaryButtonStyle: ButtonStyle {
             .background {
                 Capsule()
                     .fill(OnboardingInk.button)
-                    .opacity(isEnabled ? 1 : 0.35)
+                    .opacity(isEnabled ? 0.9 : 0.3)
             }
+            // Liquid Glass over the ink: flexes and glows under a finger.
+            .glassEffect(.regular.tint(AppGray.ink.opacity(isEnabled ? 0.55 : 0.15)).interactive(isEnabled), in: Capsule())
             .overlay {
                 Capsule().strokeBorder(OnboardingInk.edgeHighlight, lineWidth: 1)
             }
@@ -194,8 +197,8 @@ struct OnboardingPrimaryButtonStyle: ButtonStyle {
                     .clipShape(Capsule())
             }
             .shadow(color: AppGray.ink.opacity(isEnabled ? 0.18 : 0), radius: 10, y: 5)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.28, dampingFraction: 0.6), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.5), value: configuration.isPressed)
             .animation(.easeInOut(duration: 0.3), value: isEnabled)
     }
 }
@@ -308,5 +311,70 @@ struct OnboardingHalo: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Celebrations
+
+/// A ring of light that bursts outward once each time `trigger` turns true:
+/// the "that registered" moment on a chosen answer.
+struct OnboardingSelectionBurst: View {
+    let isOn: Bool
+    var cornerRadius: CGFloat = 15
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var progress: CGFloat = 1
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .strokeBorder(AppBrand.light, lineWidth: 2.5 * (1 - progress))
+            .scaleEffect(1 + 0.12 * progress)
+            .opacity(Double(1 - progress))
+            .allowsHitTesting(false)
+            .onChange(of: isOn) { _, on in
+                guard on, !reduceMotion else { return }
+                progress = 0
+                withAnimation(.easeOut(duration: 0.55)) { progress = 1 }
+            }
+    }
+}
+
+/// Sparks that fly out of the centre and fade, played once when `trigger`
+/// becomes true (the estimator reaching 100%).
+struct OnboardingCelebrationBurst: View {
+    let trigger: Bool
+    var color: Color = .white
+    var count = 14
+    var radius: CGFloat = 130
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var progress: CGFloat = 0
+    @State private var visible = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<count, id: \.self) { index in
+                let angle = Double(index) / Double(count) * 2 * .pi
+                let distance = radius * (index.isMultiple(of: 2) ? 1 : 0.72) * progress
+                Capsule()
+                    .fill(color)
+                    .frame(width: index.isMultiple(of: 3) ? 6 : 4, height: index.isMultiple(of: 3) ? 14 : 9)
+                    .rotationEffect(.radians(angle + .pi / 2))
+                    .offset(x: CGFloat(cos(angle)) * distance, y: CGFloat(sin(angle)) * distance)
+                    .scaleEffect(1.2 - 0.6 * progress)
+            }
+            Circle()
+                .strokeBorder(color.opacity(0.8), lineWidth: 3 * (1 - progress))
+                .frame(width: radius * 2 * progress, height: radius * 2 * progress)
+        }
+        .opacity(visible ? Double(1 - progress * 0.9) : 0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onChange(of: trigger) { _, on in
+            guard on, !reduceMotion else { return }
+            progress = 0
+            visible = true
+            withAnimation(.easeOut(duration: 1.1)) { progress = 1 }
+        }
     }
 }

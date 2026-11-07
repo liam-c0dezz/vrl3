@@ -6,6 +6,8 @@ struct DashboardHomeView: View {
 
     @State private var projectStore = ProjectStore.shared
     @State private var invoiceStore = InvoiceStore.shared
+    @State private var paymentStore = PaymentStore.shared
+    @State private var clientStore = ClientStore.shared
     @State private var businessStore = BusinessSettingsStore.shared
     @State private var showNewProject = false
     @State private var projectAction: ProjectQuickCreateAction?
@@ -27,6 +29,31 @@ struct DashboardHomeView: View {
 
     private func estimateCount(for status: HomeEstimateStatus) -> Int {
         estimates.filter { status.matches($0.status) }.count
+    }
+
+    private var walletFigures: WalletFigures {
+        WalletFigures.current(
+            invoices: invoiceStore.invoices,
+            payments: paymentStore.payments,
+            estimates: estimates,
+            clientName: { invoice in
+                if let id = invoice.clientId,
+                   let client = clientStore.clients.first(where: { $0.id == id }),
+                   !client.name.isEmpty {
+                    return client.name
+                }
+                return invoice.title.isEmpty ? L("Invoice %@", invoice.invoiceNumber) : invoice.title
+            }
+        )
+    }
+
+    private var walletActions: [WalletActionsRow.Item] {
+        [
+            .init(id: "estimate", title: L("Estimate"), icon: "doc.text.fill", action: beginQuickEstimate),
+            .init(id: "invoice", title: L("Invoice"), icon: "doc.plaintext.fill", action: { beginQuickAction(.invoice) }),
+            .init(id: "project", title: L("Project"), icon: "folder.fill.badge.plus", action: { showNewProject = true }),
+            .init(id: "render", title: L("Render"), icon: "camera.fill", action: { beginQuickAction(.render) }),
+        ]
     }
 
     private func invoiceCount(for status: String) -> Int {
@@ -53,13 +80,18 @@ struct DashboardHomeView: View {
                         if retention.isTrialEndingSoon {
                             TrialEndingBanner()
                         }
+                        // Wallet-style top: balance, actions, cash flow, activity.
+                        let figures = walletFigures
+                        WalletBalanceCard(figures: figures)
+                        WalletActionsRow(items: walletActions)
                         if gettingStartedCompletedCount < 4 {
                             gettingStartedSection
                         }
+                        WalletCashFlowCard(figures: figures)
+                        WalletActivityList(activity: figures.activity)
                         if !estimates.isEmpty {
                             StreakCard()
                         }
-                        quickCreateSection
                         if !weeklyRecap.isEmpty {
                             WeeklyRecapCard(recap: weeklyRecap)
                         }
@@ -67,9 +99,12 @@ struct DashboardHomeView: View {
                         invoicesSection
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 4)
                     .padding(.bottom, 140)
                 }
+                .scrollIndicators(.hidden)
         }
+        .background { LiquidGlassBackdrop().ignoresSafeArea() }
         .task(id: estimates.count + invoiceStore.invoices.count) {
             // Projects load after launch; recompute the streak once they arrive.
             RetentionCenter.shared.refresh()
@@ -134,8 +169,10 @@ struct DashboardHomeView: View {
         .task {
             async let projects: Void = projectStore.refresh()
             async let invoices: Void = invoiceStore.refresh()
+            async let payments: Void = paymentStore.refresh()
+            async let clients: Void = clientStore.refresh()
             async let business: Void = businessStore.refresh()
-            _ = await (projects, invoices, business)
+            _ = await (projects, invoices, payments, clients, business)
         }
     }
 
@@ -187,7 +224,7 @@ struct DashboardHomeView: View {
                     }
                     .padding(.horizontal, 16)
                     .frame(height: 54)
-                    .background(AppBrand.accent)
+                    .background(LinearGradient(colors: [AppBrand.accent, AppBrand.light], startPoint: .leading, endPoint: .trailing))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -226,54 +263,8 @@ struct DashboardHomeView: View {
                     }
                 }
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(Color.black.opacity(0.07), lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-        }
-    }
-
-    private var quickCreateSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(L("Quick create"))
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(AppGray.ink)
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8)
-                ],
-                spacing: 8
-            ) {
-                HomeQuickAction(
-                    title: L("Estimate"),
-                    icon: "doc.text.fill",
-                    titleSize: 11.7,
-                    action: beginQuickEstimate
-                )
-                HomeQuickAction(
-                    title: L("Invoice"),
-                    icon: "doc.plaintext.fill",
-                    titleSize: 11.7,
-                    action: { beginQuickAction(.invoice) }
-                )
-                HomeQuickAction(
-                    title: L("Project"),
-                    icon: "folder.fill.badge.plus",
-                    action: { showNewProject = true }
-                )
-                HomeQuickAction(
-                    title: L("Render"),
-                    icon: "camera.fill",
-                    action: { beginQuickAction(.render) }
-                )
-            }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .liquidGlassCard(cornerRadius: 22)
         }
     }
 
@@ -591,42 +582,6 @@ private enum HomeEstimateStatus: CaseIterable {
     }
 }
 
-private struct HomeQuickAction: View {
-    let title: String
-    let icon: String
-    var titleSize: CGFloat = 13
-    let action: () -> Void
-
-    private let brandBlue = AppBrand.accent
-
-    var body: some View {
-        HapticButton(action: action) {
-            VStack(spacing: 9) {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(brandBlue)
-
-                Text(L(title))
-                    .font(.system(size: titleSize, weight: .medium))
-                    .foregroundColor(AppGray.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity)
-            .frame(height: 78)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(Color.black.opacity(0.07), lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
 private struct HomeStatusRow: View {
     let title: String
     let count: Int
@@ -655,13 +610,7 @@ private struct HomeStatusRow: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(Color.black.opacity(0.07), lineWidth: 0.5)
-        }
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
         .contentShape(Rectangle())
+        .liquidGlassCard(cornerRadius: 18, interactive: true)
     }
 }
