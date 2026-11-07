@@ -31,6 +31,7 @@ struct OnboardingView: View {
     @State private var questionnaireAnswers: [Int: String] = [:]
     @State private var paywallErrorMessage = ""
     @State private var isShowingPaywallError = false
+    @State private var isShowingLogoReveal: Bool
 
     private let pages = Array(OnboardingPage.all.dropFirst())
     private var pageCount: Int { pages.count + OnboardingQuestion.all.count + 4 }
@@ -46,6 +47,7 @@ struct OnboardingView: View {
     ) {
         self.onBack = onBack
         self.onFinish = onFinish
+        _isShowingLogoReveal = State(initialValue: initialPage == 0)
         _selectedPage = State(
             initialValue: min(
                 max(initialPage, 0),
@@ -59,9 +61,14 @@ struct OnboardingView: View {
             OnboardingBackdrop()
                 .ignoresSafeArea()
 
+            // The fluid particle field, in white, drifting over the blues.
+            FlowParticlesView(color: .white, opacity: 0.3, density: 0.7)
+                .ignoresSafeArea()
+
             if isQuestionnairePage {
-                Color.white
+                LiquidGlassBackdrop()
                     .ignoresSafeArea()
+                    .transition(.opacity)
             }
 
             TabView(selection: $selectedPage) {
@@ -140,8 +147,17 @@ struct OnboardingView: View {
                 usesLightBackground: isQuestionnairePage,
                 onBack: retreat
             )
+
+            // Opening moment: the EasyBid mark revealed through Liquid Glass.
+            if isShowingLogoReveal {
+                GlassLogoReveal {
+                    withAnimation(.easeInOut(duration: 0.7)) { isShowingLogoReveal = false }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 1.12)))
+                .zIndex(10)
+            }
         }
-        .animation(.easeInOut(duration: 0.25), value: selectedPage)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: selectedPage)
         .alert(L("Paywall unavailable"), isPresented: $isShowingPaywallError) {
             Button(L("OK"), role: .cancel) {}
         } message: {
@@ -1707,7 +1723,7 @@ private struct OnboardingQuestionPage: View {
                             .background(
                                 selection == option
                                     ? AnyShapeStyle(OnboardingInk.selectedOption)
-                                    : AnyShapeStyle(OnboardingInk.panel)
+                                    : AnyShapeStyle(Color.white.opacity(0.35))
                             )
                             .clipShape(
                                 RoundedRectangle(
@@ -1721,10 +1737,17 @@ private struct OnboardingQuestionPage: View {
                                     style: .continuous
                                 )
                                     .strokeBorder(
-                                        selection == option ? .clear : AppGray.border.opacity(0.8),
+                                        selection == option ? .clear : Color.white.opacity(0.85),
                                         lineWidth: 1
                                     )
                             }
+                            // Liquid Glass answer cards over the light particle backdrop.
+                            .glassEffect(
+                                .regular.tint(selection == option ? AppGray.ink.opacity(0.4) : .white.opacity(0.25)).interactive(),
+                                in: RoundedRectangle(cornerRadius: 15 * designScale, style: .continuous)
+                            )
+                            .overlay { OnboardingSelectionBurst(isOn: selection == option, cornerRadius: 15 * designScale) }
+                            .scaleEffect(selection == option ? 1.02 : 1)
                         }
                         .buttonStyle(OnboardingPressStyle())
                         .onboardingTapHaptic()
@@ -1759,7 +1782,7 @@ private struct OnboardingQuestionPage: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background {
-            Color.white
+            LiquidGlassBackdrop()
                 .ignoresSafeArea()
         }
         .ignoresSafeArea(.container, edges: .bottom)
@@ -1818,6 +1841,10 @@ private struct EstimatorBuildOnboardingPage: View {
                             .frame(width: 178, height: 178)
                     }
                     .shadow(color: .black.opacity(0.14), radius: 5, y: 2)
+                    // A springy pop and a burst of sparks when it reaches 100%.
+                    .scaleEffect(isComplete ? 1.08 : 1)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.45), value: isComplete)
+                    .background { OnboardingCelebrationBurst(trigger: isComplete) }
                     .onboardingFloat()
                 }
                 .frame(width: geometry.size.width, height: visualHeight)
@@ -2256,9 +2283,12 @@ private struct OnboardingArtworkPlaceholder: View {
             radius: kind == .photo ? 22 : 18,
             y: kind == .photo ? 10 : (kind.usesDetailedCardLayout ? 7 : 8)
         )
-        .scaleEffect(isActive ? 1 : 0.965)
-        .opacity(isActive ? 1 : 0.82)
-        .animation(.spring(response: 0.48, dampingFraction: 0.86), value: isActive)
+        // The card swings up into place as its page arrives.
+        .rotation3DEffect(.degrees(isActive ? 0 : 18), axis: (x: 1, y: 0, z: 0), anchor: .bottom, perspective: 0.55)
+        .scaleEffect(isActive ? 1 : 0.84)
+        .offset(y: isActive ? 0 : 46)
+        .opacity(isActive ? 1 : 0.6)
+        .animation(.spring(response: 0.8, dampingFraction: 0.68).delay(isActive ? 0.08 : 0), value: isActive)
         .accessibilityHidden(true)
     }
 
