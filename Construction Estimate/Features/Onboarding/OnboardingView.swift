@@ -32,9 +32,15 @@ struct OnboardingView: View {
     @State private var paywallErrorMessage = ""
     @State private var isShowingPaywallError = false
     @State private var isShowingLogoReveal: Bool
+    @State private var touchPoint: CGPoint?
 
     private let pages = Array(OnboardingPage.all.dropFirst())
     private var pageCount: Int { pages.count + OnboardingQuestion.all.count + 4 }
+    /// The "Building your custom estimator" loading page keeps a plain gradient.
+    private var isEstimatorBuildPage: Bool {
+        selectedPage == pages.count + OnboardingQuestion.all.count + 3
+    }
+
     private var isQuestionnairePage: Bool {
         (Self.questionnaireStartPageIndex..<Self.estimatorBuildPageIndex)
             .contains(selectedPage)
@@ -58,15 +64,12 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            OnboardingBackdrop()
-                .ignoresSafeArea()
-
-            // The fluid particle field, in white, drifting over the blues.
-            FlowParticlesView(color: .white, opacity: 0.3, density: 0.7)
+            // Brand gradient that follows a finger or pointer.
+            InteractiveGradient(palette: .brand, point: isEstimatorBuildPage ? nil : touchPoint)
                 .ignoresSafeArea()
 
             if isQuestionnairePage {
-                LiquidGlassBackdrop()
+                InteractiveGradient(palette: .light, point: touchPoint)
                     .ignoresSafeArea()
                     .transition(.opacity)
             }
@@ -157,6 +160,7 @@ struct OnboardingView: View {
                 .zIndex(10)
             }
         }
+        .trackingGradientTouch($touchPoint)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: selectedPage)
         .alert(L("Paywall unavailable"), isPresented: $isShowingPaywallError) {
             Button(L("OK"), role: .cancel) {}
@@ -1741,7 +1745,7 @@ private struct OnboardingQuestionPage: View {
                                         lineWidth: 1
                                     )
                             }
-                            // Liquid Glass answer cards over the light particle backdrop.
+                            // Liquid Glass answer cards over the light touch gradient.
                             .glassEffect(
                                 .regular.tint(selection == option ? AppGray.ink.opacity(0.4) : .white.opacity(0.25)).interactive(),
                                 in: RoundedRectangle(cornerRadius: 15 * designScale, style: .continuous)
@@ -1780,10 +1784,6 @@ private struct OnboardingQuestionPage: View {
             }
             .padding(.bottom, bottomPadding)
             .frame(width: geometry.size.width, height: geometry.size.height)
-        }
-        .background {
-            LiquidGlassBackdrop()
-                .ignoresSafeArea()
         }
         .ignoresSafeArea(.container, edges: .bottom)
     }

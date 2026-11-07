@@ -66,45 +66,6 @@ enum OnboardingInk {
     )
 }
 
-// MARK: - Background
-
-/// The brand's navy-to-blue gradient as a slow mesh: the middle band and
-/// center drift over 25–40 s, so the light moves without ever looking busy.
-struct OnboardingBackdrop: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private static let colors: [Color] = [
-        Color(hex: 0x0B2E5A), Color(hex: 0x0E3667), Color(hex: 0x0B2E5A),
-        Color(hex: 0x1A4D92), Color(hex: 0x2262B5), Color(hex: 0x1D5297),
-        Color(hex: 0x347FE5), Color(hex: 0x3A86EA), Color(hex: 0x2F77DD),
-    ]
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { context in
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: Self.points(at: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate),
-                colors: Self.colors
-            )
-        }
-        .accessibilityHidden(true)
-    }
-
-    static func points(at time: TimeInterval) -> [SIMD2<Float>] {
-        func wave(_ period: Double, _ phase: Double, _ amount: Double) -> Float {
-            Float(sin(time * 2 * .pi / period + phase) * amount)
-        }
-        return [
-            SIMD2(0, 0), SIMD2(0.5, 0), SIMD2(1, 0),
-            SIMD2(0, 0.5 + wave(31, 0.4, 0.06)),
-            SIMD2(0.5 + wave(37, 1.1, 0.10), 0.5 + wave(29, 2.3, 0.08)),
-            SIMD2(1, 0.5 + wave(25, 3.0, 0.06)),
-            SIMD2(0, 1), SIMD2(0.5 + wave(41, 0.8, 0.08), 1), SIMD2(1, 1),
-        ]
-    }
-}
-
 // MARK: - Arrival
 
 /// Content fades up out of a light blur when its page becomes active, and

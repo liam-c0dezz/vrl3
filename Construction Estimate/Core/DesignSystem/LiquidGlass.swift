@@ -3,8 +3,8 @@
 //  Construction Estimate
 //
 //  The app's Liquid Glass look: iOS 26 glass surfaces in the brand blues,
-//  and a flowing particle field (a port of the fluid particles background)
-//  for the backdrops the glass sits on.
+//  and a brand gradient that follows a finger or pointer
+//  behind the glass.
 //
 
 import SwiftUI
@@ -55,127 +55,123 @@ struct LiquidGlassPressStyle: ButtonStyle {
     }
 }
 
-// MARK: - Backdrops
+// MARK: - Backgrounds
 
-/// Light backdrop for the main portal: pale brand blues that drift, with
-/// soft blue particles flowing over them for the glass to bend.
-struct LiquidGlassBackdrop: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+/// The brand gradient that answers a finger or pointer: the colours lean
+/// toward the touch and a soft glow follows it, its hue sliding a little
+/// across the brand blues with position. Still when nothing touches it.
+struct InteractiveGradient: View {
+    enum Palette { case brand, light }
 
-    private static let colors: [Color] = [
-        Color(hex: 0xDCE8F8), Color(hex: 0xF2F6FC), Color(hex: 0xCFE0F7),
-        Color(hex: 0xEAF1FB), Color(hex: 0xBFD5F3), Color(hex: 0xE6EEF9),
-        Color(hex: 0xF7F9FC), Color(hex: 0xEEF3FA), Color(hex: 0xF9FAFC),
-    ]
-
-    var body: some View {
-        ZStack {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { context in
-                let time = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
-                MeshGradient(width: 3, height: 3, points: OnboardingBackdrop.points(at: time), colors: Self.colors)
-            }
-            FlowParticlesView(color: AppBrand.light, opacity: 0.32, density: 0.55)
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-// MARK: - Flow particles
-
-/// Particles that drift along a slowly changing flow field and leave short
-/// streaks: the "fluid particles" background, in any brand color.
-struct FlowParticlesView: View {
-    var color: Color = .white
-    var opacity: Double = 0.5
-    /// Relative particle count; 1 is about one particle per 900 pt².
-    var density: Double = 1
+    var palette: Palette = .brand
+    /// Touch or pointer location in global coordinates; nil when nothing touches.
+    var point: CGPoint? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var field = FlowParticleField()
+    @State private var focus = UnitPoint(x: 0.5, y: 0.45)
+    @State private var strength: Double = 0
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: reduceMotion)) { context in
-            Canvas { graphics, size in
-                field.step(size: size, time: context.date.timeIntervalSinceReferenceDate, density: density, still: reduceMotion)
-                for particle in field.particles {
-                    let fade = sin(min(1, particle.life / particle.maxLife) * .pi)
-                    var path = Path()
-                    path.move(to: particle.previous)
-                    path.addLine(to: particle.position)
-                    graphics.stroke(
-                        path,
-                        with: .color(color.opacity(opacity * fade)),
-                        style: StrokeStyle(lineWidth: particle.size, lineCap: .round)
-                    )
-                }
+        GeometryReader { geometry in
+            let frame = geometry.frame(in: .global)
+            ZStack {
+                MeshGradient(width: 3, height: 3, points: meshPoints, colors: colors)
+                RadialGradient(
+                    colors: [glowColor.opacity(strength), glowColor.opacity(strength * 0.35), .clear],
+                    center: focus,
+                    startRadius: 0,
+                    endRadius: max(frame.width, frame.height) * 0.55
+                )
+                .blendMode(palette == .brand ? .plusLighter : .normal)
             }
+            .onChange(of: point) { _, newPoint in follow(newPoint, in: frame) }
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
+
+    /// Same brand colours as before: navy to blue, or the pale blues.
+    private var colors: [Color] {
+        switch palette {
+        case .brand:
+            [Color(hex: 0x0B2E5A), Color(hex: 0x0E3667), Color(hex: 0x0B2E5A),
+             Color(hex: 0x1A4D92), Color(hex: 0x2262B5), Color(hex: 0x1D5297),
+             Color(hex: 0x347FE5), Color(hex: 0x3A86EA), Color(hex: 0x2F77DD)]
+        case .light:
+            [Color(hex: 0xDCE8F8), Color(hex: 0xF2F6FC), Color(hex: 0xCFE0F7),
+             Color(hex: 0xEAF1FB), Color(hex: 0xBFD5F3), Color(hex: 0xE6EEF9),
+             Color(hex: 0xF7F9FC), Color(hex: 0xEEF3FA), Color(hex: 0xF9FAFC)]
+        }
+    }
+
+    /// Hue slides from the brand blue toward a cooler cyan-blue across the screen.
+    private var glowColor: Color {
+        let hue = 0.575 + 0.05 * Double(focus.x) - 0.015 * Double(focus.y)
+        return palette == .brand
+            ? Color(hue: hue, saturation: 0.72, brightness: 0.95).opacity(0.55)
+            : Color(hue: hue, saturation: 0.45, brightness: 1).opacity(0.75)
+    }
+
+    /// The middle of the mesh leans toward the touch.
+    private var meshPoints: [SIMD2<Float>] {
+        let pull = Float(0.28 * strength)
+        let cx = Float(0.5) + (Float(focus.x) - 0.5) * pull
+        let cy = Float(0.5) + (Float(focus.y) - 0.5) * pull
+        return [
+            SIMD2(0, 0), SIMD2(0.5 + (cx - 0.5) * 0.4, 0), SIMD2(1, 0),
+            SIMD2(0, 0.5 + (cy - 0.5) * 0.5), SIMD2(cx, cy), SIMD2(1, 0.5 + (cy - 0.5) * 0.5),
+            SIMD2(0, 1), SIMD2(0.5 + (cx - 0.5) * 0.4, 1), SIMD2(1, 1),
+        ]
+    }
+
+    private func follow(_ newPoint: CGPoint?, in frame: CGRect) {
+        guard !reduceMotion else { return }
+        if let newPoint, frame.width > 0, frame.height > 0 {
+            let target = UnitPoint(
+                x: min(max((newPoint.x - frame.minX) / frame.width, 0), 1),
+                y: min(max((newPoint.y - frame.minY) / frame.height, 0), 1)
+            )
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                focus = target
+                strength = 1
+            }
+        } else {
+            // Let go: the glow fades and the colours drift back to rest.
+            withAnimation(.spring(response: 1.4, dampingFraction: 0.9)) {
+                strength = 0
+                focus = UnitPoint(x: 0.5, y: 0.45)
+            }
+        }
+    }
 }
 
-/// Particle state lives in a reference type so the canvas can advance it
-/// each frame without re-rendering the view tree.
-final class FlowParticleField {
-    struct Particle {
-        var position: CGPoint
-        var previous: CGPoint
-        var size: CGFloat
-        var life: Double
-        var maxLife: Double
-    }
-
-    private(set) var particles: [Particle] = []
-    private var lastSize: CGSize = .zero
-
-    func step(size: CGSize, time: TimeInterval, density: Double, still: Bool) {
-        guard size.width > 1, size.height > 1 else { return }
-        if size != lastSize || particles.isEmpty {
-            lastSize = size
-            let count = Int(min(420, max(80, size.width * size.height / 900 * density)))
-            particles = (0..<count).map { _ in Self.spawn(in: size, randomLife: true) }
-            if still {
-                // A settled frame: give each particle a short tail along the field.
-                for index in particles.indices { advance(&particles[index], size: size, time: 0, speed: 6) }
+extension View {
+    /// Reports where a finger or pointer is over this view (global
+    /// coordinates) without taking touches away from its buttons.
+    func trackingGradientTouch(_ point: Binding<CGPoint?>) -> some View {
+        self
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onChanged { point.wrappedValue = $0.location }
+                    .onEnded { _ in point.wrappedValue = nil }
+            )
+            .onContinuousHover(coordinateSpace: .global) { phase in
+                switch phase {
+                case let .active(location): point.wrappedValue = location
+                case .ended: point.wrappedValue = nil
+                }
             }
-        }
-        guard !still else { return }
-        let t = time * 0.12
-        for index in particles.indices {
-            advance(&particles[index], size: size, time: t, speed: 1.6)
-            particles[index].life += 1
-            if particles[index].life > particles[index].maxLife {
-                particles[index] = Self.spawn(in: size, randomLife: false)
-            }
-        }
     }
+}
 
-    private func advance(_ particle: inout Particle, size: CGSize, time: Double, speed: CGFloat) {
-        let x = particle.position.x, y = particle.position.y
-        // Layered sines stand in for Perlin noise: smooth, swirling, cheap.
-        let angle = (sin(x * 0.0042 + time) + cos(y * 0.0051 - time * 0.8) + sin((x + y) * 0.0023 + time * 0.5)) * .pi * 0.9
-        var next = CGPoint(x: x + cos(angle) * speed, y: y + sin(angle) * speed)
-        // The streak's tail trails a few frames behind along the flow.
-        var tail = CGPoint(x: next.x - cos(angle) * 9, y: next.y - sin(angle) * 9)
-        if next.x < 0 || next.x > size.width || next.y < 0 || next.y > size.height {
-            next = CGPoint(x: (next.x + size.width).truncatingRemainder(dividingBy: size.width),
-                           y: (next.y + size.height).truncatingRemainder(dividingBy: size.height))
-            tail = next
-        }
-        particle.previous = tail
-        particle.position = next
-    }
-
-    private static func spawn(in size: CGSize, randomLife: Bool) -> Particle {
-        let point = CGPoint(x: .random(in: 0...size.width), y: .random(in: 0...size.height))
-        let maxLife = Double.random(in: 110...170)
-        return Particle(
-            position: point,
-            previous: point,
-            size: .random(in: 0.6...1.8),
-            life: randomLife ? .random(in: 0...maxLife) : 0,
-            maxLife: maxLife
+/// The main portal's background: the pale brand blues, perfectly still.
+struct PortalBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [Color(hex: 0xDCE8F8), Color(hex: 0xF2F6FC), Color(hex: 0xEEF3FA), Color(hex: 0xF7F9FC)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
+        .accessibilityHidden(true)
     }
 }
