@@ -1812,7 +1812,13 @@ private struct EstimatorBuildOnboardingPage: View {
 
                     EstimatorProgressRing(progress: progress, foreground: .white)
                     .frame(width: 156, height: 156)
+                    // A slowly turning ring of light around the progress ring.
+                    .background {
+                        OnboardingHalo()
+                            .frame(width: 178, height: 178)
+                    }
                     .shadow(color: .black.opacity(0.14), radius: 5, y: 2)
+                    .onboardingFloat()
                 }
                 .frame(width: geometry.size.width, height: visualHeight)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -2261,9 +2267,6 @@ private struct OnboardingArtworkPlaceholder: View {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .fill(AppBrand.verticalGradient)
 
-            OnboardingBackdrop()
-                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 54, weight: .medium))
@@ -2275,11 +2278,6 @@ private struct OnboardingArtworkPlaceholder: View {
                         Circle()
                             .strokeBorder(.white.opacity(0.28), lineWidth: 1)
                     }
-                    .background {
-                        OnboardingHalo()
-                            .frame(width: 118, height: 118)
-                    }
-                    .onboardingFloat()
 
                 VStack(spacing: 7) {
                     Text(L("EasyBid"))
