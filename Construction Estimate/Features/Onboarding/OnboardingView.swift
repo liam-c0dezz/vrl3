@@ -2109,19 +2109,21 @@ private struct OnboardingPageView: View {
     var body: some View {
         GeometryReader { geometry in
             let standardArtworkWidth = min(geometry.size.width - 44, 350)
+            // The job photo is a smaller, framed card under the top bar.
             let artworkWidth = page.placeholder == .photo
-                ? min(geometry.size.width - 24, 370)
+                ? min(geometry.size.width - 64, 338)
                 : standardArtworkWidth
             let standardArtworkHeight = min(geometry.size.height * 0.52, 430)
             let lowerPanelHeight = geometry.size.height * 0.445
             let lowerPanelTopPadding = max(48, min(68, geometry.size.height * 0.075))
             let lowerPanelBottomPadding = max(54, geometry.safeAreaInsets.bottom + 40)
             let artworkTop = page.placeholder == .photo
-                ? max(76, geometry.safeAreaInsets.top + 34)
+                ? max(106, geometry.safeAreaInsets.top + 74)
                 : max(112, geometry.safeAreaInsets.top + 82)
             let lowerPanelTop = geometry.size.height - lowerPanelHeight
+            // Sized to the space above the panel (only a sliver tucks under it).
             let artworkHeight = page.placeholder == .photo
-                ? min(geometry.size.height * 0.56, 460)
+                ? max(200, min(380, lowerPanelTop - artworkTop + 24))
                 : standardArtworkHeight
             let visibleArtworkHeight = min(
                 artworkHeight,
@@ -2255,7 +2257,7 @@ private struct OnboardingArtworkPlaceholder: View {
     let visibleCardHeight: CGFloat
 
     var body: some View {
-        let cornerRadius: CGFloat = kind == .photo ? 30 : 20
+        let cornerRadius: CGFloat = kind == .photo ? 24 : 20
 
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -2283,12 +2285,11 @@ private struct OnboardingArtworkPlaceholder: View {
             radius: kind == .photo ? 22 : 18,
             y: kind == .photo ? 10 : (kind.usesDetailedCardLayout ? 7 : 8)
         )
-        // The card swings up into place as its page arrives.
-        .rotation3DEffect(.degrees(isActive ? 0 : 18), axis: (x: 1, y: 0, z: 0), anchor: .bottom, perspective: 0.55)
-        .scaleEffect(isActive ? 1 : 0.84)
-        .offset(y: isActive ? 0 : 46)
-        .opacity(isActive ? 1 : 0.6)
-        .animation(.spring(response: 0.8, dampingFraction: 0.68).delay(isActive ? 0.08 : 0), value: isActive)
+        // The card rises gently into place: a short fade and lift, no tilt or bounce.
+        .scaleEffect(isActive ? 1 : 0.98)
+        .offset(y: isActive ? 0 : 22)
+        .opacity(isActive ? 1 : 0)
+        .animation(.easeOut(duration: 0.55).delay(isActive ? 0.05 : 0), value: isActive)
         .accessibilityHidden(true)
     }
 
@@ -2729,7 +2730,7 @@ private struct AnimatedOnboardingEstimateCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
-        .animation(.spring(response: 0.42, dampingFraction: 0.84), value: revealStep)
+        .animation(.easeOut(duration: 0.38), value: revealStep)
         .task(id: isActive) {
             guard isActive else {
                 revealStep = 0
@@ -2848,7 +2849,7 @@ private struct AnimatedOnboardingMaterialsCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
-        .animation(.spring(response: 0.42, dampingFraction: 0.84), value: revealStep)
+        .animation(.easeOut(duration: 0.38), value: revealStep)
         .task(id: isActive) {
             guard isActive else {
                 revealStep = 0
@@ -2976,7 +2977,7 @@ private struct AnimatedOnboardingInvoiceCard: View {
             Spacer(minLength: 6)
         }
         .background(Color.white)
-        .animation(.spring(response: 0.42, dampingFraction: 0.84), value: revealStep)
+        .animation(.easeOut(duration: 0.38), value: revealStep)
         .task(id: isActive) {
             guard isActive else {
                 revealStep = 0
