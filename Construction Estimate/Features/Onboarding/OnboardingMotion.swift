@@ -82,7 +82,6 @@ private struct OnboardingReveal: ViewModifier {
         content
             .opacity(shown ? 1 : 0)
             .blur(radius: shown ? 0 : 12)
-            .scaleEffect(shown ? 1 : 0.92, anchor: .bottom)
             .offset(y: shown ? 0 : 34)
             .task(id: isActive) {
                 if isActive {
