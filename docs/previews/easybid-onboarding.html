@@ -122,7 +122,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .callout .t{font:600 10.5px/1.2 var(--rounded);color:var(--ink)}
 .callout .a{font:700 12.5px/1.25 var(--rounded);color:var(--ink);margin-top:2px}
 /* estimate / invoice cards */
-.rv{opacity:0;transform:translateY(8px);transition:opacity .35s,transform .42s cubic-bezier(.3,1.25,.5,1)}
+.rv{opacity:0;transform:translateY(8px);transition:opacity .38s ease-out,transform .38s ease-out}
 .rv.on{opacity:1;transform:none}
 .div{height:.7px;background:rgba(229,229,234,.85)}
 .erow{height:50px;display:flex;align-items:center;padding:0 24px;font:500 13px var(--sf);color:var(--itemText);gap:3px;font-variant-numeric:tabular-nums}
@@ -256,9 +256,9 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 @keyframes obIn{from{opacity:0;filter:blur(12px);transform:translateY(34px) scale(.92)}to{opacity:1;filter:blur(0);transform:none}}
 .ttl,.subt,.next,.zipfield,.qtitle,.qopt,.auth .copy>*,.auth .carousel,.auth .btns{animation-duration:.9s;animation-timing-function:cubic-bezier(.3,1.35,.5,1)}
 
-/* Feature cards swing up into place */
-.art,.artsh{animation:artIn 1s cubic-bezier(.25,1.3,.45,1) .05s backwards}
-@keyframes artIn{from{opacity:.2;transform:perspective(700px) translateX(-50%) translateY(46px) rotateX(18deg) scale(.84)}to{transform:perspective(700px) translateX(-50%)}}
+/* Example cards rise gently into place: a short fade and lift, no tilt or bounce */
+.art,.artsh{animation:artIn .55s ease-out .05s backwards}
+@keyframes artIn{from{opacity:0;transform:translateX(-50%) translateY(22px) scale(.98)}to{opacity:1;transform:translateX(-50%)}}
 #root.still .art,#root.still .artsh{animation:none}
 
 /* Liquid Glass ink buttons */
@@ -319,8 +319,8 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 html,body{height:100%;margin:0;overflow:hidden}
 body{background:linear-gradient(#0B2E5A,#347FE5);transition:background .4s}
 body.light{background:linear-gradient(160deg,#DCE8F8,#F2F6FC 38%,#E6EEF9 70%,#F7F9FC)}
-.stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
-.stage .dev{border-radius:0;transform-origin:center;flex:none;touch-action:manipulation}
+.stage{position:fixed;inset:0;overflow:hidden}
+.stage .dev{position:absolute;left:0;top:0;border-radius:0;transform-origin:0 0;touch-action:manipulation}
 @supports (height:100dvh){.stage{height:100dvh}}
 </style></head>
 <body>
@@ -401,7 +401,7 @@ function pageAuth(){
 /* geometry from OnboardingPageView for a 402 x 874 screen, safe area 62 / 34 */
 let H=874;const W=402,SAFE_T=62,SAFE_B=34;
 let PANEL_H, PANEL_TOP, PANEL_PAD_T, PANEL_PAD_B;
-function setLayoutHeight(h){ H=h; PANEL_H=Math.max(H*0.445, 372); PANEL_TOP=H-PANEL_H; PANEL_PAD_T=Math.max(48,Math.min(68,H*0.075)); PANEL_PAD_B=Math.max(54,SAFE_B+40); }
+function setLayoutHeight(h){ H=h; PANEL_H=Math.max(H*0.445, 340); PANEL_TOP=H-PANEL_H; PANEL_PAD_T=Math.max(48,Math.min(68,H*0.075)); PANEL_PAD_B=Math.max(54,SAFE_B+40); }
 setLayoutHeight(874);
 function copyBlock(title,sub,btn,btnAct="next",off=false){
   return `<div class="copyblock" style="height:${PANEL_H}px;padding:${PANEL_PAD_T}px 42px ${PANEL_PAD_B}px">
@@ -411,9 +411,10 @@ function copyBlock(title,sub,btn,btnAct="next",off=false){
 function pageFeature(k){
   const [title,sub,kind]=PAGES[k];
   const photo=kind==="photo";
-  const aw=photo?Math.min(W-24,370):Math.min(W-44,350);
-  const ah=photo?Math.min(H*0.56,460):Math.min(H*0.52,430);
-  const top=photo?Math.max(76,SAFE_T+34):Math.max(112,SAFE_T+82);
+  // The job photo is a smaller, framed card under the top bar, sized to the space above the panel.
+  const aw=photo?Math.min(W-64,338):Math.min(W-44,350);
+  const top=photo?Math.max(106,SAFE_T+74):Math.max(112,SAFE_T+82);
+  const ah=photo?Math.max(200,Math.min(380,PANEL_TOP-top+24)):Math.min(H*0.52,430);
   const overlap=Math.max(0,top+ah-PANEL_TOP), visible=Math.min(ah,Math.max(0,PANEL_TOP-top));
   const pre=Math.max(40,Math.min(54,ah*0.125));
   let inner="";
@@ -445,7 +446,7 @@ function pageFeature(k){
       <div class="th rv" data-step="3"><span class="c1">${t("Description")}</span><span class="c2">${t("Qty")}</span><span class="c3">${t("Amount")}</span></div>
       ${INVROWS.map(([d,q,a],i)=>`<div class="tr rv" data-step="${i+4}"><span class="c1">${t(d)}</span><span class="c2">${q}</span><span class="c3">${a}</span></div>${i<INVROWS.length-1?`<div class="tdiv rv" data-step="${i+4}"></div>`:""}`).join("")}</div>`;
   }
-  const radius=photo?30:20;
+  const radius=photo?24:20;
   const shadow=photo?"0 10px 22px rgba(11,46,90,.24)":"0 7px 18px rgba(11,46,90,.18)";
   const fade=photo?"":`<div class="fadeout" style="height:${pre+overlap}px;border-radius:0 0 ${radius}px ${radius}px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.42) ${pre*0.28}px,rgba(255,255,255,.88) ${pre*0.64}px,#fff ${pre}px,#fff)"></div>`;
   // Like the app: the card's shadow stays above the panel, and the part of the card
@@ -509,14 +510,15 @@ function pageQuestion(qi){
   </div>${obNav(true)}</div>`;
 }
 function pageBuild(){
-  const vt=Math.max(82,SAFE_T+54), vh=Math.max(170,Math.min(Math.min(Math.max(H*0.405,290),340),PANEL_TOP-vt-6)), p=S.build, r=(156-8.5)/2, c=2*Math.PI*r;
+  const BPH=Math.max(PANEL_H,372);
+  const vt=Math.max(82,SAFE_T+54), vh=Math.max(170,Math.min(Math.min(Math.max(H*0.405,290),340),(H-BPH)-vt-6)), p=S.build, r=(156-8.5)/2, c=2*Math.PI*r;
   const rows=[[["hammer.fill","screwdriver.fill","tag.fill","spigot.fill","shower.fill"],-1,22],[["shower.fill","spigot.fill","tag.fill","screwdriver.fill","hammer.fill"],1,25],[["tag.fill","hammer.fill","shower.fill","screwdriver.fill","spigot.fill"],-1,28]];
   const toolRow=([icons,dir,sp])=>{const w=icons.length*116;return `<div class="row trow ${dir<0?"l":"r"}" style="--dur:${sp}s;--w:${w}px">${[...icons,...icons,...icons].map(i=>`<div class="tile">${S_(i,38)}</div>`).join("")}</div>`};
   return `<div class="screen grad nobg">
     <div class="tools" style="top:${vt}px;height:${vh}px">${rows.map(toolRow).join("")}</div>
     <div class="ring" style="top:${vt+(vh-156)/2}px"><i class="halo"></i><i class="shock"></i><span class="sparks">${Array.from({length:14},(_,i)=>`<b style="--a:${i*360/14}deg;--d:${i%2?118:150}px"></b>`).join("")}</span><svg width="156" height="156" viewBox="0 0 156 156" style="transform:rotate(-90deg)"><circle cx="78" cy="78" r="${r}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8.5"/><circle id="arc" cx="78" cy="78" r="${r}" fill="none" stroke="#fff" stroke-width="8.5" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" style="transition:stroke-dashoffset .55s ease"/></svg><b id="pct">${p}%</b></div>
-    <div class="panel" style="height:${PANEL_H}px;border-radius:34px 34px 0 0"></div>
-    <div class="copyblock" style="height:${PANEL_H}px;padding:${PANEL_PAD_T}px 42px ${PANEL_PAD_B}px">
+    <div class="panel" style="height:${BPH}px;border-radius:34px 34px 0 0"></div>
+    <div class="copyblock" style="height:${BPH}px;padding:${PANEL_PAD_T}px 42px ${PANEL_PAD_B}px">
       <p class="ttl">${t("Building your custom estimator")}</p><div style="flex:1;min-height:14px"></div>
       <div class="checklist">${[["Setting up your workspace",9],["Customizing your estimator",56],["Ready!",100]].map(([l,v])=>`<div data-at="${v}" class="${p>=v?"on":""}">${S_("checkmark",18)}${t(l)}</div>`).join("")}</div>
       <div style="flex:1;min-height:14px"></div>
@@ -616,7 +618,8 @@ function fit(){
   h=Math.round(h);
   const dev=document.getElementById("dev");
   dev.style.height=h+"px";
-  dev.style.transform=`scale(${s})`;
+  // Placed exactly: scaled from its top-left corner, then centred in the window.
+  dev.style.transform=`translate(${(vw-402*s)/2}px,${(vh-h*s)/2}px) scale(${s})`;
   if (h!==H) { setLayoutHeight(h); if (window.__started) { root.classList.add("still"); root.innerHTML=renderOnboarding(); if(S.ob===OB_COUNT-1) setBuild(S.build); } }
 }
 window.addEventListener("resize",fit);
