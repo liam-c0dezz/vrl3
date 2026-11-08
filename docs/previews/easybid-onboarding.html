@@ -253,12 +253,12 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .checklist div.on svg{transform:translateY(-50%) scale(1) rotate(0)}
 
 /* ===== Bigger, more satisfying motion + Liquid Glass (OnboardingMotion.swift / GlassLogoReveal.swift) ===== */
-@keyframes obIn{from{opacity:0;filter:blur(12px);transform:translateY(34px) scale(.92)}to{opacity:1;filter:blur(0);transform:none}}
+@keyframes obIn{from{opacity:0;filter:blur(10px);transform:translateY(30px)}to{opacity:1;filter:blur(0);transform:none}}
 .ttl,.subt,.next,.zipfield,.qtitle,.qopt,.auth .copy>*,.auth .carousel,.auth .btns{animation-duration:.9s;animation-timing-function:cubic-bezier(.3,1.35,.5,1)}
 
-/* Example cards rise gently into place: a short fade and lift, no tilt or bounce */
+/* Example cards rise straight up into place: a short fade and lift, no tilt, scale or bounce */
 .art,.artsh{animation:artIn .55s ease-out .05s backwards}
-@keyframes artIn{from{opacity:0;transform:translateX(-50%) translateY(22px) scale(.98)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes artIn{from{opacity:0;transform:translateX(-50%) translateY(22px)}to{opacity:1;transform:translateX(-50%)}}
 #root.still .art,#root.still .artsh{animation:none}
 
 /* Liquid Glass ink buttons */
@@ -267,7 +267,8 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .next:active:not(.off){transform:scale(.94)}
 .capbtn{transition:transform .34s cubic-bezier(.3,1.8,.45,1)}
 .capbtn:active{transform:scale(.95)}
-.capbtn.glass{background:rgba(11,46,90,.45);-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.18),0 10px 22px -14px rgba(0,0,0,.4)}
+.capbtn.glass{background:linear-gradient(rgba(18,59,114,.92),rgba(11,46,90,.92));box-shadow:0 10px 22px -12px rgba(0,0,0,.35);position:relative;overflow:hidden}
+.capbtn.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%)}
 .tcard{background:rgba(255,255,255,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 #fff}
 .obnav .back{border-radius:50%;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.16)}
 .obnav.lightbg .back{background:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(255,255,255,.6),0 6px 14px -8px rgba(11,46,90,.3)}
