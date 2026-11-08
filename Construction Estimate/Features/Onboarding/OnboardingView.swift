@@ -358,11 +358,30 @@ private struct AppleAuthOnboardingPage: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 50 * designScale)
                     }
-                    .buttonStyle(.plain)
-                    .glassEffect(
-                        .clear.tint(AppBrand.dark.opacity(0.82)),
-                        in: Capsule()
-                    )
+                    .buttonStyle(LiquidGlassPressStyle(pressedScale: 0.96))
+                    // Deep-blue capsule with a soft, even sheen across the top
+                    // instead of a crisp glass rim.
+                    .background {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: 0x123B72).opacity(0.92), AppBrand.dark.opacity(0.92)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .overlay {
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [.white.opacity(0.10), .white.opacity(0)],
+                                            startPoint: .top,
+                                            endPoint: .center
+                                        )
+                                    )
+                            }
+                            .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
+                    }
                     .disabled(isSubmitting)
 
                     Button {
@@ -2285,8 +2304,7 @@ private struct OnboardingArtworkPlaceholder: View {
             radius: kind == .photo ? 22 : 18,
             y: kind == .photo ? 10 : (kind.usesDetailedCardLayout ? 7 : 8)
         )
-        // The card rises gently into place: a short fade and lift, no tilt or bounce.
-        .scaleEffect(isActive ? 1 : 0.98)
+        // The card rises straight up into place: a short fade and lift, no tilt, scale or bounce.
         .offset(y: isActive ? 0 : 22)
         .opacity(isActive ? 1 : 0)
         .animation(.easeOut(duration: 0.55).delay(isActive ? 0.05 : 0), value: isActive)
