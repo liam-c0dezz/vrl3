@@ -37,8 +37,8 @@ r("<style>.strip button.ba{border-style:dashed;margin-left:6px}i.halo,span.zipok
 html,body{height:100%;margin:0;overflow:hidden}
 body{background:linear-gradient(#0B2E5A,#347FE5);transition:background .4s}
 body.light{background:linear-gradient(160deg,#DCE8F8,#F2F6FC 38%,#E6EEF9 70%,#F7F9FC)}
-.stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
-.stage .dev{border-radius:0;transform-origin:center;flex:none;touch-action:manipulation}
+.stage{position:fixed;inset:0;overflow:hidden}
+.stage .dev{position:absolute;left:0;top:0;border-radius:0;transform-origin:0 0;touch-action:manipulation}
 @supports (height:100dvh){.stage{height:100dvh}}
 </style>""")
 
@@ -91,7 +91,8 @@ function fit(){
   h=Math.round(h);
   const dev=document.getElementById("dev");
   dev.style.height=h+"px";
-  dev.style.transform=`scale(${s})`;
+  // Placed exactly: scaled from its top-left corner, then centred in the window.
+  dev.style.transform=`translate(${(vw-402*s)/2}px,${(vh-h*s)/2}px) scale(${s})`;
   if (h!==H) { setLayoutHeight(h); if (window.__started) { root.classList.add("still"); root.innerHTML=renderOnboarding(); if(S.ob===OB_COUNT-1) setBuild(S.build); } }
 }
 window.addEventListener("resize",fit);
@@ -100,7 +101,7 @@ window.addEventListener("resize",fit);
 # Layout height follows the window (see fit()).
 r("const H=874,W=402,SAFE_T=62,SAFE_B=34;", "let H=874;const W=402,SAFE_T=62,SAFE_B=34;")
 r("const PANEL_H=H*0.445, PANEL_TOP=H-PANEL_H, PANEL_PAD_T=Math.max(48,Math.min(68,H*0.075)), PANEL_PAD_B=Math.max(54,SAFE_B+40);",
-  "let PANEL_H, PANEL_TOP, PANEL_PAD_T, PANEL_PAD_B;\nfunction setLayoutHeight(h){ H=h; PANEL_H=Math.max(H*0.445, 372); PANEL_TOP=H-PANEL_H; PANEL_PAD_T=Math.max(48,Math.min(68,H*0.075)); PANEL_PAD_B=Math.max(54,SAFE_B+40); }\nsetLayoutHeight(874);")
+  "let PANEL_H, PANEL_TOP, PANEL_PAD_T, PANEL_PAD_B;\nfunction setLayoutHeight(h){ H=h; PANEL_H=Math.max(H*0.445, 340); PANEL_TOP=H-PANEL_H; PANEL_PAD_T=Math.max(48,Math.min(68,H*0.075)); PANEL_PAD_B=Math.max(54,SAFE_B+40); }\nsetLayoutHeight(874);")
 r("fit(); render();", "fit(); render(); window.__started=true;")
 
 # On short screens the graph and the progress ring fit the space above the panel.
@@ -108,6 +109,13 @@ r("const visW=Math.min(W-36,380), vt=Math.max(82,SAFE_T+54)+42, vw=330, vh=270, 
   "const visW=Math.min(W-36,380), vt=Math.max(82,SAFE_T+54)+42, vw=330, vh=Math.max(150,Math.min(270,PANEL_TOP-vt-34)), cx=vw*0.96;")
 r("const vh=Math.min(Math.max(H*0.405,290),340), vt=Math.max(82,SAFE_T+54), p=S.build,",
   "const vt=Math.max(82,SAFE_T+54), vh=Math.max(170,Math.min(Math.min(Math.max(H*0.405,290),340),PANEL_TOP-vt-6)), p=S.build,")
+
+# The estimator page has more copy, so its panel keeps a taller minimum.
+i = s.index("function pageBuild(){")
+j = s.index("function renderOnboarding", i)
+body = s[i:j].replace("PANEL_TOP", "(H-BPH)").replace("PANEL_H", "BPH")
+body = body.replace("function pageBuild(){", "function pageBuild(){\n  const BPH=Math.max(PANEL_H,372);", 1)
+s = s[:i] + body + s[j:]
 
 # Remove the wallet script.
 cut("<script>\n/* ===== Wallet: balance roll-up", "</script>\n", keep_end=False)

@@ -122,7 +122,7 @@ body{background:var(--stage);color:var(--stageInk);font-family:var(--sf);-webkit
 .callout .t{font:600 10.5px/1.2 var(--rounded);color:var(--ink)}
 .callout .a{font:700 12.5px/1.25 var(--rounded);color:var(--ink);margin-top:2px}
 /* estimate / invoice cards */
-.rv{opacity:0;transform:translateY(8px);transition:opacity .35s,transform .42s cubic-bezier(.3,1.25,.5,1)}
+.rv{opacity:0;transform:translateY(8px);transition:opacity .38s ease-out,transform .38s ease-out}
 .rv.on{opacity:1;transform:none}
 .div{height:.7px;background:rgba(229,229,234,.85)}
 .erow{height:50px;display:flex;align-items:center;padding:0 24px;font:500 13px var(--sf);color:var(--itemText);gap:3px;font-variant-numeric:tabular-nums}
@@ -484,9 +484,10 @@ function copyBlock(title,sub,btn,btnAct="next",off=false){
 function pageFeature(k){
   const [title,sub,kind]=PAGES[k];
   const photo=kind==="photo";
-  const aw=photo?Math.min(W-24,370):Math.min(W-44,350);
-  const ah=photo?Math.min(H*0.56,460):Math.min(H*0.52,430);
-  const top=photo?Math.max(76,SAFE_T+34):Math.max(112,SAFE_T+82);
+  // The job photo is a smaller, framed card under the top bar, sized to the space above the panel.
+  const aw=photo?Math.min(W-64,338):Math.min(W-44,350);
+  const top=photo?Math.max(106,SAFE_T+74):Math.max(112,SAFE_T+82);
+  const ah=photo?Math.max(200,Math.min(380,PANEL_TOP-top+24)):Math.min(H*0.52,430);
   const overlap=Math.max(0,top+ah-PANEL_TOP), visible=Math.min(ah,Math.max(0,PANEL_TOP-top));
   const pre=Math.max(40,Math.min(54,ah*0.125));
   let inner="";
@@ -518,7 +519,7 @@ function pageFeature(k){
       <div class="th rv" data-step="3"><span class="c1">${t("Description")}</span><span class="c2">${t("Qty")}</span><span class="c3">${t("Amount")}</span></div>
       ${INVROWS.map(([d,q,a],i)=>`<div class="tr rv" data-step="${i+4}"><span class="c1">${t(d)}</span><span class="c2">${q}</span><span class="c3">${a}</span></div>${i<INVROWS.length-1?`<div class="tdiv rv" data-step="${i+4}"></div>`:""}`).join("")}</div>`;
   }
-  const radius=photo?30:20;
+  const radius=photo?24:20;
   const shadow=photo?"0 10px 22px rgba(11,46,90,.24)":"0 7px 18px rgba(11,46,90,.18)";
   const fade=photo?"":`<div class="fadeout" style="height:${pre+overlap}px;border-radius:0 0 ${radius}px ${radius}px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.42) ${pre*0.28}px,rgba(255,255,255,.88) ${pre*0.64}px,#fff ${pre}px,#fff)"></div>`;
   // Like the app: the card's shadow stays above the panel, and the part of the card
