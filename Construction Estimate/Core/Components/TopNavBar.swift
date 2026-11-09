@@ -97,6 +97,18 @@ struct TopNavBar: View {
             notificationStore.startPolling()
             await notificationStore.refresh()
         }
+        .onChange(of: AppRouter.shared.pending, initial: true) { _, route in
+            switch route {
+            case .notifications?:
+                AppRouter.shared.pending = nil
+                showNotifications = true
+            case .settings?:
+                AppRouter.shared.pending = nil
+                showSettings = true
+            default:
+                break
+            }
+        }
         .fullScreenCover(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView()

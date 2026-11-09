@@ -273,28 +273,6 @@ struct NewClientSheet: View {
     }
 }
 
-struct NewClientField: View {
-    let icon: String
-    let placeholder: String
-    @Binding var text: String
-    var keyboard: UIKeyboardType = .default
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 15))
-                .foregroundColor(AppGray.secondary)
-                .frame(width: 20)
-            TextField(placeholder, text: $text)
-                .font(.system(size: 15))
-                .keyboardType(keyboard)
-        }
-        .padding(14)
-        .background(AppGray.bgFaint)
-        .cornerRadius(12)
-    }
-}
-
 // MARK: - Client Picker Sheet (used from ProjectDetailView)
 struct ClientPickerSheet: View {
     @State private var store = ClientStore.shared

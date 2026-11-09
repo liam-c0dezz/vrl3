@@ -165,55 +165,6 @@ struct FilterTabButton: View {
     }
 }
 
-// MARK: - Next Steps Banner
-struct NextStepsBanner: View {
-    var body: some View {
-        HStack(spacing: 14) {
-            // Circular progress
-            ZStack {
-                Circle()
-                    .stroke(AppGray.badge, lineWidth: 4)
-                    .frame(width: 50, height: 50)
-                
-                Circle()
-                    .trim(from: 0, to: 0.2) // 1/5
-                    .stroke(AppBrand.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 50, height: 50)
-                    .rotationEffect(.degrees(-90))
-                
-                Text("1/5")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.black)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L("Next steps"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.black)
-                
-                Text(L("Complete your onboarding"))
-                    .font(.system(size: 14))
-                    .foregroundColor(AppGray.secondary)
-            }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(AppGray.muted)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(AppBrand.accent.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppBrand.accent.opacity(0.2), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Project Card View
 struct ProjectCardView: View {
     let project: Project
@@ -385,33 +336,45 @@ struct BottomTabBar: View {
     
     private let brandBlue = AppBrand.accent
 
-    var body: some View {
-        HStack {
-            ForEach(0..<tabs.count, id: \.self) { index in
-                Spacer()
+    @Namespace private var selection
 
+    /// A floating Liquid Glass dock; a glass pill slides to the chosen tab.
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<tabs.count, id: \.self) { index in
                 HapticButton(action: {
-                    selectedIndex = index
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.7)) {
+                        selectedIndex = index
+                    }
                 }) {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 3) {
                         Image(systemName: tabs[index].icon)
-                            .font(.system(size: 20))
+                            .font(.system(size: 19))
+                            .symbolEffect(.bounce, value: selectedIndex == index)
                         Text(L(tabs[index].label))
-                            .font(.system(size: 11, weight: selectedIndex == index ? .semibold : .regular))
+                            .font(.system(size: 11, weight: selectedIndex == index ? .semibold : .medium))
                     }
                     .foregroundColor(selectedIndex == index ? brandBlue : AppGray.ink)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background {
+                        if selectedIndex == index {
+                            Capsule()
+                                .fill(.white.opacity(0.7))
+                                .shadow(color: AppBrand.dark.opacity(0.10), radius: 8, y: 3)
+                                .matchedGeometryEffect(id: "tab", in: selection)
+                        }
+                    }
+                    .contentShape(Capsule())
                 }
-                .buttonStyle(PlainButtonStyle())
-
-                Spacer()
+                .buttonStyle(LiquidGlassPressStyle(pressedScale: 0.9))
             }
         }
-        .padding(.top, 15)
-        .padding(.bottom, 20)
-        .background(
-            Color.white
-                .ignoresSafeArea(.container, edges: .bottom)
-        )
+        .padding(5)
+        .glassEffect(.regular.tint(.white.opacity(0.25)).interactive(), in: Capsule())
+        .shadow(color: AppBrand.dark.opacity(0.14), radius: 20, y: 10)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 26)
     }
 }
 

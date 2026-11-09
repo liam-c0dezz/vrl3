@@ -34,19 +34,6 @@ struct BusinessHourlyRate: Identifiable, Equatable {
     var id = UUID()
     var name: String
     var hourlyRate: Double
-
-    static var starterDefaults: [BusinessHourlyRate] {[
-        BusinessHourlyRate(name: L("General Contractor (GC)"), hourlyRate: 90),
-        BusinessHourlyRate(name: L("Standard labor"), hourlyRate: 50),
-        BusinessHourlyRate(name: L("Plumber"), hourlyRate: 95),
-        BusinessHourlyRate(name: L("Electrician"), hourlyRate: 100),
-        BusinessHourlyRate(name: L("HVAC Technician"), hourlyRate: 110),
-        BusinessHourlyRate(name: L("Roofer"), hourlyRate: 70),
-        BusinessHourlyRate(name: L("Painter"), hourlyRate: 60),
-        BusinessHourlyRate(name: L("Tile Setter"), hourlyRate: 70),
-        BusinessHourlyRate(name: L("Carpenter / Framing"), hourlyRate: 90),
-        BusinessHourlyRate(name: L("Drywaller"), hourlyRate: 58)
-    ]}
 }
 
 struct BusinessUpsell: Identifiable, Equatable {
@@ -546,9 +533,9 @@ struct BusinessSetupView: View {
             BusinessTextField(label: L("Business Name"), placeholder: L("Your company name"), text: $draft.businessName)
                 .textContentType(.organizationName)
             BusinessDivider()
-            BusinessTextField(label: L("License #"), placeholder: L("CGC1234567"), text: $draft.licenseNumber)
+            BusinessTextField(label: L("License #"), placeholder: L("License number"), text: $draft.licenseNumber)
             BusinessDivider()
-            BusinessTextField(label: L("Website"), placeholder: L("yourwebsite.com"), text: $draft.website)
+            BusinessTextField(label: L("Website"), placeholder: L("Website address"), text: $draft.website)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
         }
@@ -556,11 +543,11 @@ struct BusinessSetupView: View {
 
     private var contactCard: some View {
         BusinessFormCard(title: L("Contact"), icon: "phone") {
-            BusinessTextField(label: L("Phone"), placeholder: "+1 234 567 8900", text: $draft.phone)
+            BusinessTextField(label: L("Phone"), placeholder: L("Business phone"), text: $draft.phone)
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
             BusinessDivider()
-            BusinessTextField(label: L("Email"), placeholder: L("email@company.com"), text: $draft.email)
+            BusinessTextField(label: L("Email"), placeholder: L("Business email"), text: $draft.email)
                 .textContentType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
@@ -569,7 +556,7 @@ struct BusinessSetupView: View {
 
     private var locationCard: some View {
         BusinessFormCard(title: L("Location"), icon: "map") {
-            BusinessTextField(label: L("ZIP Code"), placeholder: "e.g. 90210", text: $draft.postalCode)
+            BusinessTextField(label: L("ZIP Code"), placeholder: L("ZIP code"), text: $draft.postalCode)
                 .textContentType(.postalCode)
                 .keyboardType(.numbersAndPunctuation)
         }
@@ -577,7 +564,7 @@ struct BusinessSetupView: View {
 
     private var estimateDefaultsCard: some View {
         BusinessFormCard(title: L("Estimate Defaults"), icon: "percent") {
-            BusinessTextField(label: L("Markup %"), placeholder: "20", text: $markupText, suffix: "%")
+            BusinessTextField(label: L("Markup %"), placeholder: "0", text: $markupText, suffix: "%")
                 .keyboardType(.decimalPad)
             BusinessDivider()
             BusinessTextField(label: L("Sales Tax %"), placeholder: "0", text: $taxText, suffix: "%")
@@ -607,7 +594,7 @@ struct BusinessSetupView: View {
         BusinessFormCard(title: L("Get Paid"), icon: "creditcard") {
             BusinessTextField(
                 label: L("Payment link"),
-                placeholder: L("stripe.com/pay/... or paypal.me/you"),
+                placeholder: L("Paste your payment link"),
                 text: $draft.paymentLink
             )
             .textInputAutocapitalization(.never)
@@ -743,7 +730,7 @@ struct HourlyRatesSetupView: View {
         if !store.hasLoaded { await store.refresh() }
         drafts = store.hourlyRates.map(RateDraft.init)
         if drafts.isEmpty {
-            drafts = BusinessHourlyRate.starterDefaults.map(RateDraft.init)
+            drafts = [RateDraft(name: "", amount: "")]
         }
         didLoad = true
     }

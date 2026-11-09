@@ -77,24 +77,10 @@ struct Construction_EstimateTests {
         #expect(PasswordRules.isValid("secure123"))
     }
 
-    @Test func starterHourlyRatesMatchPublishedDefaults() {
-        let rates = BusinessHourlyRate.starterDefaults
-
-        #expect(rates.map(\.name) == [
-            "General Contractor (GC)",
-            "Standard labor",
-            "Plumber",
-            "Electrician",
-            "HVAC Technician",
-            "Roofer",
-            "Painter",
-            "Tile Setter",
-            "Carpenter / Framing",
-            "Drywaller"
-        ])
-        #expect(rates.map(\.hourlyRate) == [90, 50, 95, 100, 110, 70, 60, 70, 90, 58])
-        #expect(Set(rates.map(\.id)).count == rates.count)
-        #expect(rates.allSatisfy { !$0.name.isEmpty && $0.hourlyRate > 0 })
+    @Test func newBlankInvoiceHasNoPremadeLineItems() {
+        let invoice = Invoice.createNew(number: 1)
+        #expect(invoice.items.isEmpty)
+        #expect(invoice.total == 0)
     }
 
     @Test func newBusinessProfileDoesNotAssumeAccountName() {

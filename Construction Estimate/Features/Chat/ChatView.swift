@@ -883,6 +883,7 @@ final class ChatViewModel {
 // MARK: - Chat Screen
 
 struct ChatView: View {
+    @FocusState private var isComposerFocused: Bool
     var initialSessionId: UUID? = nil
     var projectID: UUID? = nil
     var onEstimateConfirmed: (([String: Any], String?) -> Void)? = nil
@@ -1090,6 +1091,7 @@ struct ChatView: View {
                             showConfirmButtons: showConfirm,
                             screeningActive: vm.screeningPrompt != nil,
                             onFinishScreening: { vm.reopenScreening() },
+                            onEdit: { isComposerFocused = true },
                             onConfirm: {
                                 if let est = vm.pendingEstimate {
                                     onEstimateConfirmed?(est, vm.pendingEstimateModel?.supabaseEstimateId)
@@ -1249,6 +1251,7 @@ struct ChatView: View {
 
             // Text field
             TextField(L("Ask anything about your estimate…"), text: $vm.inputText, axis: .vertical)
+                .focused($isComposerFocused)
                 .lineLimit(1...4)
                 .font(.system(size: 15))
                 .foregroundColor(Color(UIColor.label))
@@ -1835,26 +1838,6 @@ struct GuidedEstimateFlowView: View {
                 .background(Color.red.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
         }
-    }
-
-    private func templateButton(_ title: String) -> some View {
-        HapticButton {
-            projectDescription = L(title)
-        } label: {
-            Text(L(title))
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(AppGray.secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 12)
-                .frame(height: 46)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(AppGray.border, lineWidth: 1)
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 
     private func attachmentButton(
@@ -2577,6 +2560,7 @@ private struct BubbleView: View {
     var showConfirmButtons: Bool = false
     var screeningActive: Bool = false
     var onFinishScreening: (() -> Void)? = nil
+    var onEdit: (() -> Void)? = nil
     var onConfirm: (() -> Void)? = nil
 
     private let brandBlue = AppBrand.accent
@@ -2695,6 +2679,7 @@ private struct BubbleView: View {
                     content: message.content,
                     renderedContent: renderedContent,
                     showConfirmButtons: showConfirmButtons,
+                    onEdit: onEdit,
                     onConfirm: onConfirm
                 )
             }
@@ -2751,6 +2736,7 @@ private struct AssistantBubbleView: View {
     let content: String
     let renderedContent: AttributedString
     var showConfirmButtons: Bool = false
+    var onEdit: (() -> Void)? = nil
     var onConfirm: (() -> Void)? = nil
 
     private let brandBlue = AppBrand.accent
@@ -3085,7 +3071,7 @@ private struct AssistantBubbleView: View {
             }
             .buttonStyle(PlainButtonStyle())
 
-            HapticButton(action: {}) {
+            HapticButton(action: { onEdit?() }) {
                 Image(systemName: "pencil")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(AppGray.secondary)
@@ -3097,6 +3083,7 @@ private struct AssistantBubbleView: View {
                     )
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(L("Ask for changes"))
         }
         .padding(.horizontal, 19)
         .padding(.top, 4)
@@ -3862,9 +3849,11 @@ private struct EstimateGenerationProgressView: View {
         .task(id: isComplete) {
             if isComplete {
                 progress = 100
+                EstimateLiveActivity.finish(success: true)
                 return
             }
             progress = 0
+            EstimateLiveActivity.start()
             let start = ContinuousClock.now
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .milliseconds(500)) }
@@ -3872,7 +3861,12 @@ private struct EstimateGenerationProgressView: View {
                 let elapsed = start.duration(to: .now).components
                 let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
                 progress = min(95, Int(96 * (1 - exp(-seconds / 22))))
+                EstimateLiveActivity.update(progress: progress)
             }
+        }
+        .onDisappear {
+            // Leaving before completion (cancel or error) ends the activity.
+            if !isComplete { EstimateLiveActivity.finish(success: false) }
         }
     }
 }

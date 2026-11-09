@@ -123,7 +123,10 @@ final class AuthStore {
                 if let session {
                     SuperwallService.identify(session: session)
                     await restoreOnboardingState(from: session)
+                    await NotificationService.shared.uploadToken()
+                    RetentionCenter.shared.refresh()
                 } else if event == .signedOut {
+                    RetentionCenter.shared.reset()
                     AIConsentStore.shared.reset()
                     SuperwallService.reset()
                     ProjectStore.shared.reset()
@@ -141,6 +144,7 @@ final class AuthStore {
     }
 
     func signOut() async {
+        await NotificationService.shared.unregisterDevice()
         try? await supabase.auth.signOut()
     }
 
