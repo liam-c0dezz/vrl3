@@ -1,0 +1,78 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #e9b98a; }
+body {
+  --accent: #ffcf8a; --accent-ink: #3a2414;
+  font-family: "Avenir Next", "Futura", "Century Gothic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #fff; user-select: none; -webkit-user-select: none;
+}
+body.region-fl { --accent: #cfe39a; --accent-ink: #22301a; background: #b9c9a0; }
+canvas#game { display: block; width: 100vw; height: 100vh; touch-action: none; }
+
+/* film look: warm vignette */
+#grade { position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(40, 18, 10, .38) 100%); mix-blend-mode: multiply; }
+body.region-fl #grade { background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(20, 30, 14, .38) 100%); }
+
+.hidden { opacity: 0 !important; pointer-events: none !important; }
+
+#hud { position: fixed; left: 28px; bottom: 26px; transition: opacity .6s; text-shadow: 0 1px 10px rgba(0,0,0,.4); pointer-events: none; }
+#station { display: inline-block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; margin-bottom: 10px;
+  border-radius: 4px; background: var(--accent); color: var(--accent-ink); text-shadow: none; transition: opacity .4s; }
+#station.off { opacity: .35; }
+#speed { font-size: 52px; font-weight: 600; letter-spacing: -1px; line-height: 1; font-style: italic; }
+#speed small { font-size: 13px; margin-left: 6px; opacity: .85; letter-spacing: 2px; font-style: normal; font-weight: 500; text-transform: uppercase; }
+#info { margin-top: 6px; font-size: 12px; opacity: .9; letter-spacing: 1.5px; text-transform: uppercase; }
+#info .dot { margin: 0 8px; opacity: .6; }
+
+#buttons { position: fixed; top: 16px; right: 16px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: calc(100vw - 32px); transition: opacity .6s; }
+#buttons button { font: inherit; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; background: rgba(30,20,15,.25);
+  border: 1px solid rgba(255,255,255,.4); border-radius: 4px; padding: 6px 11px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+#buttons button:hover { background: rgba(30,20,15,.45); }
+#buttons button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+#toast { position: fixed; top: 22%; left: 50%; transform: translateX(-50%); font-size: 15px; letter-spacing: 4px; text-transform: uppercase;
+  padding: 8px 18px; border-radius: 4px; background: rgba(20,14,10,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: opacity .4s; pointer-events: none; }
+
+#help { position: fixed; top: 60px; right: 16px; width: min(340px, calc(100vw - 32px)); background: rgba(28,20,16,.62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px; padding: 14px 18px; font-size: 13px; transition: opacity .3s; }
+#help h3 { margin: 0 0 8px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; font-size: 13px; color: var(--accent); }
+#help table { border-collapse: collapse; width: 100%; }
+#help td { padding: 3px 0; vertical-align: top; }
+#help td:first-child { white-space: nowrap; padding-right: 14px; opacity: .75; }
+#help p { margin: 10px 0 0; opacity: .75; }
+
+#title { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: linear-gradient(180deg, rgba(255,140,80,.18), rgba(40,10,40,.45)); transition: opacity 1.2s; cursor: pointer; overflow: auto; }
+#title .card { text-align: center; text-shadow: 0 2px 18px rgba(0,0,0,.35); max-width: 760px; }
+#title h1 { font-size: clamp(48px, 11vw, 104px); font-weight: 700; font-style: italic; letter-spacing: -2px; margin: 0; line-height: 1;
+  background: linear-gradient(180deg, #fff3d6 0%, #ffc27a 55%, #ff7f6a 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 14px rgba(60,20,10,.35)); }
+#title .sub { margin: 10px 0 24px; font-size: 15px; opacity: .9; letter-spacing: 2px; }
+#title .keys { font-size: 11px; opacity: .7; letter-spacing: 1px; margin-top: 22px; }
+#loadbar { width: 220px; height: 3px; margin: 0 auto 12px; background: rgba(255,255,255,.25); border-radius: 2px; overflow: hidden; }
+#loadfill { height: 100%; width: 0; background: #fff; transition: width .2s; }
+body.ready #loadbar { visibility: hidden; }
+#start { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; }
+.pulse { animation: pulse 2.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+
+.regions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 16px; opacity: .45; pointer-events: none; transition: opacity .6s; }
+body.ready .regions { opacity: 1; pointer-events: auto; }
+.region { font: inherit; color: #fff; text-align: left; cursor: pointer; width: min(300px, 100%); padding: 16px 18px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.45); background: rgba(30,18,14,.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: transform .2s, background .2s; text-shadow: none; }
+.region:hover { transform: translateY(-3px); background: rgba(30,18,14,.55); }
+.region b { display: block; font-size: 20px; font-style: italic; letter-spacing: .5px; margin-bottom: 6px; }
+.region span { font-size: 12px; opacity: .85; line-height: 1.6; letter-spacing: .5px; }
+.region[data-region="ca"] b { color: #ffc27a; }
+.region[data-region="fl"] b { color: #cfe39a; }
+.region.current { border-color: #fff; box-shadow: 0 0 0 1px #fff inset; }
+
+#paused { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 600; font-style: italic; letter-spacing: 10px;
+  background: rgba(0,0,0,.25); transition: opacity .3s; pointer-events: none; }
+
+@media (max-width: 600px) {
+  #hud { left: 16px; bottom: 16px; }
+  #speed { font-size: 38px; }
+  #buttons button { padding: 5px 8px; font-size: 10px; }
+}

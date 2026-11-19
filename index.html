@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Two Lanes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="grade"></div>
+
+<div id="hud" class="hidden">
+  <div id="station">♪</div>
+  <div id="speed"><span id="spd">0</span><small>mph</small></div>
+  <div id="info"><span id="regionName"></span><span class="dot">·</span><span id="dist">0.0 mi</span><span class="dot">·</span><span id="mode">auto-drive</span></div>
+</div>
+
+<div id="buttons" class="hidden">
+  <button data-act="auto" title="Auto-drive (E)">Auto</button>
+  <button data-act="cam" title="Camera (C)">Camera</button>
+  <button data-act="time" title="Time of day (T)">Time</button>
+  <button data-act="radio" title="Radio (R)">Radio</button>
+  <button data-act="sound" title="All sound (M)">Sound</button>
+  <button data-act="region" title="Switch region (G)">Region</button>
+  <button data-act="new" title="New road (N)">New road</button>
+  <button data-act="help" title="Controls (H)">?</button>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<div id="help" class="hidden">
+  <h3>Controls</h3>
+  <table>
+    <tr><td>W / ↑</td><td>Gas</td></tr>
+    <tr><td>S / ↓</td><td>Brake / reverse</td></tr>
+    <tr><td>A D / ← →</td><td>Steer (takes over from auto-drive)</td></tr>
+    <tr><td>E</td><td>Auto-drive on/off</td></tr>
+    <tr><td>C</td><td>Camera: chase · driver · cinematic</td></tr>
+    <tr><td>Drag</td><td>Look around</td></tr>
+    <tr><td>T</td><td>Time of day · Y: day cycle</td></tr>
+    <tr><td>R</td><td>Radio on/off</td></tr>
+    <tr><td>M</td><td>All sound on/off</td></tr>
+    <tr><td>G</td><td>Switch California ⇄ Florida</td></tr>
+    <tr><td>N</td><td>New road</td></tr>
+    <tr><td>U</td><td>Hide interface</td></tr>
+    <tr><td>P</td><td>Pause</td></tr>
+  </table>
+  <p>On touch screens, hold the left or right side of the screen to steer.</p>
+</div>
+
+<div id="title">
+  <div class="card">
+    <h1>Two Lanes</h1>
+    <p class="sub">roll the windows down. there's nowhere to be.</p>
+    <div id="loadbar"><div id="loadfill"></div></div>
+    <p id="start" class="pulse">Paving the road…</p>
+    <div class="regions">
+      <button class="region" data-region="ca">
+        <b>California</b>
+        <span>Pacific cliffs · golden hills · palms<br>convertible · lo-fi on 101.9</span>
+      </button>
+      <button class="region" data-region="fl">
+        <b>North Florida</b>
+        <span>Pine flatwoods · live oaks · cypress swamps<br>old pickup · country on 88.3</span>
+      </button>
+    </div>
+    <p class="keys">WASD / arrows to drive · E auto-drive · C camera · T time · R radio · H help</p>
+  </div>
+</div>
+
+<div id="paused" class="hidden">PAUSED</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module" src="game.js"></script>
+</body>
+</html>

@@ -1,75 +1,47 @@
-# EasyBid — Construction Estimate
+# Two Lanes
 
-iOS app (SwiftUI) for contractors to build estimates, send invoices and manage
-clients, backed by Supabase, plus a web portal for clients to view estimates.
+An endless, relaxing 3D driving game that runs in the browser. The road, terrain and scenery are generated as you drive, so the road never ends and every seed is different.
 
-## Repository layout
+Pick a region on the title screen:
 
-```
-Construction Estimate.xcodeproj   Xcode project (open this)
-Construction Estimate/            iOS app sources (Xcode synchronized folder)
-├── App/                          App entry point and root tab container
-├── Core/
-│   ├── Components/               Shared UI (top nav bar, language toggle)
-│   ├── DesignSystem/             Brand colors, grays, haptics
-│   ├── Errors/                   User-safe error messages
-│   ├── Localization/             In-app English ⇄ Spanish switching
-│   └── Privacy/                  Privacy center, AI consent
-├── Models/                       Estimate, Invoice, Project, Client, Render
-├── Services/                     Supabase client & data store, Superwall, portal
-├── Features/
-│   ├── Onboarding/               First-run onboarding flow (EN/ES toggle, top right)
-│   ├── Auth/                     Sign in / sign up / password recovery
-│   ├── Home/                     Dashboard, project list, notifications
-│   ├── Projects/                 Project detail, documents, renders, sending
-│   ├── Chat/                     AI estimate chat, photo/voice inputs
-│   ├── Retention/                Notifications, streaks, recap, review prompt, Live Activity
-│   ├── Invoices/                 Invoice list, editor, rich text
-│   ├── Clients/                  Client list & pickers
-│   ├── Settings/                 Settings & business setup
-│   └── Estimator/                Apache estimator preview & acceptance runner
-├── Resources/                    Bundled JSON/PNG, licenses, privacy manifest
-├── Info.plist
-└── Construction_Estimate.entitlements
-Shared/                           Code compiled into both the app and the widget
-EasyBidWidget/                    Widget extension (home/Lock Screen widget, Live Activity)
-Construction EstimateTests/       Unit tests
-Construction EstimateUITests/     UI tests
-Media.xcassets/                   App icon and image assets
-estimate-portal/                  Client-facing estimate web portal (vinext)
-supabase/                         Edge functions, migrations, SQL tests
-construction-scope-flow/          Estimating research harness and evaluations
-scripts/                          Admin/import helper scripts (Python)
-third_party/                      Upstream licensed code and notices
-distribution/                     App Store export settings from past archives
-docs/                             Release notes, privacy, operations docs
+- **California:** a coast road with the Pacific on your left, beaches and cliffs, golden hills with chaparral, oaks, eucalyptus and wind-bent cypress, and stretches lined with palms. You drive a pastel convertible, and the radio plays lo-fi on *101.9 Coastline FM*. The default time is golden hour, with the sun setting over the ocean.
+- **North Florida:** flat backroads through slash-pine flatwoods with palmetto understory, live oaks hung with Spanish moss, cabbage palms, cypress swamps and roadside power lines. You drive an old pickup, and the radio plays a walking-bass country shuffle on *88.3 Backroads Radio*. The air is hazy, and thunderheads build in the afternoon.
+
+## Run it
+
+It's a static site with no build step. Serve the folder and open it in a browser:
+
+```bash
+python3 -m http.server 8000
 ```
 
-The app target uses Xcode's synchronized folder groups, so any file added under
-`Construction Estimate/` is picked up automatically — no project file edits
-needed. `Features/Chat/LiveWalkthroughView.swift` is intentionally excluded from
-the target (see the exception set in the project file).
+Then open http://localhost:8000. (Opening `index.html` straight from disk won't work, because ES modules need a server.)
 
-## Retention
+URL options: `?region=ca` or `?region=fl`, and `?seed=1234` to replay a specific road.
 
-Push notifications, weekly streaks with streak freezes, the home-screen
-widget, Live Activities, lifecycle email and win-back are described in
-[docs/RETENTION.md](docs/RETENTION.md), including the few one-time setup steps.
+## Controls
 
-## Language
+| Key | Action |
+| --- | --- |
+| W / ↑ | Gas |
+| S / ↓ | Brake / reverse |
+| A D / ← → | Steer (takes over from auto-drive) |
+| E | Auto-drive on/off |
+| C | Camera: chase, driver, cinematic |
+| Mouse drag | Look around |
+| T / Y | Next time of day / day cycle on/off |
+| R | Radio on/off |
+| M | All sound on/off |
+| G | Switch between California and Florida |
+| N | New road |
+| U | Hide interface |
+| P / Esc | Pause |
 
-The whole app switches between English and Spanish instantly with the animated
-EN/ES toggle — top-right during onboarding, and under **Settings → Language**.
+On touch screens, hold the left or right side of the screen to steer; the car keeps cruising on its own.
 
-- `Core/Localization/AppLanguage.swift` — `LanguageStore` (observable current
-  language) and `L(...)`, which translates an English string at render time.
-- `Resources/Localization/Translations-es.json` — English → Spanish table.
-  Missing entries fall back to English.
-- The choice is saved as the app's `AppleLanguages` override (the same setting
-  iOS uses for per-app language), so it defaults to the device language and
-  system screens (photo picker, share sheet) follow it after the next launch.
+## How it works
 
-To translate new UI: write `Text(L("New label"))` (or
-`L("%@ items", "\(count)")` for values) and add the Spanish string to the JSON.
-Keep stored data values (statuses such as "Draft", payment terms) in English and
-translate them where they are displayed.
+- `game.js` holds everything. The road centreline comes from a bounded sum of sines, so it winds but never loops back. Its elevation is smoothed with a Gaussian window. A spatial hash finds the nearest road point, and terrain within ~40 m of the road is flattened and blended into the natural heightfield.
+- The terrain streams in 64 m chunks around the car. Trees, palms and props are merged into one mesh per chunk.
+- The engine, wind and radio music are synthesised live with the Web Audio API, so there are no audio files.
+- Three.js r160 is vendored in `vendor/` (MIT, see `vendor/THREE-LICENSE`).
