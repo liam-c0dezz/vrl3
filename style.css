@@ -180,3 +180,33 @@ body.ready #title .regions { opacity: 1; pointer-events: auto; }
 
 #title .regions { display: none; }
 body.ready #title .regions { display: grid; }
+
+/* ---------- garage ---------- */
+#garage { position: fixed; inset: 0; pointer-events: none; transition: opacity .4s; }
+#garage .g-panel, #garage .g-list { pointer-events: auto; }
+#garage .g-panel { position: absolute; left: max(24px, 4vw); top: 50%; transform: translateY(-50%); width: min(360px, 80vw); color: #fff8f0;
+  text-shadow: 0 2px 18px rgba(0,0,0,.45); }
+.g-kicker { font-family: var(--sans); font-stretch: 125%; font-weight: 600; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; opacity: .85; }
+#gName { font-family: var(--display); font-style: italic; font-weight: 400; font-size: clamp(44px, 6vw, 76px); line-height: .9; margin: 8px 0 6px; }
+#gClass { font-family: var(--sans); font-size: 14px; margin: 0 0 18px; opacity: .9; }
+.g-stats div { display: grid; grid-template-columns: 90px 70px 1fr; align-items: center; gap: 10px; margin: 8px 0; font-family: var(--mono); font-size: 12px; }
+.g-stats label { opacity: .8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
+.g-stats i { height: 3px; background: rgba(255,255,255,.25); display: block; } .g-stats i span { display: block; height: 100%; background: #fff; transition: width .4s; }
+.g-paint { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0; }
+.g-paint button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); background: var(--c); cursor: pointer; }
+.g-paint button.on { outline: 2px solid #fff; outline-offset: 2px; }
+#gDrive { font-family: var(--sans); font-stretch: 125%; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; font-size: 13px; padding: 12px 26px;
+  border: 0; background: #fff8f0; color: #1b1d2a; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.35); }
+.g-credit { font-family: var(--mono); font-size: 10px; opacity: .7; margin-top: 14px; max-width: 320px; }
+#garage .g-list { position: absolute; right: max(16px, 3vw); top: 50%; transform: translateY(-50%); display: grid; gap: 6px; width: min(300px, 44vw); max-height: 86vh; overflow: auto; }
+.g-list button { display: grid; grid-template-columns: 26px 1fr; text-align: left; gap: 0 8px; padding: 8px 12px; border: 0; cursor: pointer;
+  background: rgba(16,12,24,.45); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-family: var(--sans); }
+.g-list button .n { grid-row: span 2; font-family: var(--mono); font-size: 11px; opacity: .6; align-self: center; }
+.g-list button b { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 21px; line-height: 1.1; }
+.g-list button .k { font-size: 11px; opacity: .75; }
+.g-list button.on { background: rgba(255,248,240,.92); color: #1b1d2a; }
+@media (max-width: 700px) {
+  #garage .g-panel { top: 70px; transform: none; }
+  #garage .g-list { top: auto; bottom: 16px; transform: none; left: 16px; right: 16px; width: auto; grid-auto-flow: column; grid-auto-columns: 62%; overflow-x: auto; max-height: none; }
+  .g-stats div { grid-template-columns: 80px 60px 1fr; }
+}

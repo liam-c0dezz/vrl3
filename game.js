@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { createWorld, mulberry32, makeNoise2D, clamp, lerp, smooth, sstep, wrapAngle, K } from './world.js';
 import { createGen, SIGN_WORDS } from './gen.js';
+import { createCars, CARS, PAINT_SWATCHES } from './cars.js';
 
 // ---------------------------------------------------------------------------
 // Params & quality
@@ -656,125 +657,53 @@ function streamWorld(budgetMs, maxUploads) {
 // ---------------------------------------------------------------------------
 // Vehicles
 // ---------------------------------------------------------------------------
-const PAINTS = CA ? [0xf28a7a, 0x7fd1c7, 0xf2c45a, 0x8fb2f0, 0xf4efe4] : [0xf4f1ec, 0xff5f8f, 0x34c3d8, 0x1d1f26, 0xf2e35a];
-const paintColor = PAINTS[(SEED >>> 3) % PAINTS.length];
 const VM = {
-  paint: new THREE.MeshPhysicalMaterial({ color: paintColor, metalness: 0.45, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.06 }),
+  paint: new THREE.MeshPhysicalMaterial({ color: 0xb0090f, metalness: 0.5, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.04 }),
   chrome: std({ color: 0xe8eaec, metalness: 1, roughness: 0.12 }),
-  glass: std({ color: 0x0e141c, metalness: 0.6, roughness: 0.04, transparent: CA, opacity: CA ? 0.45 : 1 }),
+  glass: std({ color: 0x0b1118, metalness: 0.65, roughness: 0.03, transparent: true, opacity: 0.78 }),
   rubber: std({ color: 0x18181a, roughness: 0.92 }),
   dark: std({ color: 0x1c1d20, roughness: 0.6 }),
-  seat: std({ color: CA ? 0xf3e6cf : 0x2a2a2e, roughness: 0.7 }),
+  seat: std({ color: 0x2a1d1a, roughness: 0.7 }),
   head: std({ color: 0xffffff, emissive: 0xfff2d8, emissiveIntensity: 0.4, roughness: 0.2 }),
   tail: std({ color: 0x400000, emissive: 0xff1a10, emissiveIntensity: 1.2, roughness: 0.3 }),
   plate: std({ color: 0xf2f2ea, roughness: 0.6 }),
   white: std({ color: 0xf6f2ea, roughness: 0.5 }),
 };
-function sideShape(top, bottomY, arches, xr, xf) {
-  const pts = [...top, [xf, bottomY]];
-  for (const [cx, r, cy] of arches) {
-    pts.push([cx + r, bottomY]);
-    for (let i = 0; i <= 12; i++) { const a = (i / 12) * Math.PI; pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
-    pts.push([cx - r, bottomY]);
+const carsLib = createCars(THREE, VM);
+// The player's car: chosen in the garage, remembered between visits. Starts on a procedural car and
+// swaps to the detailed model as soon as it has loaded.
+let player = null, carSpec = CARS[0], heroReady = false;
+function installPlayer(rig) {
+  const old = player;
+  if (old) scene.remove(old.car);
+  player = rig; scene.add(rig.car);
+  WB = rig.wheelBase;
+}
+function chooseCar(id, paintHex) {
+  const spec = CARS.find((c) => c.id === id) || CARS[0];
+  carSpec = spec;
+  VM.paint.color.setHex(paintHex ?? spec.color);
+  if (spec.model) {
+    if (!player) installPlayer(carsLib.buildProcedural(CARS[1]));
+    return carsLib.buildModel(spec).then((rig) => { if (carSpec === spec) installPlayer(rig); heroReady = true; })
+      .catch((e) => { console.warn('car model failed to load, using a procedural car', e); heroReady = true; if (carSpec === spec) installPlayer(carsLib.buildProcedural(CARS[1])); });
   }
-  pts.push([xr, bottomY]);
-  const sh = new THREE.Shape();
-  sh.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
-  sh.closePath();
-  return sh;
+  installPlayer(carsLib.buildProcedural(spec));
+  heroReady = true;
+  return Promise.resolve();
 }
-function polyShape(pts) { const s = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y))); s.closePath(); return s; }
-function extrudeSide(shape, width, bevel = 0.07) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth: width - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 4, curveSegments: 8, steps: 1 });
-  g.rotateY(-Math.PI / 2); g.translate((width - 2 * bevel) / 2, 0, 0);
-  return g;
-}
-function wheel(Rw, Wd, white) {
-  const grp = new THREE.Group();
-  const prof = [[Rw * 0.64, -Wd / 2], [Rw * 0.9, -Wd / 2], [Rw * 0.99, -Wd * 0.34], [Rw, 0], [Rw * 0.99, Wd * 0.34], [Rw * 0.9, Wd / 2], [Rw * 0.64, Wd / 2]].map(([a, b]) => new THREE.Vector2(a, b));
-  const tyre = new THREE.Mesh(new THREE.LatheGeometry(prof, 28).rotateZ(Math.PI / 2), VM.rubber); tyre.castShadow = true; grp.add(tyre);
-  if (white) grp.add(new THREE.Mesh(new THREE.CylinderGeometry(Rw * 0.82, Rw * 0.82, Wd * 1.01, 28, 1, true).rotateZ(Math.PI / 2), VM.white));
-  grp.add(new THREE.Mesh(new THREE.CylinderGeometry(Rw * 0.64, Rw * 0.64, Wd * 0.8, 24).rotateZ(Math.PI / 2), VM.chrome));
-  for (let k = 0; k < 5; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(Wd * 0.85, Rw * 0.1, Rw * 1.1), VM.dark); sp.rotation.x = (k / 5) * Math.PI; grp.add(sp); }
-  grp.add(new THREE.Mesh(new THREE.CylinderGeometry(Rw * 0.16, Rw * 0.16, Wd * 0.9, 12).rotateZ(Math.PI / 2), VM.chrome));
-  return grp;
-}
-function buildPlayerCar() {
-  const carG = new THREE.Group(), body = new THREE.Group(); carG.add(body);
-  const add = (geo, mat, x = 0, y = 0, z = 0, rx = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; m.castShadow = true; m.receiveShadow = true; body.add(m); return m; };
-  let Rw, Wd, wheelPos, camH, track;
-  if (CA) { // long, low convertible
-    Rw = 0.36; Wd = 0.26; track = 0.86;
-    wheelPos = [[track, 1.5], [-track, 1.5], [track, -1.5], [-track, -1.5]];
-    const top = [[-2.36, 0.4], [-2.42, 0.66], [-2.3, 0.86], [-1.2, 0.93], [0.5, 0.93], [0.7, 0.96], [2.0, 0.84], [2.36, 0.7], [2.44, 0.46]];
-    add(extrudeSide(sideShape(top, 0.3, [[1.5, 0.44, 0.36], [-1.5, 0.44, 0.36]], -2.36, 2.4), 1.88), VM.paint);
-    add(new THREE.BoxGeometry(1.52, 0.06, 2.05), VM.seat, 0, 0.9, -0.42);
-    for (const x of [-0.4, 0.4]) { add(new THREE.BoxGeometry(0.56, 0.58, 0.16), VM.seat, x, 1.2, -0.95, -0.12); add(new THREE.BoxGeometry(0.56, 0.14, 0.6), VM.seat, x, 1.0, -0.65); }
-    add(new THREE.BoxGeometry(1.6, 0.4, 0.16), VM.seat, 0, 1.12, -1.7, -0.1);
-    add(new THREE.BoxGeometry(1.6, 0.18, 0.4), VM.dark, 0, 1.02, 0.42);
-    const sw = add(new THREE.TorusGeometry(0.18, 0.025, 8, 20), VM.dark, 0.4, 1.12, 0.2); sw.rotation.x = -0.9;
-    const ws = add(new THREE.BoxGeometry(1.62, 0.52, 0.03), VM.glass, 0, 1.2, 0.66); ws.rotation.x = -0.5;
-    const fr = add(new THREE.BoxGeometry(1.66, 0.05, 0.06), VM.chrome, 0, 1.43, 0.53); fr.rotation.x = -0.5;
-    add(new THREE.CapsuleGeometry(0.08, 1.7, 4, 10).rotateZ(Math.PI / 2), VM.chrome, 0, 0.42, 2.46);
-    add(new THREE.CapsuleGeometry(0.08, 1.7, 4, 10).rotateZ(Math.PI / 2), VM.chrome, 0, 0.42, -2.42);
-    for (const x of [0.66, -0.66]) {
-      add(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 18).rotateX(Math.PI / 2), VM.chrome, x, 0.7, 2.42);
-      add(new THREE.CylinderGeometry(0.12, 0.12, 0.09, 18).rotateX(Math.PI / 2), VM.head, x, 0.7, 2.44);
-      add(new THREE.BoxGeometry(0.24, 0.2, 0.06), VM.tail, x * 1.05, 0.72, -2.4);
-    }
-    add(new THREE.BoxGeometry(0.8, 0.18, 0.04), VM.chrome, 0, 0.55, 2.45);
-    add(new THREE.BoxGeometry(0.52, 0.12, 0.02), VM.plate, 0, 0.5, -2.46);
-    camH = 1.62;
-  } else { // '80s wedge coupe
-    Rw = 0.34; Wd = 0.3; track = 0.88;
-    wheelPos = [[track, 1.38], [-track, 1.38], [track, -1.36], [-track, -1.36]];
-    const top = [[-2.22, 0.5], [-2.26, 0.84], [-1.95, 0.95], [-0.95, 0.97], [1.0, 0.95], [2.15, 0.72], [2.28, 0.5]];
-    add(extrudeSide(sideShape(top, 0.28, [[1.38, 0.42, 0.34], [-1.36, 0.42, 0.34]], -2.22, 2.26), 1.9), VM.paint);
-    add(extrudeSide(polyShape([[-1.0, 0.95], [-0.52, 1.22], [0.36, 1.25], [1.08, 0.95]]), 1.56, 0.04), VM.glass);
-    add(extrudeSide(polyShape([[-0.6, 1.21], [-0.52, 1.245], [0.36, 1.275], [0.42, 1.24]]), 1.46, 0.02), VM.paint);
-    add(new THREE.BoxGeometry(1.7, 0.05, 0.36), VM.paint, 0, 1.1, -2.0);
-    for (const x of [0.7, -0.7]) add(new THREE.BoxGeometry(0.06, 0.14, 0.06), VM.dark, x, 1.0, -2.0);
-    add(new THREE.BoxGeometry(1.76, 0.12, 0.05), VM.tail, 0, 0.78, -2.25);
-    for (const x of [0.58, -0.58]) add(new THREE.BoxGeometry(0.44, 0.08, 0.05), VM.head, x, 0.62, 2.27);
-    add(new THREE.BoxGeometry(1.2, 0.08, 0.04), VM.dark, 0, 0.45, 2.28);
-    for (const side of [1, -1]) {
-      for (let k = 0; k < 4; k++) add(new THREE.BoxGeometry(0.03, 0.035, 0.7), VM.dark, side * 0.955, 0.66 + k * 0.06, -0.85);
-      add(new THREE.BoxGeometry(0.02, 0.5, 0.012), VM.dark, side * 0.952, 0.68, 0.98);
-      add(new THREE.BoxGeometry(0.12, 0.09, 0.2), VM.paint, side * 1.0, 1.0, 0.85);
-    }
-    add(new THREE.BoxGeometry(0.52, 0.12, 0.02), VM.plate, 0, 0.5, -2.27);
-    for (const x of [0.45, 0.6]) add(new THREE.CylinderGeometry(0.045, 0.045, 0.2, 10).rotateX(Math.PI / 2), VM.chrome, x, 0.32, -2.2);
-    camH = 1.18;
-  }
-  add(new THREE.BoxGeometry(1.7, 0.08, 3.8), VM.dark, 0, 0.3, 0);
-  const wheels = wheelPos.map(([x, z]) => {
-    const pivot = new THREE.Group(); pivot.position.set(x, Rw, z);
-    const w = wheel(Rw, Wd, CA); pivot.add(w); carG.add(pivot);
-    return { pivot, spin: w, front: z > 0 };
-  });
-  const beam = new THREE.SpotLight(0xfff1d8, 0, 110, 0.5, 0.55, 1.3);
-  beam.position.set(0, 0.8, 2.2); beam.target.position.set(0, -1.2, 24);
-  carG.add(beam, beam.target);
-  return { car: carG, body, wheels, beam, R: Rw, camH, wheelBase: Math.abs(wheelPos[0][1] - wheelPos[2][1]), track };
-}
-const player = buildPlayerCar();
-scene.add(player.car);
+let WB = 2.8;
 
-// Oncoming traffic: a small pool of cars, reused
-const TRAFFIC_COLORS = [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a];
-function buildTrafficCar(colorHex) {
-  const g = new THREE.Group(), paint = new THREE.MeshPhysicalMaterial({ color: colorHex, metalness: 0.4, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1 });
-  const top = [[-2.2, 0.45], [-2.24, 0.9], [-1.4, 1.0], [-1.0, 1.45], [0.6, 1.47], [1.1, 1.0], [2.15, 0.88], [2.25, 0.45]];
-  const body = new THREE.Mesh(extrudeSide(sideShape(top, 0.3, [[1.35, 0.42, 0.34], [-1.35, 0.42, 0.34]], -2.2, 2.25), 1.8), paint);
-  body.castShadow = true; g.add(body);
-  const gl = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.34, 1.7), VM.glass); gl.position.set(0, 1.2, -0.2); g.add(gl);
-  for (const [x, z] of [[0.86, 1.35], [-0.86, 1.35], [0.86, -1.35], [-0.86, -1.35]]) { const w = wheel(0.34, 0.24, false); w.position.set(x, 0.34, z); g.add(w); }
-  for (const x of [0.6, -0.6]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.05), VM.head); h.position.set(x, 0.72, 2.24); g.add(h); }
-  return g;
-}
+// Oncoming traffic: a pool of lower-detail versions of the procedural cars, reused
+const TRAFFIC_COLORS = [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a, 0xb0090f, 0x1f6fff];
 const traffic = [];
-const trafficPool = Array.from({ length: 6 }, (_, i) => { const m = buildTrafficCar(TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]); m.visible = false; scene.add(m); return m; });
+const trafficPool = Array.from({ length: 8 }, (_, i) => {
+  const paint = new THREE.MeshPhysicalMaterial({ color: TRAFFIC_COLORS[i % TRAFFIC_COLORS.length], metalness: 0.45, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.08 });
+  const rig = carsLib.buildProcedural(CARS[1 + (i % (CARS.length - 1))], { lod: true, paint });
+  rig.car.remove(rig.beam, rig.beam.target);
+  rig.car.visible = false; scene.add(rig.car);
+  return rig.car;
+});
 const trafficRng = mulberry32(SEED ^ 0x7a1);
 
 // ---------------------------------------------------------------------------
@@ -784,7 +713,7 @@ const car = { x: 0, z: 0, y: 0, h: 0, vx: 0, vz: 0, yawRate: 0, steer: 0, pitch:
 const prev = { x: 0, y: 0, z: 0, h: 0, pitch: 0, roll: 0, steer: 0, spin: 0 };
 const input = { up: false, down: false, left: false, right: false, hand: false, axis: 0 }; // axis: analog steering from the touch pad (-1..1, + = left)
 let autoDrive = true, throttle = 0, brake = 0, shake = 0, cruise = CA ? 24.6 : 20.1, wetTime = 0;
-const WB = player.wheelBase, PHYS_DT = 1 / 120;
+const PHYS_DT = 1 / 120;
 let physAcc = 0, alpha = 0;
 const _cq = world.Q();
 function curvatureAhead(s, dist) {
@@ -832,8 +761,8 @@ function physicsStep(dt) {
   brake = brk;
   const onRoad = car.d < ROAD_EDGE + 0.3 || (world.citySide(car.z, 1) && world.baseH(car.x, car.z) > 0.8); // city streets & plazas count as paved
   const inWater = groundAt(car.x, car.z) < WATER - 0.3;
-  const vmax = CA ? 50 : 54;
-  let acc = throttle * (CA ? 6.2 : 7.0) * Math.max(0, 1 - vF / vmax);
+  const vmax = carSpec.vmax;
+  let acc = throttle * carSpec.acc * Math.max(0, 1 - vF / vmax);
   if (brk > 0) { if (vF > 0.3) acc -= 11 * brk; else if (!autoDrive) acc -= 4 * brk; }
   if (input.hand) acc -= Math.sign(vF) * 5;
   acc -= 0.25 * Math.sign(vF) + 0.0011 * vF * Math.abs(vF);
@@ -845,7 +774,7 @@ function physicsStep(dt) {
   if (throttle < 0.01 && !(brk > 0) && Math.abs(vF) < 0.2) vF = 0;
   vF = clamp(vF, -8, vmax);
   // yaw: bicycle model with a lateral-grip limit; the handbrake lets the tail step out
-  const maxLat = input.hand ? 14 : onRoad ? 9.5 : 6;
+  const maxLat = input.hand ? 14 : onRoad ? carSpec.grip : 6;
   const lim = maxLat / Math.max(Math.abs(vF), 1);
   const yawT = clamp((vF * Math.tan(car.steer)) / WB, -lim, lim) * (input.hand ? 1.45 : 1);
   car.yawRate += (yawT - car.yawRate) * (1 - Math.exp(-dt * (input.hand ? 4 : 11)));
@@ -1112,7 +1041,8 @@ const ex = (rate, dt) => 1 - Math.exp(-rate * dt);
 function updateCamera(dt) {
   if (!look.dragging) { look.idle += dt; if (look.idle > 1.5) { look.yaw *= Math.exp(-dt * 1.5); look.pitch *= Math.exp(-dt * 1.5); } }
   const mode = CAM_MODES[camMode], speed = Math.hypot(car.vx, car.vz);
-  if (photo.on) {
+  if (garageOpen) { photo.yaw += dt * 0.35; photo.pitch = 0.12; photo.dist = 6.4; }
+  if (photo.on || garageOpen) {
     const cp = Math.cos(photo.pitch);
     camera.position.set(R.x + Math.sin(photo.yaw) * cp * photo.dist, R.y + 1 + Math.sin(photo.pitch) * photo.dist, R.z + Math.cos(photo.yaw) * cp * photo.dist);
     camera.position.y = Math.max(camera.position.y, groundAt(camera.position.x, camera.position.z) + 0.5);
@@ -1134,8 +1064,8 @@ function updateCamera(dt) {
   } else if (mode === 'driver') {
     const C = player.car;
     C.updateMatrixWorld();
-    camera.position.set(0.4, player.camH, CA ? -0.5 : -0.25).applyMatrix4(C.matrixWorld);
-    camera.lookAt(camLook.set(0.4 + Math.sin(look.yaw) * 10, player.camH - 0.15 + look.pitch * 10, 10).applyMatrix4(C.matrixWorld));
+    camera.position.set(0.38, player.camH, -0.3).applyMatrix4(C.matrixWorld);
+    camera.lookAt(camLook.set(0.38 + Math.sin(look.yaw) * 10, player.camH - 0.15 + look.pitch * 10, 10).applyMatrix4(C.matrixWorld));
     camFov = lerp(camFov, 72, ex(3, dt));
   } else {
     if (!cine.set || car.s > cine.s + 45 || Math.hypot(R.x - cine.x, R.z - cine.z) > 260) {
@@ -1195,10 +1125,11 @@ const audio = {
   },
   update(v, thr, offroad) {
     if (!this.ctx) return;
-    const t = this.ctx.currentTime, av = Math.abs(v), tops = [8, 15, 23, 32, 42, 60];
+    const t = this.ctx.currentTime, av = Math.abs(v), tops = [8, 15, 23, 32, 42, 60].map((x) => x * carSpec.vmax / 60);
+    if (this.o1.type !== carSpec.sound[2]) this.o1.type = carSpec.sound[2];
     let g = 0; while (g < tops.length - 1 && av > tops[g]) g++;
     const lo = g ? tops[g - 1] * 0.6 : 0, rpm = clamp((av - lo) / (tops[g] - lo), 0, 1);
-    const f = (SF ? 42 : 34) + rpm * (SF ? 78 : 62) + thr * 6;
+    const f = carSpec.sound[0] + rpm * carSpec.sound[1] + thr * 6;
     this.o1.frequency.setTargetAtTime(f, t, 0.08); this.o2.frequency.setTargetAtTime(f * 0.5, t, 0.08);
     this.filt.frequency.setTargetAtTime(220 + rpm * 400 + thr * 320, t, 0.1);
     this.eng.gain.setTargetAtTime((0.03 + thr * 0.035) * (radio.on ? 0.7 : 1), t, 0.15);
@@ -1374,7 +1305,7 @@ const $ = (id) => document.getElementById(id);
 const ui = { hud: $('hud'), buttons: $('buttons'), help: $('help'), title: $('title'), spd: $('spd'), dist: $('dist'), mode: $('mode'), paused: $('paused'),
   station: $('station'), region: $('regionName'), toast: $('toast'), coords: $('coords'), clock: $('clock'), seasonName: $('seasonName'), photobar: $('photobar'), mapWrap: $('mapwrap'), topleft: $('topleft'), touchpad: $('touchpad') };
 const LS_KEY = 'twolanes.settings.v3';
-const settings = { look: 0, radio: true, sound: true, map: true, cam: 0, season: null, autoSeasons: false };
+const settings = { look: 0, radio: true, sound: true, map: true, cam: 0, season: null, autoSeasons: false, car: 'rosso', paint: null };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) { /* storage unavailable */ }
 function saveSettings() { try { localStorage.setItem(LS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
 let started = false, paused = false, uiHidden = false, ready = false, simT = 0;
@@ -1413,7 +1344,7 @@ const gotoRegion = (id) => navigate(id, 0);
 const newRoad = () => navigate(REGION_ID, ((Math.random() * 1e9) | 0) >>> 0);
 function toggleHelp() { ui.help.classList.toggle('hidden'); btn('help').classList.toggle('on', !ui.help.classList.contains('hidden')); }
 function applyChrome() {
-  const hide = uiHidden || photo.on || !started;
+  const hide = uiHidden || photo.on || garageOpen || !started;
   ui.hud.classList.toggle('hidden', hide); ui.buttons.classList.toggle('hidden', hide); ui.topleft.classList.toggle('hidden', hide);
   ui.mapWrap.classList.toggle('hidden', hide || !settings.map); ui.photobar.classList.toggle('hidden', !photo.on);
   ui.touchpad.classList.toggle('hidden', hide || !TOUCH);
@@ -1422,6 +1353,42 @@ function applyChrome() {
 function toggleUI() { uiHidden = !uiHidden; applyChrome(); }
 function togglePause() { if (photo.on) return; paused = !paused; ui.paused.classList.toggle('hidden', !paused); }
 function setPhoto(on) { photo.on = on; if (on) { photo.yaw = R.h + Math.PI + 0.7; photo.pitch = 0.18; photo.dist = 9; } applyChrome(); }
+// ---- the garage: pick a car and paint while the car turns slowly in the world
+let garageOpen = false;
+function setGarage(on) {
+  garageOpen = on;
+  $('garage').classList.toggle('hidden', !on);
+  if (on) { photo.yaw = R.h + Math.PI * 0.8; showCarInfo(); }
+  applyChrome();
+}
+function showCarInfo() {
+  const c = carSpec;
+  $('gName').textContent = c.name; $('gClass').textContent = c.klass;
+  const top = Math.round(c.vmax * 2.237), zero = (26.8 / c.acc).toFixed(1), g = (c.grip / 9.81).toFixed(2);
+  $('gTop').textContent = top + ' mph'; $('gAcc').textContent = zero + ' s'; $('gGrip').textContent = g + ' g';
+  $('gTopBar').style.width = Math.min(100, (top / 185) * 100) + '%';
+  $('gAccBar').style.width = Math.min(100, (c.acc / 13) * 100) + '%';
+  $('gGripBar').style.width = Math.min(100, (c.grip / 13.5) * 100) + '%';
+  $('gCredit').textContent = c.credit || 'Original design';
+  for (const b of $('gList').children) b.classList.toggle('on', b.dataset.id === c.id);
+  for (const b of $('gPaint').children) b.classList.toggle('on', +b.dataset.hex === VM.paint.color.getHex());
+}
+function buildGarage() {
+  const list = $('gList'), sw = $('gPaint');
+  CARS.forEach((c, i) => {
+    const b = document.createElement('button'); b.dataset.id = c.id;
+    b.innerHTML = `<span class="n">${String(i + 1).padStart(2, '0')}</span><b>${c.name}</b><span class="k">${c.klass}</span>`;
+    b.addEventListener('click', (e) => { e.stopPropagation(); settings.car = c.id; settings.paint = null; saveSettings(); chooseCar(c.id).then(showCarInfo); showCarInfo(); });
+    list.appendChild(b);
+  });
+  for (const hex of PAINT_SWATCHES) {
+    const b = document.createElement('button'); b.dataset.hex = hex; b.style.setProperty('--c', '#' + hex.toString(16).padStart(6, '0'));
+    b.addEventListener('click', (e) => { e.stopPropagation(); VM.paint.color.setHex(hex); settings.paint = hex; saveSettings(); showCarInfo(); });
+    sw.appendChild(b);
+  }
+  $('gDrive').addEventListener('click', (e) => { e.stopPropagation(); setGarage(false); });
+  $('garage').addEventListener('pointerdown', (e) => e.stopPropagation());
+}
 function cycleHeadlights() { headlights = headlights === 'auto' ? 'on' : headlights === 'on' ? 'off' : 'auto'; toast('headlights · ' + headlights); }
 
 ui.buttons.addEventListener('click', (e) => {
@@ -1430,7 +1397,7 @@ ui.buttons.addEventListener('click', (e) => {
   e.stopPropagation();
   ({ auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
      photo: () => setPhoto(true), radio: () => setRadio(!radio.on), sound: () => setSound(!audio.on), map: () => setMap(!settings.map),
-     reset: () => { returnToRoad(); toast('back on the road'); }, region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
+     reset: () => { returnToRoad(); toast('back on the road'); }, garage: () => setGarage(true), region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
   e.target.blur();
 });
 ui.buttons.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1461,6 +1428,7 @@ addEventListener('keydown', (e) => {
   const k = KEYMAP[e.code];
   if (k && !photo.on) { input[k] = true; e.preventDefault(); if (k === 'hand' && autoDrive) setAuto(false); return; }
   if (e.repeat) return;
+  if (garageOpen) { if (e.code === 'KeyV' || e.code === 'Escape' || e.code === 'Enter') setGarage(false); return; }
   if (photo.on) {
     if (e.code === 'Enter' || e.code === 'Space') { photo.save = true; e.preventDefault(); }
     else if (e.code === 'KeyF' || e.code === 'Escape') setPhoto(false);
@@ -1479,7 +1447,7 @@ addEventListener('keydown', (e) => {
     case 'KeyX': setLook(settings.look + 1); toast('look · ' + LOOKS[settings.look]); break;
     case 'KeyF': setPhoto(true); break;
     case 'KeyQ': setRadio(!radio.on); toast(radio.on ? STATION.name : 'radio off'); break;
-    case 'KeyV': setSound(!audio.on); toast(audio.on ? 'sound on' : 'muted'); break;
+    case 'KeyV': if (e.shiftKey) { setSound(!audio.on); toast(audio.on ? 'sound on' : 'muted'); } else setGarage(!garageOpen); break;
     case 'KeyM': setMap(!settings.map); break;
     case 'KeyL': cycleHeadlights(); break;
     case 'KeyJ': audio.horn(); break;
@@ -1563,6 +1531,8 @@ function updateHud() {
 // ---------------------------------------------------------------------------
 // Boot & main loop
 // ---------------------------------------------------------------------------
+chooseCar(settings.car || 'rosso', settings.paint);
+buildGarage();
 {
   world.ensureRoadIndex(400);
   const p = roadPoint(500, LANE);
@@ -1623,7 +1593,7 @@ function frame(now) {
     const pct = Math.max(loadPct, Math.min(99, Math.round(100 * (1 - left / (Math.PI * QUALITY.view * QUALITY.view + 12)))));
     loadPct = pct; $('loadfill').style.width = pct + '%'; $('loadpct').textContent = pct + '%';
     bootFrames++;
-    if ((left === 0 && bootFrames > 10) || bootFrames > 2400) {
+    if ((left === 0 && heroReady && bootFrames > 10) || bootFrames > 2400) {
       ready = true; document.body.classList.add('ready'); $('start').textContent = 'Choose where to drive';
       clearInterval(tipTimer);
       if (!AUTOGO) capturePostcards();
@@ -1639,7 +1609,7 @@ function frame(now) {
       else if (frameEma < 1 / 58 && prScale < 1) { prScale = Math.min(1, prScale + 0.08); resize(); }
     }
   }
-  const frozen = paused || photo.on;
+  const frozen = paused || photo.on || garageOpen;
   if (!paused) {
     simT += dt;
     seasonU.uTime.value = simT;
@@ -1669,7 +1639,7 @@ requestAnimationFrame(frame);
 // Hooks for the automated tests (tests/smoke.cjs)
 window.__game = {
   car, road, chunks, segments, traffic, stats, SEED, REGION_ID, ROAD_EDGE, world,
-  isReady: () => ready, start, returnToRoad, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
+  isReady: () => ready, start, returnToRoad, setGarage, CARS, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
   setTime: (t) => { timeOfDay = timeTarget = t; }, setCam, setLook, setPhoto, setMap,
-  state: () => ({ autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
+  state: () => ({ car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
 };

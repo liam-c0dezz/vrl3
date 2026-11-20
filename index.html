@@ -24,11 +24,12 @@
   <button data-act="time" title="Time of day (T)">Time</button>
   <button data-act="season" title="Season (Z · Shift+Z cycles)">Season</button>
   <button data-act="look" title="Visual style (X)">Look</button>
+  <button data-act="garage" title="Garage (V)">Garage</button>
   <button data-act="photo" title="Photo mode (F)">Photo</button>
   <button data-act="reset" title="Back on the road (R)">Reset</button>
   <button data-act="radio" title="Radio (Q)">Radio</button>
   <button data-act="map" title="Route map (M)">Map</button>
-  <button data-act="sound" title="All sound (V)">Sound</button>
+  <button data-act="sound" title="All sound (Shift+V)">Sound</button>
   <button data-act="region" title="Switch region (G)">Region</button>
   <button data-act="new" title="New road (N)">New</button>
   <button data-act="help" title="Controls (H)">?</button>
@@ -61,6 +62,22 @@
   <button data-act="exit">Exit</button>
 </div>
 
+<div id="garage" class="hidden">
+  <div class="g-panel">
+    <span class="g-kicker">Garage</span>
+    <h2 id="gName">Rosso Dodici</h2>
+    <p id="gClass"></p>
+    <div class="g-stats">
+      <div><label>Top speed</label><b id="gTop"></b><i><span id="gTopBar"></span></i></div>
+      <div><label>0–60</label><b id="gAcc"></b><i><span id="gAccBar"></span></i></div>
+      <div><label>Grip</label><b id="gGrip"></b><i><span id="gGripBar"></span></i></div>
+    </div>
+    <div class="g-paint" id="gPaint"></div>
+    <button id="gDrive">Drive</button>
+    <p class="g-credit" id="gCredit"></p>
+  </div>
+  <div class="g-list" id="gList"></div>
+</div>
 <div id="toast" class="hidden"></div>
 
 <div id="help" class="hidden">
@@ -77,7 +94,8 @@
     <tr><td>X</td><td>Look: cinematic · poster · riso</td></tr>
     <tr><td>F</td><td>Photo mode (Enter saves a PNG)</td></tr>
     <tr><td>L / J</td><td>Headlights auto/on/off / horn</td></tr>
-    <tr><td>Q / V / M</td><td>Radio / all sound / route map</td></tr>
+    <tr><td>V</td><td>Garage: ten cars, paint</td></tr>
+    <tr><td>Q / Shift+V / M</td><td>Radio / all sound / route map</td></tr>
     <tr><td>G / N</td><td>Switch California ⇄ South Florida / new road</td></tr>
     <tr><td>U / P</td><td>Hide interface / pause</td></tr>
   </table>
