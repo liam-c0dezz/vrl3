@@ -157,8 +157,9 @@ async function run(browser, base, region, device) {
 
     // pause menu
     await page.keyboard.press('Escape');
-    const mo = await page.evaluate(() => ({ st: window.__game.state(), vis: getComputedStyle(document.getElementById('buttons')).opacity }));
-    check(`${tag}: Esc opens the pause menu`, mo.st.paused && mo.vis === '1');
+    await page.waitForTimeout(500); // let the 0.2s fade finish
+    const mo = await page.evaluate(() => { const b = document.getElementById('buttons'); return { st: window.__game.state(), shown: !b.classList.contains('hidden') && getComputedStyle(b).visibility !== 'hidden' }; });
+    check(`${tag}: Esc opens the pause menu`, mo.st.paused && mo.shown);
     await page.keyboard.press('Escape');
     check(`${tag}: Esc closes it again`, !(await page.evaluate(() => window.__game.state().paused)));
     // garage: ten cars, switching works
