@@ -390,7 +390,7 @@ export function createGen(THREE, seed, region) {
       const e = Math.min(lx, CHUNK - lx, lz, CHUNK - lz);
       const dist = W.districtAt(z);
       let k = null;
-      if (e < 3.5) k = ASPHALT; else if (e < 6) k = WALK;
+      if (e < K.GRID_HALF + 0.4) k = ASPHALT; else if (e < K.GRID_HALF + 2.6) k = WALK;
       else if (dist === 'downtown') k = mix3(PLAZA, WALK, v * 0.4);
       if (k) { c = mix3(c, k, city); if (city > 0.5) st = S.NONE; }
     }
@@ -462,6 +462,54 @@ export function createGen(THREE, seed, region) {
   }
   const C0 = [0, 0, 0];
 
+  // The back-street grid: every chunk edge in town is a two-lane street. Each chunk paves its west and
+  // south edges (so every street is drawn exactly once) and the crossing at its south-west corner.
+  const _gs = W.Q();
+  function gridPt(x, z) { // a back-street point: in town, clear of the boulevard's buildings and the beach
+    const y = W.heightAt(x, z, _gs);
+    if (_gs.d < 47) return null;
+    const dz = W.districtAt(z);
+    if (dz === 'coast' || dz === 'causeway' || W.baseH(x, z) < 1.0) return null;
+    if ((x - W.roadXAtZ(z)) * W.OCEAN_SIDE > W.coastDist(z) - 70) return null;
+    return y;
+  }
+  function gridStreets(G, ox, oz) {
+    const GH = K.GRID_HALF, STEPG = 4, YEL = col('#e8c25a');
+    for (const along of ['z', 'x']) {
+      for (let t = 0; t < CHUNK; t += STEPG) {
+        const P = (u, a) => along === 'z' ? [ox + a, oz + u] : [ox + u, oz + a];
+        const [xa, za] = P(t, 0), [xb, zb] = P(t + STEPG, 0);
+        const ya = gridPt(xa, za), yb = gridPt(xb, zb);
+        if (ya === null || yb === null) continue;
+        const pa = (a) => { const [x, z] = P(t, a); return [x, ya + 0.05, z]; }, pb = (a) => { const [x, z] = P(t + STEPG, a); return [x, yb + 0.05, z]; };
+        const uvA = t / 8, uvB = (t + STEPG) / 8;
+        const flip = along === 'x'; // keep the quads facing up whichever way the street runs
+        const Q4 = (mat, a0, a1, colr, lift = 0, uv = null) => {
+          const v = [pa(a0), pb(a0), pb(a1), pa(a1)].map((p) => [p[0], p[1] + lift, p[2]]);
+          if (flip) quad(G, mat, v[0], v[3], v[2], v[1], [0, 1, 0], uv && [uv[0], uv[3], uv[2], uv[1]], colr);
+          else quad(G, mat, v[0], v[1], v[2], v[3], [0, 1, 0], uv, colr);
+        };
+        Q4('road2', -GH, GH, WHITE, 0, [[0, uvA], [0, uvB], [1, uvB], [1, uvA]]);
+        if (t >= 8 && t < CHUNK - 8) {
+          for (const e of [-GH + 0.35, GH - 0.35]) Q4('paint', e - 0.07, e + 0.07, WHITE, 0.01); // edge lines
+          if (t % 8 === 0) Q4('paint', -0.08, 0.08, YEL, 0.01); // centre dashes (each 4 m quad, every other one)
+        }
+      }
+    }
+    // zebra crossings on the four arms of the south-west corner's intersection
+    const y0 = gridPt(ox, oz);
+    if (y0 === null) return;
+    for (const [ux, uz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+      const cx = ox + ux * 7, cz = oz + uz * 7;
+      if (gridPt(ox + ux * 14, oz + uz * 14) === null) continue;
+      for (let a = -GH + 0.6; a <= GH - 0.6; a += 0.9) {
+        const y = y0 + 0.07;
+        if (ux === 0) quad(G, 'paint', [cx + a - 0.22, y, cz - 1.4], [cx + a - 0.22, y, cz + 1.4], [cx + a + 0.22, y, cz + 1.4], [cx + a + 0.22, y, cz - 1.4], [0, 1, 0], null, WHITE);
+        else quad(G, 'paint', [cx - 1.4, y, cz + a - 0.22], [cx - 1.4, y, cz + a + 0.22], [cx + 1.4, y, cz + a + 0.22], [cx + 1.4, y, cz + a - 0.22], [0, 1, 0], null, WHITE);
+      }
+    }
+  }
+
   // South Florida: beach, mangroves, parks, and city blocks on a street grid away from the corridor.
   function sfChunk(G, rr, cx, cz, ox, oz, st, sample) {
     const zc = oz + CHUNK / 2, dist = W.districtAt(zc);
@@ -499,7 +547,7 @@ export function createGen(THREE, seed, region) {
     };
     // street trees and lamps along this block's sidewalks
     for (let e = 0; e < 4; e++) for (let t = 8; t < CHUNK - 4; t += 16) {
-      const lx = e === 0 ? 4.6 : e === 1 ? CHUNK - 4.6 : t, lz = e === 2 ? 4.6 : e === 3 ? CHUNK - 4.6 : t;
+      const lx = e === 0 ? 6.6 : e === 1 ? CHUNK - 6.6 : t, lz = e === 2 ? 6.6 : e === 3 ? CHUNK - 6.6 : t;
       if (!okAt(lx, lz)) continue;
       const b = sample(lx, lz);
       if ((t / 16 + e) % 2 === 0) tpl(G, 'props', STREET_PALM, ox + lx, hBuf[b] - 0.1, oz + lz, rr() * 6, 0.85 + rr() * 0.2, 0.75 + rr() * 0.25, palmC(), rr());
@@ -509,15 +557,7 @@ export function createGen(THREE, seed, region) {
       }
     }
     const beachy = dist === 'deco' || dist === 'beach';
-    for (let t = 2; t < CHUNK; t += 6) { // dashed centre lines on this block's west and south streets
-      for (const [lx, lz, along] of [[0, t, 'z'], [t, 0, 'x']]) {
-        if (!okAt(lx + 6, lz + 6)) continue;
-        const b = sample(lx, lz), y = hBuf[b] + 0.04, x0 = ox + lx, z0 = oz + lz;
-        const L = 2.6, Wd = 0.14;
-        if (along === 'z') quad(G, 'paint', [x0 - Wd, y, z0], [x0 + Wd, y, z0], [x0 + Wd, y, z0 + L], [x0 - Wd, y, z0 + L], [0, 1, 0], null, col('#e8c25a'));
-        else quad(G, 'paint', [x0, y, z0 - Wd], [x0 + L, y, z0 - Wd], [x0 + L, y, z0 + Wd], [x0, y, z0 + Wd], [0, 1, 0], null, col('#e8c25a'));
-      }
-    }
+    gridStreets(G, ox, oz);
     const park = noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || beachy && noise(cx * 0.5, cz * 0.5) > 0.3;
     if (park) {
       for (let t = 0; t < 14; t++) {
@@ -533,7 +573,7 @@ export function createGen(THREE, seed, region) {
     const lots = [];
     if (dist === 'downtown') {
       if (rr() < 0.5) lots.push([32, 32, 36, 36, 'tower']);
-      else { lots.push([19, 32, 22, 40, 'tower']); lots.push([45, 32, 22, 40, rr() < 0.5 ? 'tower' : 'condo']); }
+      else { lots.push([20, 32, 40, 22, 'tower']); lots.push([44, 32, 40, 22, rr() < 0.5 ? 'tower' : 'condo']); } // [lx, lz, w (along z), d (along x)]: clear of the streets
     } else if (beachy) {
       for (const [a, b] of [[19, 19], [45, 19], [19, 45], [45, 45]]) lots.push([a, b, 18, 18, rr() < 0.6 ? 'deco' : 'condo']);
     } else {
@@ -655,13 +695,13 @@ export function createGen(THREE, seed, region) {
       const anyCity = W.citySide(pc.z, -1) || W.citySide(pc.z, 1);
       if (!anyCity) continue;
       for (const sc of [sb - 6.5, sb + 6.5]) { // zebra crosswalks
-        for (let lt = -3.2; lt <= 3.2; lt += 0.9) {
+        for (let lt = -ROAD_HALF + 0.3; lt <= ROAD_HALF - 0.3; lt += 0.9) {
           const a = RP(sc - 1.5, lt - 0.22), b = RP(sc + 1.5, lt - 0.22), c = RP(sc + 1.5, lt + 0.22), d = RP(sc - 1.5, lt + 0.22);
           quad(G, 'paint', [a.x, a.y + 0.045, a.z], [b.x, b.y + 0.045, b.z], [c.x, c.y + 0.045, c.z], [d.x, d.y + 0.045, d.z], [0, 1, 0], null, WHITE);
         }
       }
       { // stop lines
-        for (const [sc, lo, hi] of [[sb - 8.6, 0.2, 3.5], [sb + 8.6, -3.5, -0.2]]) {
+        for (const [sc, lo, hi] of [[sb - 8.6, 0.2, ROAD_HALF - 0.2], [sb + 8.6, -ROAD_HALF + 0.2, -0.2]]) {
           const a = RP(sc - 0.25, lo), b = RP(sc + 0.25, lo), c = RP(sc + 0.25, hi), d = RP(sc - 0.25, hi);
           quad(G, 'paint', [a.x, a.y + 0.045, a.z], [b.x, b.y + 0.045, b.z], [c.x, c.y + 0.045, c.z], [d.x, d.y + 0.045, d.z], [0, 1, 0], null, WHITE);
         }
@@ -673,9 +713,11 @@ export function createGen(THREE, seed, region) {
         // signal pole on the near-side corner, arm reaching over the lanes
         const sg = RP(sb - side * 7.4, side * (ROAD_EDGE + 0.8));
         box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, 0, 0, 0, 0.22, 6.2, 0.22, DARK, null, { ao: false });
-        box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, side * 2.9, 5.9, 0, 5.8, 0.14, 0.14, DARK, null, { ao: false });
-        const hd = RP(sb - side * 7.4, side * 1.8);
-        box(G, 'trim', hd.x, hd.y + 0.17, hd.z, hd.h, 0, 4.6, 0, 0.4, 1.3, 0.4, col('#2c3a2c'), null, { ao: false });
+        box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, side * 3.1, 5.9, 0, 6.4, 0.14, 0.14, DARK, null, { ao: false });
+        for (const hl of [K.LANE, K.LANE2]) { // a signal head over each lane
+          const hd = RP(sb - side * 7.4, side * hl);
+          box(G, 'trim', hd.x, hd.y + 0.17, hd.z, hd.h, 0, 4.6, 0, 0.4, 1.3, 0.4, col('#2c3a2c'), null, { ao: false });
+        }
         // the lamps themselves are drawn live by the game so they can cycle
         const nameIdx = Math.abs((m * 7 + (side > 0 ? 3 : 0)) % 16);
         box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, side * 0.0, 3.2, 0, 0.06, 0.04, 0.04, DARK, null, { ao: false });
@@ -728,8 +770,8 @@ export function createGen(THREE, seed, region) {
           if ((i + (side > 0 ? 8 : 0)) % 16 === 0) { // streetlights, alternating sides
             const p = RP(s, side * (ROAD_EDGE + 0.7));
             box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, 0, 0, 0.18, 8.2, 0.18, METAL, null, { ao: false });
-            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, side * 1.0, 7.95, 0, 2.1, 0.12, 0.14, METAL, null, { ao: false });
-            const hp = RP(s, side * (ROAD_EDGE - 1.4));
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, side * 1.85, 7.95, 0, 3.8, 0.12, 0.14, METAL, null, { ao: false });
+            const hp = RP(s, side * (ROAD_EDGE - 3.0));
             box(G, 'neon', hp.x, hp.y + 0.17, hp.z, hp.h, 0, 7.75, 0, 0.6, 0.18, 0.32, LAMP, null, { ao: false });
             lights.push(hp.x, hp.y + 7.6, hp.z);
           }
@@ -748,14 +790,14 @@ export function createGen(THREE, seed, region) {
           if ((i + (side > 0 ? 10 : 0)) % 20 === 0) {
             const p = RP(s, side * (ROAD_EDGE + 0.25));
             box(G, 'trim', p.x, p.y + 0.85, p.z, p.h, 0, 0, 0, 0.16, 7.4, 0.16, METAL, null, { ao: false });
-            const hp = RP(s, side * (ROAD_EDGE - 1.2));
-            box(G, 'trim', p.x, p.y + 0.85, p.z, p.h, -side * 0.75, 7.2, 0, 1.6, 0.1, 0.12, METAL, null, { ao: false });
+            const hp = RP(s, side * (ROAD_EDGE - 2.6));
+            box(G, 'trim', p.x, p.y + 0.85, p.z, p.h, -side * 1.45, 7.2, 0, 3.0, 0.1, 0.12, METAL, null, { ao: false });
             box(G, 'neon', hp.x, hp.y + 0.85, hp.z, hp.h, 0, 7.0, 0, 0.55, 0.16, 0.3, LAMP, null, { ao: false });
             lights.push(hp.x, hp.y + 7.6, hp.z);
           }
           if (i % 15 === 0 && side > 0) { // bridge piers
             const y = road.ys[i];
-            for (const lt of [-3, 3]) { const p = RP(s, lt); box(G, 'trim', p.x, -6, p.z, p.h, 0, 0, 0, 1.0, y + 5.7, 2.2, CONCRETE, null, { ao: false }); }
+            for (const lt of [-6, 6]) { const p = RP(s, lt); box(G, 'trim', p.x, -6, p.z, p.h, 0, 0, 0, 1.0, y + 5.7, 2.2, CONCRETE, null, { ao: false }); }
           }
         }
       }

@@ -364,14 +364,14 @@ const texR = mulberry32(1234);
 function speckle(g, x, y, w, h, n, alpha, size = 1.5) {
   for (let i = 0; i < n; i++) { const v = (texR() * 255) | 0; g.fillStyle = `rgba(${v},${v},${v},${alpha})`; g.fillRect(x + texR() * w, y + texR() * h, size, size); }
 }
-const roadTex = canvasTex(512, 1024, (g, W, H) => {
+const roadTex = canvasTex(1024, 1024, (g, W, H) => {
   const px = W / (2 * ROAD_EDGE), a0 = (ROAD_EDGE - ROAD_HALF) * px, a1 = W - a0;
   if (CA) { g.fillStyle = '#9c8c72'; g.fillRect(0, 0, W, H); speckle(g, 0, 0, W, H, 9000, 0.3, 2); }
   const ax = CA ? a0 : 0, aw = CA ? a1 - a0 : W;
   g.fillStyle = CA ? '#3e3f44' : '#36383d'; g.fillRect(ax, 0, aw, H);
   speckle(g, ax, 0, aw, H, 40000, 0.14, 1.5);
   g.fillStyle = 'rgba(20,20,22,.18)';
-  for (const off of [-2.5, -1.0, 1.0, 2.5]) g.fillRect(W / 2 + (off - 0.4) * px, 0, 0.8 * px, H);
+  for (const ln of [-5.4, -1.8, 1.8, 5.4]) for (const off of [-0.75, 0.75]) g.fillRect(W / 2 + (ln + off - 0.4) * px, 0, 0.8 * px, H); // tyre-worn tracks in each lane
   for (let i = 0; i < 5; i++) { // patches and cracks
     g.fillStyle = 'rgba(25,25,28,.25)'; g.fillRect(a0 + texR() * (a1 - a0 - 80), texR() * H, 30 + texR() * 70, 20 + texR() * 120);
     g.strokeStyle = 'rgba(15,15,15,.35)'; g.lineWidth = 1; g.beginPath();
@@ -380,12 +380,14 @@ const roadTex = canvasTex(512, 1024, (g, W, H) => {
     g.stroke();
   }
   if (SF) { g.fillStyle = '#8f8b84'; g.fillRect(0, 0, 0.3 * px, H); g.fillRect(W - 0.3 * px, 0, 0.3 * px, H); }
-  const lw = 0.15 * px, edgeLat = CA ? ROAD_HALF - 0.2 : 3.45;
+  const lw = 0.15 * px, edgeLat = ROAD_HALF - 0.2;
   g.fillStyle = 'rgba(240,238,228,.92)';
   g.fillRect(W / 2 - edgeLat * px - lw / 2, 0, lw, H);
   g.fillRect(W / 2 + edgeLat * px - lw / 2, 0, lw, H);
   g.fillStyle = 'rgba(236,188,64,.95)';
   g.fillRect(W / 2 - lw * 1.6, 0, lw, H); g.fillRect(W / 2 + lw * 0.6, 0, lw, H);
+  g.fillStyle = 'rgba(240,238,228,.9)'; // dashed lane dividers: 3 m dashes, 8 m apart (the texture spans 16 m)
+  for (const ln of [-3.6, 3.6]) for (const y0 of [0, H / 2]) g.fillRect(W / 2 + ln * px - lw / 2, y0, lw, H * 3 / 16);
 });
 roadTex.wrapS = THREE.ClampToEdgeWrapping;
 const sidewalkTex = canvasTex(256, 256, (g, W, H) => {
@@ -555,7 +557,7 @@ const MATS = {
   sign: new THREE.MeshBasicMaterial({ map: signTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
   pool: std({ color: 0x3fd0e8, roughness: 0.04, metalness: 0.1, emissive: 0x18a8c8, emissiveIntensity: 0.15 }),
   road: std({ map: roadTex, roughness: 0.88 }),
-  road2: std({ color: 0x3a3c41, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+  road2: std({ color: 0x4a4b50, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
   paint: std({ color: 0xeeeeea, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }),
   sidewalk: std({ map: sidewalkTex, roughness: 0.9 }),
   streetsign: std({ map: streetSignTex, roughness: 0.6, side: THREE.DoubleSide }),
@@ -729,13 +731,15 @@ let WB = 2.8;
 // Oncoming traffic: a pool of lower-detail versions of the procedural cars, reused
 const TRAFFIC_COLORS = [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a, 0xb0090f, 0x1f6fff];
 const traffic = [];
-const trafficPool = Array.from({ length: 12 }, (_, i) => {
+const makeTrafficCar = (_, i) => {
   const paint = new THREE.MeshPhysicalMaterial({ color: TRAFFIC_COLORS[i % TRAFFIC_COLORS.length], metalness: 0.45, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.08 });
   const rig = carsLib.buildProcedural(CARS[1 + (i % (CARS.length - 1))], { lod: true, paint });
   rig.car.remove(rig.beam, rig.beam.target);
   rig.car.visible = false; scene.add(rig.car);
   return rig.car;
-});
+};
+const trafficPool = Array.from({ length: MOBILE ? 12 : 18 }, makeTrafficCar);
+const gridPool = Array.from({ length: MOBILE ? 5 : 12 }, (_, i) => makeTrafficCar(_, i + 3));
 const trafficRng = mulberry32(SEED ^ 0x7a1);
 
 // ---------------------------------------------------------------------------
@@ -779,7 +783,7 @@ function physicsStep(dt) {
     const steerTarget = clamp(Math.atan(2 * WB * Math.sin(al) / Math.hypot(tp.x - car.x, tp.z - car.z)), -0.55, 0.55);
     const c = curvatureAhead(car.s, 40 + vF * 2.5);
     let gapA = stopLineGap(car.s, 1, vF);
-    for (const t of traffic) if (t.lane > 0) { const d = t.s - car.s; if (d > 0 && d < gapA) gapA = d; }
+    for (const t of traffic) if (t.lane > 0 && Math.abs(t.lat - car.lat) < 2) { const d = t.s - car.s; if (d > 0 && d < gapA) gapA = d; }
     const vt = Math.min(cruise, isCityAt(car.s) ? CITY_SPEED + Math.max(0, cruise - 24.6) : 99, Math.sqrt(2.8 / Math.max(c, 1e-4)), car.d > ROAD_EDGE ? 10 : 99, Math.sqrt(2 * 3.5 * Math.max(0, gapA - 8)));
     if (vF < vt - 0.3) thr = clamp((vt - vF) * 0.4, 0.12, 1);
     else if (vF > vt + 0.8) brk = clamp((vF - vt) * 0.18, 0, 1);
@@ -942,7 +946,7 @@ function stopLineGap(s, dir, v) {
 
 // ---- signal lamps (instanced, recoloured every frame)
 const lampGeo = new THREE.BoxGeometry(0.26, 0.26, 0.05);
-const lamps = new THREE.InstancedMesh(lampGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 96);
+const lamps = new THREE.InstancedMesh(lampGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 192);
 lamps.instanceMatrix.setUsage(THREE.DynamicDrawUsage); lamps.frustumCulled = false; lamps.count = 0;
 scene.add(lamps);
 const LAMP_ON = [new THREE.Color(6, 0.4, 0.3), new THREE.Color(6, 3.2, 0.3), new THREE.Color(0.4, 6, 1.4)], LAMP_OFF = new THREE.Color(0.06, 0.06, 0.06);
@@ -950,19 +954,21 @@ const _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion(), _e4 = new THREE.E
 function updateSignals() {
   let n = 0;
   const m0 = Math.floor(car.s / BLOCK) - 2;
-  for (let m = Math.max(1, m0); m < m0 + 7 && n < 90; m++) {
+  for (let m = Math.max(1, m0); m < m0 + 7 && n < 180; m++) {
     const sb = m * BLOCK;
     if (sb / STEP >= road.nFinal - 4 || !isCityAt(sb)) continue;
     const st = signalState(m);
     for (const side of [1, -1]) {
-      const hd = roadPoint(sb - side * 7.4, side * 1.8), lz = -side * 0.21, cs = Math.cos(hd.h), sn = Math.sin(hd.h);
-      [['r', 0.82], ['y', 0.42], ['g', 0.02]].forEach(([k, dy], j) => {
-        _v4.set(hd.x + lz * sn, hd.y + 0.17 + 4.7 + dy + 0.12, hd.z + lz * cs);
-        _q4.setFromEuler(_e4.set(0, hd.h, 0));
-        lamps.setMatrixAt(n, _m4.compose(_v4, _q4, _s4));
-        lamps.setColorAt(n, st === k ? LAMP_ON[j] : LAMP_OFF);
-        n++;
-      });
+      for (const hl of [LANE, K.LANE2]) {
+        const hd = roadPoint(sb - side * 7.4, side * hl), lz = -side * 0.21, cs = Math.cos(hd.h), sn = Math.sin(hd.h);
+        [['r', 0.82], ['y', 0.42], ['g', 0.02]].forEach(([k, dy], j) => {
+          _v4.set(hd.x + lz * sn, hd.y + 0.17 + 4.7 + dy + 0.12, hd.z + lz * cs);
+          _q4.setFromEuler(_e4.set(0, hd.h, 0));
+          lamps.setMatrixAt(n, _m4.compose(_v4, _q4, _s4));
+          lamps.setColorAt(n, st === k ? LAMP_ON[j] : LAMP_OFF);
+          n++;
+        });
+      }
     }
   }
   lamps.count = n;
@@ -978,15 +984,15 @@ function updateTraffic(dt) {
     const rel = t.s - car.s;
     if (rel < -160 || rel > 640 || t.s / STEP >= road.nFinal - 3 || t.s < 4) { t.mesh.visible = false; trafficPool.push(t.mesh); traffic.splice(i, 1); continue; }
     let gap = Infinity, leadV = 0;
-    for (const o of traffic) if (o !== t && o.lane === t.lane) { const d = (o.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = o.v; } }
-    if (Math.abs(car.lat - dir * LANE) < 2 && car.d < ROAD_EDGE + 1) { const d = (car.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = Math.max(0, car.v * dir); } }
+    for (const o of traffic) if (o !== t && o.lane === t.lane && o.lat === t.lat) { const d = (o.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = o.v; } }
+    if (Math.abs(car.lat - t.lat) < 2 && car.d < ROAD_EDGE + 1) { const d = (car.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = Math.max(0, car.v * dir); } }
     gap = Math.min(gap, stopLineGap(t.s, dir, t.v));
     const limit = isCityAt(t.s) ? Math.min(t.v0, CITY_SPEED) : t.v0;
     const want = Math.min(limit, Math.sqrt(2 * 4 * Math.max(0, gap - 7)), gap < 25 ? leadV + (gap - 9) * 0.4 : Infinity);
     t.v += clamp(want - t.v, -7 * dt, 2.4 * dt);
     t.v = Math.max(0, t.v);
     t.s += t.v * dir * dt;
-    const p = roadPoint(t.s, dir * LANE);
+    const p = roadPoint(t.s, t.lat);
     t.mesh.position.set(p.x, p.y + 0.02, p.z); t.mesh.rotation.y = p.h + (dir < 0 ? Math.PI : 0);
     t.x = p.x; t.z = p.z;
     const dx = t.x - car.x, dz = t.z - car.z;
@@ -998,14 +1004,75 @@ function updateTraffic(dt) {
   }
   // keep a few cars around in each lane; more in town
   for (const lane of [1, -1]) {
-    const want = city ? 5 : 2;
+    const want = city ? (MOBILE ? 6 : 8) : 3;
     if (traffic.filter((t) => t.lane === lane).length >= want || !trafficPool.length || trafficRng() > dt * 2) continue;
     const s = lane > 0 ? car.s + (trafficRng() < 0.75 ? 160 + trafficRng() * 300 : -110 - trafficRng() * 40) : car.s + 220 + trafficRng() * 300;
-    if (s / STEP >= road.nFinal - 4 || s < 10 || traffic.some((t) => t.lane === lane && Math.abs(t.s - s) < 30)) continue;
+    const lat = lane * (trafficRng() < 0.5 ? LANE : K.LANE2); // inner (passing) or outer (slow) lane
+    if (s / STEP >= road.nFinal - 4 || s < 10 || traffic.some((t) => t.lat === lat && Math.abs(t.s - s) < 30)) continue;
     const mesh = trafficPool.pop(); mesh.visible = true;
-    const v0 = (city ? 14 : 20) + trafficRng() * 6;
-    traffic.push({ s, lane, v: v0, v0, mesh, x: 0, z: 0, hit: false });
+    const v0 = (city ? 14 : 20) + trafficRng() * 6 + (Math.abs(lat) === LANE ? 3 : 0);
+    traffic.push({ s, lane, lat, v: v0, v0, mesh, x: 0, z: 0, hit: false });
   }
+}
+
+// ---- back-street traffic: cars on the city grid (every CHUNK metres), turning at the corners
+const gridCars = [], _gg = world.Q();
+function gridOK(x, z) { // mirrors gen.js gridPt(): in town, clear of the boulevard and the beach
+  roadQuery(x, z, _gg);
+  if (_gg.d < 47) return false;
+  const dz = world.districtAt(z);
+  if (dz === 'coast' || dz === 'causeway' || world.baseH(x, z) < 1.0) return false;
+  return (x - world.roadXAtZ(z)) * world.OCEAN_SIDE <= world.coastDist(z) - 70;
+}
+const gridLegOK = (x, z, dx, dz) => gridOK(x + dx * CHUNK * 0.5, z + dz * CHUNK * 0.5) && gridOK(x + dx * CHUNK, z + dz * CHUNK);
+function updateGridCars(dt) {
+  for (let i = gridCars.length - 1; i >= 0; i--) {
+    const c = gridCars[i];
+    const ddx = c.rx - car.x, ddz = c.rz - car.z;
+    if (ddx * ddx + ddz * ddz > 330 * 330) { c.mesh.visible = false; gridPool.push(c.mesh); gridCars.splice(i, 1); continue; }
+    // slow for the player (and stop rather than drive through them)
+    const fx = c.dx, fz = c.dz, ahead = -ddx * fx + -ddz * fz, side = Math.abs(-ddx * fz + ddz * fx);
+    let want = c.v0;
+    if (ahead > 0 && ahead < 22 && side < 3) want = Math.max(0, (ahead - 7) * 0.8);
+    for (const o of gridCars) { // and for the car in front on the same street
+      if (o === c || o.dx !== c.dx || o.dz !== c.dz) continue;
+      const a = (o.x - c.x) * fx + (o.z - c.z) * fz, l = Math.abs((o.x - c.x) * fz - (o.z - c.z) * fx);
+      if (a > 0 && a < 20 && l < 2) want = Math.min(want, Math.max(0, (a - 8) * 0.8));
+    }
+    c.v += clamp(want - c.v, -8 * dt, 2.5 * dt);
+    c.x += c.dx * c.v * dt; c.z += c.dz * c.v * dt;
+    if ((c.x - c.nx) * c.dx + (c.z - c.nz) * c.dz >= 0) { // at the next corner: straight on, or turn
+      c.x = c.nx; c.z = c.nz;
+      const opts = [];
+      if (gridLegOK(c.x, c.z, c.dx, c.dz)) opts.push([c.dx, c.dz], [c.dx, c.dz]);
+      if (gridLegOK(c.x, c.z, -c.dz, c.dx)) opts.push([-c.dz, c.dx]);
+      if (gridLegOK(c.x, c.z, c.dz, -c.dx)) opts.push([c.dz, -c.dx]);
+      const [nx, nz] = opts.length ? opts[(trafficRng() * opts.length) | 0] : [-c.dx, -c.dz];
+      c.dx = nx; c.dz = nz; c.nx = c.x + nx * CHUNK; c.nz = c.z + nz * CHUNK;
+    }
+    // drive on the right: offset from the street's centre line
+    const tx = c.x - c.dz * 2.5, tz = c.z + c.dx * 2.5, k = 1 - Math.exp(-dt * 6);
+    c.rx += (tx - c.rx) * k; c.rz += (tz - c.rz) * k;
+    c.h += wrapAngle(Math.atan2(c.dx, c.dz) - c.h) * (1 - Math.exp(-dt * 5));
+    c.mesh.position.set(c.rx, groundAt(c.rx, c.rz) + 0.05, c.rz); c.mesh.rotation.y = c.h;
+    const hx = c.rx - car.x, hz = c.rz - car.z;
+    if (hx * hx + hz * hz < 7 && !c.hit) {
+      c.hit = true; const imp = Math.hypot(car.vx, car.vz);
+      car.vx *= 0.4; car.vz *= 0.4; c.v = 0; shake = Math.min(1, 0.3 + imp * 0.03); thud(10 + imp); toast('bump');
+    }
+    if (c.hit && hx * hx + hz * hz > 40) c.hit = false;
+  }
+  // spawn on a street corner out of the player's immediate view
+  if (!gridPool.length || trafficRng() > dt * 3) return;
+  const ix = Math.round((car.x + (trafficRng() - 0.5) * 440) / CHUNK) * CHUNK, iz = Math.round((car.z + (trafficRng() - 0.4) * 440) / CHUNK) * CHUNK;
+  const dd = Math.hypot(ix - car.x, iz - car.z);
+  if (dd < 70 || dd > 300 || !gridOK(ix, iz) || gridCars.some((o) => Math.hypot(o.x - ix, o.z - iz) < 20)) return;
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dz]) => gridLegOK(ix, iz, dx, dz));
+  if (!dirs.length) return;
+  const [dx, dz] = dirs[(trafficRng() * dirs.length) | 0];
+  const mesh = gridPool.pop(); mesh.visible = true;
+  const v0 = 9 + trafficRng() * 4;
+  gridCars.push({ x: ix, z: iz, dx, dz, nx: ix + dx * CHUNK, nz: iz + dz * CHUNK, rx: ix - dz * 2.5, rz: iz + dx * 2.5, h: Math.atan2(dx, dz), v: v0, v0, mesh, hit: false });
 }
 
 // ---- pedestrians: instanced people on the sidewalks, crossing at crosswalks on red
@@ -1025,6 +1092,8 @@ for (const m of [peds.body, peds.head]) { m.instanceMatrix.setUsage(THREE.Dynami
 const CLOTHES = [0xf4f1ec, 0x2b2d33, 0x3a5fa8, 0xd9573f, 0xf2c45a, 0x5a8a4a, 0x8a5a9a, 0xe8a0b4, 0x6ac0c8, 0x9a7a5a].map((h) => new THREE.Color(h));
 const SKIN = [0xf2d0b4, 0xd8a888, 0xb07a58, 0x7a4a30, 0x5a3420].map((h) => new THREE.Color(h));
 const pedRng = mulberry32(SEED ^ 0x9ed);
+const _pq = world.Q();
+let pedsDown = 0;
 function spawnPed(p, near) {
   const side = pedRng() < 0.5 ? -1 : 1;
   let s = car.s + (near ? (pedRng() - 0.4) * 300 : (pedRng() < 0.5 ? 200 : -150) + pedRng() * 60);
@@ -1039,7 +1108,38 @@ function updatePeds(dt) {
     spawnPed(p, true); peds.list.push(p);
   }
   let n = 0;
+  const carSpd = Math.hypot(car.vx, car.vz);
   for (const p of peds.list) {
+    if (p.fall) { // knocked over: thrown, tumbles flat, lies there, then gets back up
+      const f = p.fall; f.t += dt;
+      const gy = groundAt(f.x, f.z);
+      if (f.t < 4.2) {
+        f.vy -= 9.8 * dt; f.y += f.vy * dt;
+        const onGround = f.y <= gy;
+        if (onGround) { f.y = gy; f.vy = f.vy < -2 ? -f.vy * 0.25 : 0; const k = Math.exp(-dt * 5); f.vx *= k; f.vz *= k; }
+        f.x += f.vx * dt; f.z += f.vz * dt;
+        f.ang = Math.min(Math.PI / 2 - 0.04, f.ang + dt * (onGround ? 9 : 6));
+        f.roll += f.spin * dt * (onGround ? 0 : 1);
+      } else {
+        f.y = gy; f.ang -= dt * 2.2; f.roll *= Math.exp(-dt * 4);
+        if (f.ang <= 0) { // back on their feet: rejoin the sidewalk where they landed
+          roadQuery(f.x, f.z, _pq);
+          p.fall = null; p.cross = null; p.dodge = 0;
+          if (_pq.d !== Infinity) {
+            const sg = Math.sign(_pq.lat) || 1;
+            p.s = _pq.s; p.lat = _pq.lat; p.side = sg;
+            if (Math.abs(p.lat) < ROAD_EDGE + 0.5) { p.side = -sg; p.cross = { to: sg * (ROAD_EDGE + 1.4) }; } // landed in the road: walk back to the kerb
+          }
+        }
+      }
+      if (p.fall) {
+        _v4.set(f.x, f.y, f.z); _q4.setFromEuler(_e4.set(Math.max(0, f.ang), f.yaw, f.roll, 'YXZ')); _s4.setScalar(p.scale);
+        _m4.compose(_v4, _q4, _s4);
+        peds.body.setMatrixAt(n, _m4); peds.head.setMatrixAt(n, _m4);
+        peds.body.setColorAt(n, p.body); peds.head.setColorAt(n, p.skin);
+        n++; continue;
+      }
+    }
     if (!p.alive || Math.abs(p.s - car.s) > 260) { spawnPed(p, false); if (!p.alive) continue; }
     if (p.cross) { // crossing the road at a crosswalk
       const goal = p.cross.to, dl = goal - p.lat;
@@ -1053,7 +1153,16 @@ function updatePeds(dt) {
     }
     if (p.dodge > 0) { p.dodge -= dt; p.lat += Math.sign(p.lat || 1) * 3.5 * dt; }
     const pt = roadPoint(p.s, p.lat), dx = pt.x - car.x, dz = pt.z - car.z;
-    if (dx * dx + dz * dz < 16 && Math.hypot(car.vx, car.vz) > 3 && p.dodge <= 0) { p.dodge = 0.6; if (p.cross) { p.side = -p.side; p.cross = null; } }
+    const r2 = dx * dx + dz * dz;
+    if (r2 < 4.8 && carSpd > 2.5) { // hit: they go down
+      const k = 0.75 + pedRng() * 0.3, side = (pedRng() - 0.5) * 3;
+      p.fall = { x: pt.x, z: pt.z, y: groundAt(pt.x, pt.z), vx: car.vx * k + Math.cos(car.h) * side, vz: car.vz * k - Math.sin(car.h) * side,
+        vy: Math.min(7, 1.6 + carSpd * 0.16), t: 0, ang: 0, yaw: Math.atan2(car.vx, car.vz), roll: 0, spin: (pedRng() - 0.5) * 6 };
+      pedsDown++; car.vx *= 0.97; car.vz *= 0.97; shake = Math.min(1, shake + 0.15 + carSpd * 0.01); thud(3 + carSpd * 0.4);
+      p.cross = null;
+      continue;
+    }
+    if (r2 < 16 && carSpd > 3 && carSpd < 14 && p.dodge <= 0) { p.dodge = 0.6; if (p.cross) { p.side = -p.side; p.cross = null; } } // they can only jump clear of slow cars
     p.lat = clamp(p.lat, -(ROAD_EDGE + K.SIDEWALK - 0.3), ROAD_EDGE + K.SIDEWALK - 0.3);
     p.phase += dt * p.speed * 6;
     const bob = Math.abs(Math.sin(p.phase)) * 0.05, ground = groundAt(pt.x, pt.z);
@@ -1893,7 +2002,7 @@ function frame(now) {
     let dT = timeTarget - timeOfDay; if (dT < -0.5) dT += 1; if (dT > 0.5) dT -= 1;
     timeOfDay = (timeOfDay + dT * Math.min(1, dt * (dayCycle ? 10 : 1.4)) + 1) % 1;
     if (autoSeasons) { seasonTimer += dt; if (seasonTimer > 90) { seasonTimer = 0; setSeason(seasonIdx + 1); } }
-    if (ready && !frozen) { gatherFootprints(); stepPhysics(dt); updateTraffic(dt); updatePeds(dt); updateChase(dt); }
+    if (ready && !frozen) { gatherFootprints(); stepPhysics(dt); updateTraffic(dt); updateGridCars(dt); updatePeds(dt); updateChase(dt); }
   }
   applyCarPose();
   updateSky(paused ? 0 : dt);
@@ -1915,8 +2024,8 @@ requestAnimationFrame(frame);
 
 // Hooks for the automated tests (tests/smoke.cjs)
 window.__game = {
-  car, road, chunks, segments, traffic, stats, SEED, REGION_ID, ROAD_EDGE, world,
+  car, road, chunks, segments, traffic, gridCars, peds, stats, setAuto, SEED, REGION_ID, ROAD_EDGE, world,
   isReady: () => ready, start, returnToRoad, setGarage, CARS, setChase, signalState, chaseState: () => chase, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
   setTime: (t) => { timeOfDay = timeTarget = t; }, setCam, setLook, setPhoto, setMap,
-  state: () => ({ chase: chase.on, cops: chase.cops.length, copDist: chase.minD, peds: peds.body.count, traffic: traffic.length, car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
+  state: () => ({ pedsDown, pedsFallen: peds.list.filter((p) => p.fall).length, chase: chase.on, cops: chase.cops.length, copDist: chase.minD, peds: peds.body.count, traffic: traffic.length, gridCars: gridCars.length, car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
 };

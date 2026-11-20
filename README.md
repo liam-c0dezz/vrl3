@@ -16,9 +16,11 @@ An endless open-world driving game for the browser. The road, terrain, plants an
 
 ## Open world
 
-- **Side streets** at every intersection lead into a street grid with lane markings. You can leave the main road and explore. Buildings are solid.
-- **Traffic** runs in both lanes. It follows the car ahead and stops at red lights. Signals cycle green, yellow, red.
-- **Pedestrians** walk the sidewalks, cross at crosswalks when the light is red, and jump out of your way.
+- **The main street** is a four-lane boulevard, two lanes each way, with dashed lane lines and a signal over every lane.
+- **Side streets** at every intersection lead into a grid of real two-lane back streets, every 64 m, with centre and edge lines and zebra crossings at each corner. You can leave the main road and explore. Buildings are solid.
+- **Traffic** fills all four lanes of the boulevard. It follows the car ahead and stops at red lights. Signals cycle green, yellow, red.
+- **Back-street traffic** drives the grid, turns at corners and stops for you.
+- **Pedestrians** walk the sidewalks and cross at crosswalks when the light is red. They jump out of the way of slow cars. Hit one and they're knocked flat, lie there for a few seconds, then get up and walk back to the kerb.
 - **Auto-drive** follows traffic, stops at lights and keeps to city speed in town.
 - **Police chase (K):** cruisers with flashing light bars and a siren pursue you, ram you and box you in. Stay 180 m clear for 12 seconds to escape. If you stop with a cruiser on you, you're busted.
 - **Street detail:**
@@ -125,6 +127,7 @@ Links can also use `#sf` or `#sf-1234`.
 `tests/smoke.cjs` runs both regions on a desktop viewport and a mobile (touch) viewport in headless Chromium. It checks:
 
 - **World:** it builds in the worker; traffic, pedestrians and signals are present; auto-drive stays in lane.
+- **Open world:** the main street has four lanes and traffic in both its inner and outer lanes; cars drive the back-street grid; pedestrians fall over when hit.
 - **Map and looks:** the map renders; looks and cameras switch.
 - **Driving:** cruise control, steering takeover, braking and the handbrake; R returns to the road; physics stays finite.
 - **Seasons:** all four cycle.

@@ -79,6 +79,12 @@ async function run(browser, base, region, device) {
   check(`${tag}: traffic is on the road`, life.s.traffic > 0, `${life.s.traffic} cars`);
   check(`${tag}: pedestrians on the sidewalks`, life.s.peds > 0, `${life.s.peds} people`);
   check(`${tag}: signals have a state`, life.sig.every((x) => 'gyr'.includes(x)), life.sig.join(''));
+  // the open world: a four-lane boulevard, traffic in every lane, cars on the back-street grid
+  const ow = await page.evaluate(() => ({ edge: window.__game.ROAD_EDGE, lats: [...new Set(window.__game.traffic.map((t) => t.lat))] }));
+  check(`${tag}: main street is a four-lane boulevard`, ow.edge > 8, `edge ${ow.edge} m`);
+  check(`${tag}: traffic uses inner and outer lanes`, ow.lats.some((l) => Math.abs(l) > 4) && ow.lats.some((l) => Math.abs(l) < 3), `lanes ${ow.lats.join(', ')}`);
+  const gridN = await page.waitForFunction(() => window.__game.state().gridCars > 0, null, { timeout: 600000 }).then(() => page.evaluate(() => window.__game.state().gridCars)).catch(() => 0);
+  check(`${tag}: cars drive the back-street grid`, gridN > 0, `${gridN} cars`);
   // route map draws something
   const mapInk = await page.evaluate(() => {
     const c = document.getElementById('map'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -252,6 +258,21 @@ async function run(browser, base, region, device) {
     check(`${tag}: buttons fit the screen`, !overflow);
     await page.screenshot({ path: path.join(OUT, `${tag}-touch.png`) });
   }
+
+  // run into a pedestrian: they get knocked over
+  const aimed = await page.evaluate(() => {
+    const g = window.__game, c = g.car;
+    const ped = g.peds.list.find((q) => q.alive && !q.fall && !q.cross && Math.abs(q.s - c.s) < 200);
+    if (!ped) return false;
+    g.setAuto(false);
+    const pt = g.world.roadPoint(ped.s, ped.lat), back = g.world.roadPoint(ped.s - 9, ped.lat);
+    c.x = back.x; c.z = back.z; c.h = Math.atan2(pt.x - back.x, pt.z - back.z); c.vx = Math.sin(c.h) * 13; c.vz = Math.cos(c.h) * 13;
+    return true;
+  });
+  await waitFrames(page, 14);
+  const ko = await page.evaluate(() => window.__game.state());
+  check(`${tag}: pedestrians fall over when hit`, aimed && ko.pedsDown > 0, `${ko.pedsDown} knocked down, ${ko.pedsFallen} on the ground`);
+  await page.screenshot({ path: path.join(OUT, `${tag}-knockdown.png`) });
 
   const fps = await page.evaluate(async () => { const f0 = window.__game.stats.frames; await new Promise((r) => setTimeout(r, 2000)); return (window.__game.stats.frames - f0) / 2; });
   console.log(`  · ${fps.toFixed(1)} fps in headless software rendering (not representative of a real GPU)`);

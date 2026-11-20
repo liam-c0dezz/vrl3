@@ -43,9 +43,10 @@ export const sstep = (a, b, x) => smooth((x - a) / (b - a));
 export const wrapAngle = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
 export const K = {
-  ROAD_HALF: 3.6, ROAD_EDGE: 4.9, FLAT: 6.5, BLEND: 32, STEP: 2, SMOOTH_K: 50, WATER: 0,
-  CHUNK: 64, RES: 32, CELL: 42, SEG: 64, SIDEWALK: 3.4, BLOCK: 150, LANE: 1.8,
+  ROAD_HALF: 7.4, ROAD_EDGE: 8.7, FLAT: 10.5, BLEND: 31, STEP: 2, SMOOTH_K: 50, WATER: 0,
+  CHUNK: 64, RES: 32, CELL: 42, SEG: 64, SIDEWALK: 3.4, BLOCK: 150, LANE: 1.8, LANE2: 5.4, GRID_HALF: 5.2,
 };
+// the main road is a four-lane boulevard: inner lanes at ±LANE, outer lanes at ±LANE2
 K.SETBACK = K.ROAD_EDGE + K.SIDEWALK + 0.6; // where corridor buildings start
 K.WALL = K.ROAD_EDGE + K.SIDEWALK - 1.0;    // how far the car may drift onto the sidewalk
 
