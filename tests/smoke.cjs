@@ -182,9 +182,9 @@ async function run(browser, base, region, device) {
     await page.keyboard.press('KeyF');
     const a = await page.evaluate(() => window.__game.car.odo);
     await sleep(1000);
-    const b = await page.evaluate(() => ({ odo: window.__game.car.odo, st: window.__game.state(), hud: getComputedStyle(document.getElementById('hud')).opacity }));
+    const b = await page.evaluate(() => ({ odo: window.__game.car.odo, st: window.__game.state(), hud: document.getElementById('hud').classList.contains('hidden') }));
     check(`${tag}: photo mode freezes the drive`, b.st.photo && Math.abs(b.odo - a) < 0.01);
-    check(`${tag}: photo mode hides the HUD`, b.hud === '0');
+    check(`${tag}: photo mode hides the HUD`, b.hud === true);
     await page.mouse.move(640, 360); await page.mouse.down(); await page.mouse.move(800, 330, { steps: 6 }); await page.mouse.up();
     await sleep(300);
     await page.screenshot({ path: path.join(OUT, `${tag}-photo.png`) });
