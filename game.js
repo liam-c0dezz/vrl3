@@ -946,7 +946,7 @@ const seasonTarget = new THREE.Vector4();
 function setSeason(i, announce = true) {
   seasonIdx = ((i % 4) + 4) % 4; settings.season = seasonIdx; saveSettings();
   if (announce) toast(SEASONS[seasonIdx]);
-  btn('season').textContent = 'Season · ' + SEASONS[seasonIdx];
+  btn('season').querySelector('.v').textContent = SEASONS[seasonIdx];
 }
 const ENV_MATS = [...Object.values(MATS), ...Object.values(VM), waterMat].filter((m) => 'envMapIntensity' in m);
 function updateSky(dt) {
@@ -1303,7 +1303,7 @@ function drawMap() {
 // ---------------------------------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const ui = { hud: $('hud'), buttons: $('buttons'), help: $('help'), title: $('title'), spd: $('spd'), dist: $('dist'), mode: $('mode'), paused: $('paused'),
-  station: $('station'), region: $('regionName'), toast: $('toast'), coords: $('coords'), clock: $('clock'), seasonName: $('seasonName'), photobar: $('photobar'), mapWrap: $('mapwrap'), topleft: $('topleft'), touchpad: $('touchpad') };
+  station: $('station'), region: $('regionName'), toast: $('toast'), coords: $('coords'), clock: $('clock'), seasonName: $('seasonName'), photobar: $('photobar'), mapWrap: $('mapwrap'), menuBtn: $('menuBtn'), place: $('place'), touchpad: $('touchpad') };
 const LS_KEY = 'twolanes.settings.v3';
 const settings = { look: 0, radio: true, sound: true, map: true, cam: 0, season: null, autoSeasons: false, car: 'rosso', paint: null };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) { /* storage unavailable */ }
@@ -1320,11 +1320,13 @@ for (const b of document.querySelectorAll('.region')) b.classList.toggle('curren
 let toastTimer = 0;
 function toast(msg) { ui.toast.textContent = msg; ui.toast.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(() => ui.toast.classList.add('hidden'), 1500); }
 function setAuto(on) { autoDrive = on; btn('auto').classList.toggle('on', on); $('autoBtn').classList.toggle('on', on); }
-function setCam(i) { camMode = ((i % CAM_MODES.length) + CAM_MODES.length) % CAM_MODES.length; cine.set = false; settings.cam = camMode; saveSettings(); btn('cam').textContent = 'Cam · ' + CAM_MODES[camMode]; }
-function setLook(i) { settings.look = ((i % LOOKS.length) + LOOKS.length) % LOOKS.length; saveSettings(); compU.look.value = settings.look; btn('look').textContent = 'Look · ' + LOOKS[settings.look]; }
-function nextTime() { presetIdx = (presetIdx + 1) % PRESETS.length; timeTarget = PRESETS[presetIdx]; dayCycle = false; toast(PRESET_NAMES[presetIdx]); }
+function setCam(i) { camMode = ((i % CAM_MODES.length) + CAM_MODES.length) % CAM_MODES.length; cine.set = false; settings.cam = camMode; saveSettings(); btn('cam').querySelector('.v').textContent = CAM_MODES[camMode]; }
+function setLook(i) { settings.look = ((i % LOOKS.length) + LOOKS.length) % LOOKS.length; saveSettings(); compU.look.value = settings.look; btn('look').querySelector('.v').textContent = LOOKS[settings.look]; }
+function nextTime() { presetIdx = (presetIdx + 1) % PRESETS.length; timeTarget = PRESETS[presetIdx]; dayCycle = false; toast(PRESET_NAMES[presetIdx]); btn('time').querySelector('.v').textContent = PRESET_NAMES[presetIdx]; }
 function setSound(on) { settings.sound = on; saveSettings(); audio.setOn(on); btn('sound').classList.toggle('on', on); }
-function setRadio(on) { settings.radio = on; saveSettings(); radio.setOn(on); btn('radio').classList.toggle('on', on); ui.station.classList.toggle('off', !on); }
+function setRadio(on) { settings.radio = on; saveSettings(); radio.setOn(on); btn('radio').classList.toggle('on', on); if (on) flashStation(); }
+let stationTimer = 0;
+function flashStation() { ui.station.classList.add('show'); clearTimeout(stationTimer); stationTimer = setTimeout(() => ui.station.classList.remove('show'), 5000); }
 function setMap(on) { settings.map = on; saveSettings(); btn('map').classList.toggle('on', on); applyChrome(); }
 function setAutoSeasons(on) { autoSeasons = on; settings.autoSeasons = on; saveSettings(); seasonTimer = 0; toast(on ? 'seasons cycle on' : 'seasons cycle off'); }
 function navigate(region, seed) {
@@ -1345,13 +1347,19 @@ const newRoad = () => navigate(REGION_ID, ((Math.random() * 1e9) | 0) >>> 0);
 function toggleHelp() { ui.help.classList.toggle('hidden'); btn('help').classList.toggle('on', !ui.help.classList.contains('hidden')); }
 function applyChrome() {
   const hide = uiHidden || photo.on || garageOpen || !started;
-  ui.hud.classList.toggle('hidden', hide); ui.buttons.classList.toggle('hidden', hide); ui.topleft.classList.toggle('hidden', hide);
+  ui.hud.classList.toggle('hidden', hide); ui.buttons.classList.toggle('hidden', hide || !menuOpen); ui.menuBtn.classList.toggle('hidden', hide || menuOpen);
   ui.mapWrap.classList.toggle('hidden', hide || !settings.map); ui.photobar.classList.toggle('hidden', !photo.on);
-  ui.touchpad.classList.toggle('hidden', hide || !TOUCH);
+  ui.touchpad.classList.toggle('hidden', hide || !TOUCH || menuOpen);
   if (hide) ui.help.classList.add('hidden');
 }
 function toggleUI() { uiHidden = !uiHidden; applyChrome(); }
 function togglePause() { if (photo.on) return; paused = !paused; ui.paused.classList.toggle('hidden', !paused); }
+let menuOpen = false;
+function setMenu(on) {
+  menuOpen = on; paused = on; ui.paused.classList.toggle('hidden', !on);
+  if (!on) ui.help.classList.add('hidden');
+  applyChrome();
+}
 function setPhoto(on) { photo.on = on; if (on) { photo.yaw = R.h + Math.PI + 0.7; photo.pitch = 0.18; photo.dist = 9; } applyChrome(); }
 // ---- the garage: pick a car and paint while the car turns slowly in the world
 let garageOpen = false;
@@ -1395,12 +1403,14 @@ ui.buttons.addEventListener('click', (e) => {
   const a = e.target.closest('button')?.dataset.act;
   if (!a) return;
   e.stopPropagation();
-  ({ auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
-     photo: () => setPhoto(true), radio: () => setRadio(!radio.on), sound: () => setSound(!audio.on), map: () => setMap(!settings.map),
-     reset: () => { returnToRoad(); toast('back on the road'); }, garage: () => setGarage(true), region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
+  ({ resume: () => setMenu(false), auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
+     photo: () => { setMenu(false); setPhoto(true); }, radio: () => setRadio(!radio.on), sound: () => setSound(!audio.on), map: () => setMap(!settings.map),
+     reset: () => { setMenu(false); returnToRoad(); toast('back on the road'); }, garage: () => { setMenu(false); setGarage(true); }, region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
   e.target.blur();
 });
 ui.buttons.addEventListener('pointerdown', (e) => e.stopPropagation());
+ui.menuBtn.addEventListener('click', (e) => { e.stopPropagation(); setMenu(true); });
+ui.menuBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
 ui.photobar.addEventListener('pointerdown', (e) => e.stopPropagation());
 ui.photobar.addEventListener('click', (e) => {
   const a = e.target.closest('button')?.dataset.act;
@@ -1409,14 +1419,15 @@ ui.photobar.addEventListener('click', (e) => {
 setAuto(true); setLook(settings.look); setCam(settings.cam);
 if (settings.season !== null && settings.season !== undefined) seasonIdx = settings.season;
 autoSeasons = !!settings.autoSeasons;
-btn('season').textContent = 'Season · ' + SEASONS[seasonIdx];
+btn('season').querySelector('.v').textContent = SEASONS[seasonIdx];
+btn('time').querySelector('.v').textContent = PRESET_NAMES[presetIdx];
 seasonU.uSeason.value.set(seasonIdx === 0 ? 1 : 0, seasonIdx === 1 ? 1 : 0, seasonIdx === 2 ? 1 : 0, seasonIdx === 3 ? 1 : 0);
 cover = WEATHER[seasonIdx].cover;
 btn('sound').classList.toggle('on', settings.sound); btn('radio').classList.toggle('on', settings.radio); btn('map').classList.toggle('on', settings.map);
 audio.on = settings.sound; radio.on = settings.radio; ui.station.classList.toggle('off', !settings.radio);
 
 function wakeAudio() { audio.init(); if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume(); }
-function start() { if (started || !ready) return; started = true; ui.title.classList.add('hidden'); clearInterval(postcardTimer); applyChrome(); wakeAudio(); }
+function start() { if (started || !ready) return; started = true; ui.title.classList.add('hidden'); clearInterval(postcardTimer); applyChrome(); wakeAudio(); if (radio.on) flashStation(); }
 for (const b of document.querySelectorAll('.region')) b.addEventListener('click', (e) => { e.stopPropagation(); if (b.dataset.region === REGION_ID) start(); else gotoRegion(b.dataset.region); });
 ui.title.addEventListener('click', start);
 addEventListener('pointerdown', wakeAudio);
@@ -1429,6 +1440,7 @@ addEventListener('keydown', (e) => {
   if (k && !photo.on) { input[k] = true; e.preventDefault(); if (k === 'hand' && autoDrive) setAuto(false); return; }
   if (e.repeat) return;
   if (garageOpen) { if (e.code === 'KeyV' || e.code === 'Escape' || e.code === 'Enter') setGarage(false); return; }
+  if (menuOpen && e.code !== 'Escape' && e.code !== 'KeyH') return;
   if (photo.on) {
     if (e.code === 'Enter' || e.code === 'Space') { photo.save = true; e.preventDefault(); }
     else if (e.code === 'KeyF' || e.code === 'Escape') setPhoto(false);
@@ -1455,7 +1467,8 @@ addEventListener('keydown', (e) => {
     case 'KeyU': toggleUI(); break;
     case 'KeyN': newRoad(); break;
     case 'KeyG': gotoRegion(CA ? 'sf' : 'ca'); break;
-    case 'KeyP': case 'Escape': togglePause(); break;
+    case 'KeyP': togglePause(); break;
+    case 'Escape': setMenu(!menuOpen); break;
   }
 });
 addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) input[k] = false; });
@@ -1512,20 +1525,22 @@ canvas.addEventListener('wheel', (e) => { if (photo.on) { photo.dist = clamp(pho
 }
 addEventListener('resize', resize);
 
+let lastPlace = '', placeTimer = 0;
 const BASE_LL = CA ? [34.0195, -118.4912] : [25.7907, -80.13];
 const PLACE = CA ? { downtown: 'Downtown LA', beach: 'LA beach cities', resid: 'Los Angeles', coast: 'Pacific coast' }
   : { downtown: 'Downtown', deco: 'Art deco strip', resid: 'South Florida', causeway: 'Causeway' };
 const fmtCoord = (v, pos, neg) => Math.abs(v).toFixed(4) + '°' + (v >= 0 ? pos : neg);
 function updateHud() {
-  ui.spd.textContent = String(Math.round(Math.hypot(car.vx, car.vz) * 2.23694)).padStart(2, '0');
+  ui.spd.textContent = String(Math.round(Math.hypot(car.vx, car.vz) * 2.23694));
   ui.dist.textContent = (car.odo / 1609.34).toFixed(1) + ' mi';
-  ui.mode.textContent = autoDrive ? 'auto · ' + Math.round(cruise * 2.23694) : input.hand ? 'handbrake' : 'manual';
+  ui.mode.textContent = autoDrive ? 'Auto ' + Math.round(cruise * 2.23694) : input.hand ? 'Handbrake' : 'Manual';
   const lat = BASE_LL[0] + car.z / 111320, lon = BASE_LL[1] - car.x / (111320 * Math.cos(lat * Math.PI / 180));
   ui.coords.textContent = fmtCoord(lat, 'N', 'S') + '  ' + fmtCoord(lon, 'E', 'W');
   const mins = Math.floor(timeOfDay * 24 * 60);
   ui.clock.textContent = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
   ui.seasonName.textContent = SEASONS[seasonIdx] + (rain > 0.3 ? ' · rain' : '');
-  ui.region.textContent = PLACE[world.districtAt(car.z)] || (CA ? 'California' : 'South Florida');
+  const place = PLACE[world.districtAt(car.z)] || (CA ? 'California' : 'South Florida');
+  if (place !== lastPlace) { lastPlace = place; ui.region.textContent = place; ui.place.classList.remove('hidden'); clearTimeout(placeTimer); placeTimer = setTimeout(() => ui.place.classList.add('hidden'), 4000); }
 }
 
 // ---------------------------------------------------------------------------

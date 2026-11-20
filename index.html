@@ -6,40 +6,44 @@
 <title>Two Lanes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <!-- top-left wordmark + clock -->
-<div id="topleft" class="hidden">
-  <div class="mark">TWO LANES</div>
-  <div class="meta"><span id="regionName"></span><span class="sep">/</span><span id="seasonName"></span><span class="sep">/</span><span id="clock">17:28</span></div>
-</div>
+<button id="menuBtn" class="hidden" aria-label="Menu">Menu<kbd>Esc</kbd></button>
+<div id="place" class="hidden"><span id="regionName"></span></div>
 
-<div id="buttons" class="hidden">
-  <button data-act="auto" title="Auto-drive (E)">Auto</button>
-  <button data-act="cam" title="Camera (C)">Cam</button>
-  <button data-act="time" title="Time of day (T)">Time</button>
-  <button data-act="season" title="Season (Z · Shift+Z cycles)">Season</button>
-  <button data-act="look" title="Visual style (X)">Look</button>
-  <button data-act="garage" title="Garage (V)">Garage</button>
-  <button data-act="photo" title="Photo mode (F)">Photo</button>
-  <button data-act="reset" title="Back on the road (R)">Reset</button>
-  <button data-act="radio" title="Radio (Q)">Radio</button>
-  <button data-act="map" title="Route map (M)">Map</button>
-  <button data-act="sound" title="All sound (Shift+V)">Sound</button>
-  <button data-act="region" title="Switch region (G)">Region</button>
-  <button data-act="new" title="New road (N)">New</button>
-  <button data-act="help" title="Controls (H)">?</button>
+<div id="buttons" class="hidden" role="menu" aria-label="Menu">
+  <div class="m-title">Paused</div>
+  <button data-act="resume">Resume<kbd>Esc</kbd></button>
+  <button data-act="garage">Garage<kbd>V</kbd></button>
+  <button data-act="auto">Auto-drive<kbd>E</kbd></button>
+  <button data-act="reset">Back on the road<kbd>R</kbd></button>
+  <div class="m-sep"></div>
+  <button data-act="cam">Camera<span class="v"></span><kbd>C</kbd></button>
+  <button data-act="time">Time of day<span class="v"></span><kbd>T</kbd></button>
+  <button data-act="season">Season<span class="v"></span><kbd>Z</kbd></button>
+  <button data-act="look">Look<span class="v"></span><kbd>X</kbd></button>
+  <button data-act="photo">Photo mode<kbd>F</kbd></button>
+  <div class="m-sep"></div>
+  <button data-act="radio">Radio<kbd>Q</kbd></button>
+  <button data-act="map">Map<kbd>M</kbd></button>
+  <button data-act="sound">Sound<kbd>⇧V</kbd></button>
+  <div class="m-sep"></div>
+  <button data-act="region">Switch region<kbd>G</kbd></button>
+  <button data-act="new">New road<kbd>N</kbd></button>
+  <button data-act="help">Controls<kbd>H</kbd></button>
 </div>
 
 <div id="hud" class="hidden">
-  <div id="station">♪</div>
-  <div id="speed"><span id="spd">00</span><small>MPH</small></div>
-  <div id="info"><span id="dist">0.0 mi</span><span class="sep">—</span><span id="mode">auto</span></div>
-  <div id="coords">00.0000°N 000.0000°W</div>
+  <div id="station"></div>
+  <div class="hud-row"><span id="seasonName"></span><span id="clock"></span></div>
+  <div id="speed"><span id="spd">0</span><small>mph</small></div>
+  <div id="info"><span id="mode">auto</span><span id="dist">0.0 mi</span></div>
+  <div id="coords" hidden></div>
 </div>
 
 <div id="mapwrap" class="hidden"><canvas id="map"></canvas></div>
@@ -111,9 +115,9 @@
     <figure class="pc pc3"><canvas width="560" height="360"></canvas><figcaption>&nbsp;</figcaption></figure>
   </div>
   <div class="brand">
-    <div class="kicker"><span>An endless drive</span><span class="dot">●</span><span id="seedLabel">SEED</span></div>
-    <h1><span class="w1">Two</span><em class="w2">Lanes</em></h1>
-    <p class="sub">Los Angeles <i>·</i> the Pacific coast <i>·</i> South Florida</p>
+    <div class="kicker">An endless drive</div><span id="seedLabel" hidden></span>
+    <h1>Two Lanes</h1>
+    <p class="sub">Los Angeles, the Pacific coast and South Florida.</p>
   </div>
   <div class="loadrow">
     <div id="loadbar"><div id="loadfill"></div></div>
@@ -123,18 +127,12 @@
   <p id="tip"></p>
   <div class="regions">
       <button class="region" data-region="ca">
-        <span class="idx">01</span>
         <b>Los Angeles</b>
-        <span class="ll">34.02°N 118.49°W</span>
-        <span class="desc">Downtown LA, the beach cities, then the open Pacific coast. Convertible. Lo-fi on 101.9.</span>
-        <span class="chips"><i style="--c:#f3a9b8"></i><i style="--c:#ffd9a2"></i><i style="--c:#f0b552"></i><i style="--c:#5079c6"></i><i style="--c:#3b3350"></i></span>
+        <span class="desc">Downtown LA and the beach cities, then the open Pacific coast.</span>
       </button>
       <button class="region" data-region="sf">
-        <span class="idx">02</span>
         <b>South Florida</b>
-        <span class="ll">25.79°N 80.13°W</span>
-        <span class="desc">Art deco strip, glass towers, causeways and beaches. '80s coupe. Neon Coast on 104.3.</span>
-        <span class="chips"><i style="--c:#ff5f8f"></i><i style="--c:#34c3d8"></i><i style="--c:#f6c6cf"></i><i style="--c:#bfe6dc"></i><i style="--c:#1b1d2a"></i></span>
+        <span class="desc">Art deco strip, glass towers, causeways over the bay, and beaches.</span>
       </button>
     </div>
 </div>
