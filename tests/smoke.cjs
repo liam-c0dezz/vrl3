@@ -44,6 +44,7 @@ async function run(browser, base, region, device) {
     ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 }
     : { viewport: { width: 960, height: 540 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
+  page.setDefaultTimeout(600000); // software rendering can take tens of seconds per frame
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|ERR_|net::/.test(m.text())) errors.push(m.text()); });
