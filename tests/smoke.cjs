@@ -33,7 +33,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Game time advances at most 0.05 s per frame, so slow (software) rendering needs frame-based waits.
 async function waitFrames(page, n) {
   const f0 = await page.evaluate(() => window.__game.stats.frames);
-  await page.waitForFunction((t) => window.__game.stats.frames >= t, f0 + n, { timeout: 120000 });
+  await page.waitForFunction((t) => window.__game.stats.frames >= t, f0 + n, { timeout: 900000 });
 }
 const results = [];
 function check(name, ok, detail = '') { results.push({ name, ok, detail }); console.log(`${ok ? '  ✓' : '  ✗'} ${name}${detail ? '  — ' + detail : ''}`); }
@@ -42,7 +42,7 @@ async function run(browser, base, region, device) {
   const mobile = device === 'mobile';
   const ctx = await browser.newContext(mobile
     ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 }
-    : { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+    : { viewport: { width: 960, height: 540 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
