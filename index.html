@@ -22,6 +22,7 @@
   <button data-act="garage">Garage<kbd>V</kbd></button>
   <button data-act="auto">Auto-drive<kbd>E</kbd></button>
   <button data-act="reset">Back on the road<kbd>R</kbd></button>
+  <button data-act="chase">Police chase<kbd>K</kbd></button>
   <div class="m-sep"></div>
   <button data-act="cam">Camera<span class="v"></span><kbd>C</kbd></button>
   <button data-act="time">Time of day<span class="v"></span><kbd>T</kbd></button>
@@ -51,7 +52,7 @@
 <div id="touchpad" class="hidden">
   <div id="steerZone" aria-label="Steer: drag left or right"><span class="rail"></span><span id="steerKnob"></span><span class="lbl">drag to steer</span></div>
   <div id="pedals">
-    <div class="row small"><button id="autoBtn" class="on">Auto</button><button id="resetBtn">Reset</button></div>
+    <div class="row small"><button id="chaseBtn">Chase</button><button id="autoBtn" class="on">Auto</button><button id="resetBtn">Reset</button></div>
     <div class="row"><button id="handBtn">Hand<br>brake</button><button id="brakeBtn">Brake</button><button id="gasBtn">Gas</button></div>
   </div>
 </div>
@@ -83,6 +84,8 @@
   <div class="g-list" id="gList"></div>
 </div>
 <div id="toast" class="hidden"></div>
+<div id="chase" class="hidden"><span class="lbl">Police chase</span><i><span id="chaseBar"></span></i><span id="chaseMsg"></span></div>
+<div id="bigmsg" class="hidden"></div>
 
 <div id="help" class="hidden">
   <h3>Controls</h3>
@@ -97,6 +100,7 @@
     <tr><td>T / Y</td><td>Time of day / day cycle</td></tr>
     <tr><td>X</td><td>Look: cinematic · poster · riso</td></tr>
     <tr><td>F</td><td>Photo mode (Enter saves a PNG)</td></tr>
+    <tr><td>K</td><td>Start or stop a police chase</td></tr>
     <tr><td>L / J</td><td>Headlights auto/on/off / horn</td></tr>
     <tr><td>V</td><td>Garage: ten cars, paint</td></tr>
     <tr><td>Q / Shift+V / M</td><td>Radio / all sound / route map</td></tr>

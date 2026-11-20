@@ -171,3 +171,13 @@ body.ready #start { bottom: calc(10vh + 196px); }
   #title .loadrow { bottom: 22vh; } #tip { bottom: calc(22vh - 36px); max-width: 80vw; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition-duration: 0s !important; animation: none !important; } }
+
+/* ---------- police chase ---------- */
+#chase { position: fixed; top: var(--s2); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--s2); padding: 8px 14px; background: var(--panel); border-radius: 4px;
+  font-size: 13px; transition: opacity .3s; pointer-events: none; }
+#chase .lbl { font-weight: 700; color: #ff5a4a; text-transform: uppercase; letter-spacing: .1em; font-size: 12px; animation: chasePulse 1s steps(2) infinite; }
+@keyframes chasePulse { 50% { color: #5a8aff; } }
+#chase i { width: 140px; height: 3px; background: var(--line); border-radius: 2px; display: block; } #chase i span { display: block; height: 100%; width: 0; background: var(--fg); border-radius: 2px; transition: width .3s; }
+#chaseMsg { color: var(--fg-dim); min-width: 92px; }
+#bigmsg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(48px, 9vw, 120px); font-weight: 800; font-stretch: 120%; letter-spacing: -.02em;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, .5); transition: opacity .5s; pointer-events: none; }

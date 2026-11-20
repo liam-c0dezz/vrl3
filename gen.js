@@ -650,8 +650,7 @@ export function createGen(THREE, seed, region) {
         box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, side * 2.9, 5.9, 0, 5.8, 0.14, 0.14, DARK, null, { ao: false });
         const hd = RP(sb - side * 7.4, side * 1.8);
         box(G, 'trim', hd.x, hd.y + 0.17, hd.z, hd.h, 0, 4.6, 0, 0.4, 1.3, 0.4, col('#2c3a2c'), null, { ao: false });
-        const lamp = (dy, c) => box(G, 'neon', hd.x, hd.y + 0.17, hd.z, hd.h, 0, 4.7 + dy, -side * 0.21, 0.24, 0.24, 0.04, c, null, { ao: false });
-        lamp(0.82, OFF); lamp(0.42, OFF); lamp(0.02, GREEN);
+        // the lamps themselves are drawn live by the game so they can cycle
       }
     }
     // ---- street furniture along the corridor

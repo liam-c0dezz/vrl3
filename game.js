@@ -697,7 +697,7 @@ let WB = 2.8;
 // Oncoming traffic: a pool of lower-detail versions of the procedural cars, reused
 const TRAFFIC_COLORS = [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a, 0xb0090f, 0x1f6fff];
 const traffic = [];
-const trafficPool = Array.from({ length: 8 }, (_, i) => {
+const trafficPool = Array.from({ length: 12 }, (_, i) => {
   const paint = new THREE.MeshPhysicalMaterial({ color: TRAFFIC_COLORS[i % TRAFFIC_COLORS.length], metalness: 0.45, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.08 });
   const rig = carsLib.buildProcedural(CARS[1 + (i % (CARS.length - 1))], { lod: true, paint });
   rig.car.remove(rig.beam, rig.beam.target);
@@ -746,9 +746,11 @@ function physicsStep(dt) {
     const al = wrapAngle(Math.atan2(tp.x - car.x, tp.z - car.z) - car.h);
     const steerTarget = clamp(Math.atan(2 * WB * Math.sin(al) / Math.hypot(tp.x - car.x, tp.z - car.z)), -0.55, 0.55);
     const c = curvatureAhead(car.s, 40 + vF * 2.5);
-    const vt = Math.min(cruise, Math.sqrt(2.8 / Math.max(c, 1e-4)), car.d > ROAD_EDGE ? 10 : 99);
+    let gapA = stopLineGap(car.s, 1, vF);
+    for (const t of traffic) if (t.lane > 0) { const d = t.s - car.s; if (d > 0 && d < gapA) gapA = d; }
+    const vt = Math.min(cruise, isCityAt(car.s) ? CITY_SPEED + Math.max(0, cruise - 24.6) : 99, Math.sqrt(2.8 / Math.max(c, 1e-4)), car.d > ROAD_EDGE ? 10 : 99, Math.sqrt(2 * 3.5 * Math.max(0, gapA - 8)));
     if (vF < vt - 0.3) thr = clamp((vt - vF) * 0.4, 0.12, 1);
-    else if (vF > vt + 0.8) brk = clamp((vF - vt) * 0.12, 0, 0.8);
+    else if (vF > vt + 0.8) brk = clamp((vF - vt) * 0.18, 0, 1);
     car.steer += (steerTarget - car.steer) * (1 - Math.exp(-dt * 6));
   } else {
     const steerTarget = manualSteer * (0.55 / (1 + Math.abs(vF) / 13));
@@ -889,25 +891,241 @@ function returnToRoad() {
   car.vx = Math.sin(p.h) * spd; car.vz = Math.cos(p.h) * spd; car.yawRate = 0; car.steer = 0; car.pitch = 0; car.roll = 0; car.pv = 0; car.rv = 0;
   car.s = s; car.lat = LANE; car.d = LANE; savePrev(); camInit = false; wetTime = 0;
 }
-function updateTraffic(dt) {
-  for (let i = traffic.length - 1; i >= 0; i--) {
-    const t = traffic[i];
-    t.s -= t.v * dt;
-    if (t.s < car.s - 120 || t.s / STEP >= road.nFinal - 2 || t.s < 2) { t.mesh.visible = false; trafficPool.push(t.mesh); traffic.splice(i, 1); continue; }
-    const p = roadPoint(t.s, -LANE);
-    t.mesh.position.set(p.x, p.y + 0.02, p.z); t.mesh.rotation.y = p.h + Math.PI;
-    t.x = p.x; t.z = p.z;
-    const dx = t.x - car.x, dz = t.z - car.z;
-    if (dx * dx + dz * dz < 7 && !t.hit) { t.hit = true; car.vx *= 0.35; car.vz *= 0.35; shake = 0.8; thud(12); toast('bump'); }
-  }
-  if (trafficPool.length && trafficRng() < dt * (SF ? 0.45 : 0.25)) {
-    const s = car.s + 380 + trafficRng() * 250;
-    if (s / STEP < road.nFinal - 4) {
-      const mesh = trafficPool.pop(); mesh.visible = true;
-      traffic.push({ s, v: 14 + trafficRng() * 10, mesh, x: 0, z: 0, hit: false });
+// ---------------------------------------------------------------------------
+// The living city: signals, two-way traffic, pedestrians, police chases
+// ---------------------------------------------------------------------------
+const BLOCK = K.BLOCK, CITY_SPEED = 15.6; // 35 mph in town
+const SIG_CYCLE = 26;
+function signalState(m) { const t = (simT + m * 7.3 + 1000 * SIG_CYCLE) % SIG_CYCLE; return t < 15 ? 'g' : t < 18 ? 'y' : 'r'; }
+const isCityAt = (s) => { const i = clamp(Math.floor(s / STEP), 0, road.nFinal - 1); return world.citySide(road.zs[i], 1); };
+// distance (along travel direction `dir`) to the next stop line this car must respect, or Infinity
+function stopLineGap(s, dir, v) {
+  const m = dir > 0 ? Math.ceil((s + 9) / BLOCK) : Math.floor((s - 9) / BLOCK);
+  const stopS = m * BLOCK - dir * 8.6, d = (stopS - s) * dir;
+  if (d < 0.5 || d > 140 || !isCityAt(m * BLOCK)) return Infinity;
+  const st = signalState(m);
+  if (st === 'g' || (st === 'y' && d < v * 1.3)) return Infinity;
+  return d;
+}
+
+// ---- signal lamps (instanced, recoloured every frame)
+const lampGeo = new THREE.BoxGeometry(0.26, 0.26, 0.05);
+const lamps = new THREE.InstancedMesh(lampGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 96);
+lamps.instanceMatrix.setUsage(THREE.DynamicDrawUsage); lamps.frustumCulled = false; lamps.count = 0;
+scene.add(lamps);
+const LAMP_ON = [new THREE.Color(6, 0.4, 0.3), new THREE.Color(6, 3.2, 0.3), new THREE.Color(0.4, 6, 1.4)], LAMP_OFF = new THREE.Color(0.06, 0.06, 0.06);
+const _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion(), _e4 = new THREE.Euler(), _v4 = new THREE.Vector3(), _s4 = new THREE.Vector3(1, 1, 1);
+function updateSignals() {
+  let n = 0;
+  const m0 = Math.floor(car.s / BLOCK) - 2;
+  for (let m = Math.max(1, m0); m < m0 + 7 && n < 90; m++) {
+    const sb = m * BLOCK;
+    if (sb / STEP >= road.nFinal - 4 || !isCityAt(sb)) continue;
+    const st = signalState(m);
+    for (const side of [1, -1]) {
+      const hd = roadPoint(sb - side * 7.4, side * 1.8), lz = -side * 0.21, cs = Math.cos(hd.h), sn = Math.sin(hd.h);
+      [['r', 0.82], ['y', 0.42], ['g', 0.02]].forEach(([k, dy], j) => {
+        _v4.set(hd.x + lz * sn, hd.y + 0.17 + 4.7 + dy + 0.12, hd.z + lz * cs);
+        _q4.setFromEuler(_e4.set(0, hd.h, 0));
+        lamps.setMatrixAt(n, _m4.compose(_v4, _q4, _s4));
+        lamps.setColorAt(n, st === k ? LAMP_ON[j] : LAMP_OFF);
+        n++;
+      });
     }
   }
+  lamps.count = n;
+  lamps.instanceMatrix.needsUpdate = true;
+  if (lamps.instanceColor) lamps.instanceColor.needsUpdate = true;
 }
+
+// ---- two-way traffic: follows the car ahead, stops at red lights
+function updateTraffic(dt) {
+  const city = isCityAt(car.s);
+  for (let i = traffic.length - 1; i >= 0; i--) {
+    const t = traffic[i], dir = t.lane;
+    const rel = t.s - car.s;
+    if (rel < -160 || rel > 640 || t.s / STEP >= road.nFinal - 3 || t.s < 4) { t.mesh.visible = false; trafficPool.push(t.mesh); traffic.splice(i, 1); continue; }
+    let gap = Infinity, leadV = 0;
+    for (const o of traffic) if (o !== t && o.lane === t.lane) { const d = (o.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = o.v; } }
+    if (Math.abs(car.lat - dir * LANE) < 2 && car.d < ROAD_EDGE + 1) { const d = (car.s - t.s) * dir; if (d > 0 && d < gap) { gap = d; leadV = Math.max(0, car.v * dir); } }
+    gap = Math.min(gap, stopLineGap(t.s, dir, t.v));
+    const limit = isCityAt(t.s) ? Math.min(t.v0, CITY_SPEED) : t.v0;
+    const want = Math.min(limit, Math.sqrt(2 * 4 * Math.max(0, gap - 7)), gap < 25 ? leadV + (gap - 9) * 0.4 : Infinity);
+    t.v += clamp(want - t.v, -7 * dt, 2.4 * dt);
+    t.v = Math.max(0, t.v);
+    t.s += t.v * dir * dt;
+    const p = roadPoint(t.s, dir * LANE);
+    t.mesh.position.set(p.x, p.y + 0.02, p.z); t.mesh.rotation.y = p.h + (dir < 0 ? Math.PI : 0);
+    t.x = p.x; t.z = p.z;
+    const dx = t.x - car.x, dz = t.z - car.z;
+    if (dx * dx + dz * dz < 7 && !t.hit) {
+      t.hit = true; const imp = Math.hypot(car.vx, car.vz);
+      car.vx *= 0.4; car.vz *= 0.4; t.v *= 0.3; shake = Math.min(1, 0.3 + imp * 0.03); thud(10 + imp); toast('bump');
+    }
+    if (t.hit && dx * dx + dz * dz > 40) t.hit = false;
+  }
+  // keep a few cars around in each lane; more in town
+  for (const lane of [1, -1]) {
+    const want = city ? 5 : 2;
+    if (traffic.filter((t) => t.lane === lane).length >= want || !trafficPool.length || trafficRng() > dt * 2) continue;
+    const s = lane > 0 ? car.s + (trafficRng() < 0.75 ? 160 + trafficRng() * 300 : -110 - trafficRng() * 40) : car.s + 220 + trafficRng() * 300;
+    if (s / STEP >= road.nFinal - 4 || s < 10 || traffic.some((t) => t.lane === lane && Math.abs(t.s - s) < 30)) continue;
+    const mesh = trafficPool.pop(); mesh.visible = true;
+    const v0 = (city ? 14 : 20) + trafficRng() * 6;
+    traffic.push({ s, lane, v: v0, v0, mesh, x: 0, z: 0, hit: false });
+  }
+}
+
+// ---- pedestrians: instanced people on the sidewalks, crossing at crosswalks on red
+const PED_MAX = MOBILE ? 40 : 120;
+const pedBody = (() => {
+  const legs = new THREE.BoxGeometry(0.3, 0.84, 0.2).translate(0, 0.42, 0);
+  const torso = new THREE.CapsuleGeometry(0.2, 0.42, 3, 8).scale(1.1, 1, 0.7).translate(0, 1.14, 0);
+  const g = new THREE.BufferGeometry();
+  const parts = [legs.toNonIndexed(), torso.toNonIndexed()];
+  const pos = [], nrm = [];
+  for (const q of parts) { pos.push(...q.attributes.position.array); nrm.push(...q.attributes.normal.array); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  return g;
+})();
+const peds = { body: new THREE.InstancedMesh(pedBody, std({ color: 0xffffff, roughness: 0.85 }), PED_MAX), head: new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 10, 8).translate(0, 1.62, 0), std({ color: 0xffffff, roughness: 0.7 }), PED_MAX), list: [] };
+for (const m of [peds.body, peds.head]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.castShadow = true; m.frustumCulled = false; m.count = 0; scene.add(m); }
+const CLOTHES = [0xf4f1ec, 0x2b2d33, 0x3a5fa8, 0xd9573f, 0xf2c45a, 0x5a8a4a, 0x8a5a9a, 0xe8a0b4, 0x6ac0c8, 0x9a7a5a].map((h) => new THREE.Color(h));
+const SKIN = [0xf2d0b4, 0xd8a888, 0xb07a58, 0x7a4a30, 0x5a3420].map((h) => new THREE.Color(h));
+const pedRng = mulberry32(SEED ^ 0x9ed);
+function spawnPed(p, near) {
+  const side = pedRng() < 0.5 ? -1 : 1;
+  let s = car.s + (near ? (pedRng() - 0.4) * 300 : (pedRng() < 0.5 ? 200 : -150) + pedRng() * 60);
+  if (world.intersectionDist(s) < 10) s += 12;
+  p.s = s; p.side = side; p.lat = side * (ROAD_EDGE + 0.9 + pedRng() * 2.1); p.dir = pedRng() < 0.5 ? -1 : 1;
+  p.speed = 1.0 + pedRng() * 0.7; p.phase = pedRng() * 6; p.cross = null; p.dodge = 0; p.alive = isCityAt(s) && world.citySide(roadPoint(s).z, side);
+}
+function updatePeds(dt) {
+  if (!isCityAt(car.s) && !peds.list.some((p) => p.alive)) { peds.body.count = peds.head.count = 0; return; }
+  while (peds.list.length < PED_MAX) {
+    const p = { body: CLOTHES[(pedRng() * CLOTHES.length) | 0], skin: SKIN[(pedRng() * SKIN.length) | 0], scale: 0.92 + pedRng() * 0.16 };
+    spawnPed(p, true); peds.list.push(p);
+  }
+  let n = 0;
+  for (const p of peds.list) {
+    if (!p.alive || Math.abs(p.s - car.s) > 260) { spawnPed(p, false); if (!p.alive) continue; }
+    if (p.cross) { // crossing the road at a crosswalk
+      const goal = p.cross.to, dl = goal - p.lat;
+      p.lat += Math.sign(dl) * Math.min(Math.abs(dl), p.speed * 1.2 * dt);
+      if (Math.abs(dl) < 0.05) { p.side = -p.side; p.cross = null; }
+    } else {
+      p.s += p.dir * p.speed * dt;
+      const id = world.intersectionDist(p.s);
+      if (id < 6.7 && id > 6.2 && signalState(Math.round(p.s / BLOCK)) === 'r' && pedRng() < 0.6) p.cross = { to: -p.side * (ROAD_EDGE + 1.4) };
+      else if (id < 5.4) p.dir = -p.dir; // no sidewalk across the side street: turn around
+    }
+    if (p.dodge > 0) { p.dodge -= dt; p.lat += Math.sign(p.lat || 1) * 3.5 * dt; }
+    const pt = roadPoint(p.s, p.lat), dx = pt.x - car.x, dz = pt.z - car.z;
+    if (dx * dx + dz * dz < 16 && Math.hypot(car.vx, car.vz) > 3 && p.dodge <= 0) { p.dodge = 0.6; if (p.cross) { p.side = -p.side; p.cross = null; } }
+    p.lat = clamp(p.lat, -(ROAD_EDGE + K.SIDEWALK - 0.3), ROAD_EDGE + K.SIDEWALK - 0.3);
+    p.phase += dt * p.speed * 6;
+    const bob = Math.abs(Math.sin(p.phase)) * 0.05, ground = groundAt(pt.x, pt.z);
+    const face = p.cross ? pt.h + (p.cross.to > p.lat ? -Math.PI / 2 : Math.PI / 2) : pt.h + (p.dir > 0 ? 0 : Math.PI);
+    _v4.set(pt.x, ground + bob, pt.z); _q4.setFromEuler(_e4.set(Math.sin(p.phase) * 0.04, face, 0)); _s4.setScalar(p.scale);
+    _m4.compose(_v4, _q4, _s4);
+    peds.body.setMatrixAt(n, _m4); peds.head.setMatrixAt(n, _m4);
+    peds.body.setColorAt(n, p.body); peds.head.setColorAt(n, p.skin);
+    n++;
+  }
+  _s4.set(1, 1, 1);
+  peds.body.count = peds.head.count = n;
+  for (const m of [peds.body, peds.head]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+}
+
+// ---- police chase (K): cruisers pursue, ram and box you in; lose them to escape
+const chase = { on: false, cops: [], escape: 0, busted: 0, spawnT: 0, slowmo: 0 };
+const copPaint = new THREE.MeshPhysicalMaterial({ color: 0x14161a, metalness: 0.4, roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 });
+const copRed = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 0.3, 0.2) }), copBlue = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.8, 7) });
+const copPool = Array.from({ length: 4 }, () => {
+  const rig = carsLib.buildProcedural(CARS.find((c) => c.id === 'gran'), { lod: true, paint: copPaint });
+  rig.car.remove(rig.beam, rig.beam.target);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.36, 1.6), new THREE.MeshStandardMaterial({ color: 0xf4f1ec, roughness: 0.4 })); door.position.set(0, 0.6, 0); rig.car.add(door);
+  const r = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.22), copRed), b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.22), copBlue);
+  r.position.set(0.28, 1.36, -0.15); b.position.set(-0.28, 1.36, -0.15); rig.car.add(r, b);
+  rig.car.visible = false; scene.add(rig.car);
+  return { mesh: rig.car, red: r, blue: b };
+});
+const copLights = [new THREE.PointLight(0xff2020, 0, 26, 1.6), new THREE.PointLight(0x2050ff, 0, 26, 1.6)];
+copLights.forEach((l) => scene.add(l));
+function setChase(on) {
+  if (on === chase.on) return;
+  chase.on = on; chase.escape = 0; chase.busted = 0; chase.spawnT = 0;
+  for (const c of chase.cops) c.rig.mesh.visible = false;
+  chase.cops = [];
+  if (on) { setAuto(false); spawnCop(); spawnCop(); toast('police chase'); }
+  copLights.forEach((l) => (l.intensity = 0));
+  $('chase').classList.toggle('hidden', !on);
+}
+function spawnCop() {
+  const rig = copPool.find((r) => !chase.cops.some((c) => c.rig === r));
+  if (!rig) return;
+  const k = chase.cops.length, p = roadPoint(Math.max(20, car.s - 80 - k * 22), (k % 2 ? -1 : 1) * LANE);
+  chase.cops.push({ rig, x: p.x, z: p.z, h: p.h, v: Math.max(18, Math.hypot(car.vx, car.vz)), hit: 0 });
+  rig.mesh.visible = true;
+}
+function collideCircle(o, rad) { // push a moving body (x, z, v, h) out of building footprints
+  for (let i = 0; i < nearFoot.length; i += 5) {
+    const cs = Math.cos(nearFoot[i + 2]), sn = Math.sin(nearFoot[i + 2]), hx = nearFoot[i + 3], hz = nearFoot[i + 4];
+    const dx = o.x - nearFoot[i], dz = o.z - nearFoot[i + 1], lx = dx * cs - dz * sn, lz = dx * sn + dz * cs;
+    if (Math.abs(lx) > hx + rad || Math.abs(lz) > hz + rad) continue;
+    const qx = clamp(lx, -hx, hx), qz = clamp(lz, -hz, hz), ox = lx - qx, oz = lz - qz, d = Math.hypot(ox, oz);
+    if (d >= rad && d > 1e-4) continue;
+    const nx = d > 1e-4 ? ox / d : Math.sign(lx) || 1, nz = d > 1e-4 ? oz / d : 0, pen = d > 1e-4 ? rad - d : hx - Math.abs(lx) + rad;
+    o.x += (nx * cs + nz * sn) * pen; o.z += (-nx * sn + nz * cs) * pen; o.v *= 0.6;
+  }
+}
+function updateChase(dt) {
+  if (!chase.on) return;
+  const pv = Math.hypot(car.vx, car.vz);
+  chase.spawnT += dt;
+  if (chase.spawnT > 25 && chase.cops.length < 4) { chase.spawnT = 0; spawnCop(); }
+  let minD = Infinity, nearest = null;
+  for (const c of chase.cops) {
+    const ahead = Math.min(1.2, Math.hypot(car.x - c.x, car.z - c.z) / 40);
+    const tx = car.x + car.vx * 0.5 * ahead, tz = car.z + car.vz * 0.5 * ahead;
+    const dx = tx - c.x, dz = tz - c.z, dist = Math.hypot(dx, dz);
+    const turn = wrapAngle(Math.atan2(dx, dz) - c.h), yawMax = 1.9 / (1 + c.v / 30);
+    c.h += clamp(turn, -yawMax * dt, yawMax * dt);
+    const want = dist > 30 ? Math.min(60, pv + 14) : Math.min(60, pv + 4);
+    c.v += clamp(want - c.v, -10 * dt, 9 * dt);
+    if (Math.abs(turn) > 1.2) c.v = Math.max(8, c.v - 12 * dt);
+    c.x += Math.sin(c.h) * c.v * dt; c.z += Math.cos(c.h) * c.v * dt;
+    collideCircle(c, 1.2);
+    const gx = c.x - car.x, gz = c.z - car.z, gd = Math.hypot(gx, gz);
+    if (gd < 3.0) { // contact: shove both apart
+      const nx = gx / (gd || 1), nz = gz / (gd || 1), pen = 3.0 - gd;
+      c.x += nx * pen * 0.5; c.z += nz * pen * 0.5; car.x -= nx * pen * 0.5; car.z -= nz * pen * 0.5;
+      const rel = (car.vx - Math.sin(c.h) * c.v) * nx + (car.vz - Math.cos(c.h) * c.v) * nz;
+      if (rel > 0) { car.vx -= nx * rel * 1.2; car.vz -= nz * rel * 1.2; }
+      if (c.hit <= 0) { c.hit = 0.6; shake = 0.7; thud(14); }
+    }
+    c.hit -= dt;
+    const y = groundAt(c.x, c.z);
+    c.rig.mesh.position.set(c.x, y, c.z); c.rig.mesh.rotation.set(0, c.h, 0);
+    const flash = Math.floor(simT * 6) % 2 === 0;
+    c.rig.red.material = flash ? copRed : copBlue; c.rig.blue.material = flash ? copBlue : copRed;
+    if (gd < minD) { minD = gd; nearest = c; }
+  }
+  if (nearest) {
+    const f = Math.floor(simT * 6) % 2;
+    copLights[0].position.set(nearest.x + 0.3, groundAt(nearest.x, nearest.z) + 2, nearest.z); copLights[0].intensity = f ? 30 : 4;
+    copLights[1].position.set(nearest.x - 0.3, groundAt(nearest.x, nearest.z) + 2, nearest.z); copLights[1].intensity = f ? 4 : 30;
+  }
+  chase.minD = minD;
+  if (minD > 180) chase.escape += dt; else chase.escape = Math.max(0, chase.escape - dt * 0.5);
+  if (pv < 1.5 && minD < 7) chase.busted += dt; else chase.busted = Math.max(0, chase.busted - dt);
+  $('chaseBar').style.width = Math.min(100, (chase.escape / 12) * 100) + '%';
+  $('chaseMsg').textContent = minD > 180 ? 'Out of sight' : minD > 60 ? 'Pulling away' : 'Close behind';
+  if (chase.escape >= 12) { setChase(false); bigMessage('Escaped'); }
+  else if (chase.busted >= 3.5) { setChase(false); chase.slowmo = 2.2; bigMessage('Busted'); setTimeout(() => { returnToRoad(); car.vx = car.vz = 0; }, 2000); }
+}
+let bigTimer = 0;
+function bigMessage(text) { const el = $('bigmsg'); el.textContent = text; el.classList.remove('hidden'); clearTimeout(bigTimer); bigTimer = setTimeout(() => el.classList.add('hidden'), 2600); }
 
 // ---------------------------------------------------------------------------
 // Time of day, seasons, weather → lighting
@@ -1403,7 +1621,7 @@ ui.buttons.addEventListener('click', (e) => {
   const a = e.target.closest('button')?.dataset.act;
   if (!a) return;
   e.stopPropagation();
-  ({ resume: () => setMenu(false), auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
+  ({ chase: () => { setMenu(false); setChase(!chase.on); }, resume: () => setMenu(false), auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
      photo: () => { setMenu(false); setPhoto(true); }, radio: () => setRadio(!radio.on), sound: () => setSound(!audio.on), map: () => setMap(!settings.map),
      reset: () => { setMenu(false); returnToRoad(); toast('back on the road'); }, garage: () => { setMenu(false); setGarage(true); }, region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
   e.target.blur();
@@ -1462,6 +1680,7 @@ addEventListener('keydown', (e) => {
     case 'KeyV': if (e.shiftKey) { setSound(!audio.on); toast(audio.on ? 'sound on' : 'muted'); } else setGarage(!garageOpen); break;
     case 'KeyM': setMap(!settings.map); break;
     case 'KeyL': cycleHeadlights(); break;
+    case 'KeyK': setChase(!chase.on); break;
     case 'KeyJ': audio.horn(); break;
     case 'KeyH': toggleHelp(); break;
     case 'KeyU': toggleUI(); break;
@@ -1521,6 +1740,7 @@ canvas.addEventListener('wheel', (e) => { if (photo.on) { photo.dist = clamp(pho
   const tap = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(); });
   tap('autoBtn', () => setAuto(!autoDrive));
   tap('resetBtn', () => { returnToRoad(); toast('back on the road'); });
+  tap('chaseBtn', () => setChase(!chase.on));
   $('touchpad').addEventListener('contextmenu', (e) => e.preventDefault());
 }
 addEventListener('resize', resize);
@@ -1601,7 +1821,9 @@ function capturePostcards() {
 let postcardTimer = 0;
 const stats = { frames: 0 };
 function frame(now) {
-  const rawDt = (now - last) / 1000, dt = Math.min(0.1, rawDt);
+  const rawDt = (now - last) / 1000;
+  if (chase.slowmo > 0) chase.slowmo -= rawDt;
+  const dt = Math.min(0.1, rawDt) * (chase.slowmo > 0 ? 0.3 : 1);
   last = now; stats.frames++;
   if (!ready) {
     const left = streamWorld(30, 6);
@@ -1632,12 +1854,13 @@ function frame(now) {
     let dT = timeTarget - timeOfDay; if (dT < -0.5) dT += 1; if (dT > 0.5) dT -= 1;
     timeOfDay = (timeOfDay + dT * Math.min(1, dt * (dayCycle ? 10 : 1.4)) + 1) % 1;
     if (autoSeasons) { seasonTimer += dt; if (seasonTimer > 90) { seasonTimer = 0; setSeason(seasonIdx + 1); } }
-    if (ready && !frozen) { gatherFootprints(); stepPhysics(dt); updateTraffic(dt); }
+    if (ready && !frozen) { gatherFootprints(); stepPhysics(dt); updateTraffic(dt); updatePeds(dt); updateChase(dt); }
   }
   applyCarPose();
   updateSky(paused ? 0 : dt);
   updateCamera(paused ? 0 : Math.min(dt, 0.05));
   updateStreetLights();
+  if (ready) updateSignals();
   audio.update(frozen ? 0 : car.v, frozen ? 0 : throttle, car.d > ROAD_EDGE + 0.3);
   if (started) { updateHud(); mapTimer -= dt; if (settings.map && mapTimer <= 0 && !photo.on && !uiHidden) { mapTimer = 0.1; drawMap(); } }
   renderFrame();
@@ -1654,7 +1877,7 @@ requestAnimationFrame(frame);
 // Hooks for the automated tests (tests/smoke.cjs)
 window.__game = {
   car, road, chunks, segments, traffic, stats, SEED, REGION_ID, ROAD_EDGE, world,
-  isReady: () => ready, start, returnToRoad, setGarage, CARS, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
+  isReady: () => ready, start, returnToRoad, setGarage, CARS, setChase, signalState, chaseState: () => chase, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
   setTime: (t) => { timeOfDay = timeTarget = t; }, setCam, setLook, setPhoto, setMap,
-  state: () => ({ car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
+  state: () => ({ chase: chase.on, cops: chase.cops.length, copDist: chase.minD, peds: peds.body.count, traffic: traffic.length, car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
 };
