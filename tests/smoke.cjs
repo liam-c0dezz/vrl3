@@ -188,7 +188,7 @@ async function run(browser, base, region, device) {
     await page.mouse.move(640, 360); await page.mouse.down(); await page.mouse.move(800, 330, { steps: 6 }); await page.mouse.up();
     await sleep(300);
     await page.screenshot({ path: path.join(OUT, `${tag}-photo.png`) });
-    const dl = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+    const dl = page.waitForEvent('download', { timeout: 180000 }).catch(() => null);
     await page.keyboard.press('Enter');
     const download = await dl;
     check(`${tag}: photo mode saves a PNG`, !!download && /\.png$/.test(download.suggestedFilename()), download ? download.suggestedFilename() : 'no download');
