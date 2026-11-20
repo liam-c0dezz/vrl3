@@ -8,6 +8,7 @@ export const S = { NONE: 0, DECID: 1, GROUND: 2, PALM: 3, EVER: 4, FLOWER: 5 };
 
 // Facade textures tile 8 window bays × 8 floors; these are a bay's width and a floor's height.
 export const FACADE = { deco: [3.0, 3.4], condo: [3.6, 3.2], tower: [1.6, 3.8], house: [3.0, 3.0] };
+export const STREET_NAMES = ['Ocean Ave', 'Palm St', 'Collins Dr', 'Sunset Blvd', 'Bay Rd', '2nd St', 'Lincoln Rd', 'Vine St', 'Coral Way', 'Pier Ave', 'Main St', 'Alton Rd', 'Mesa Dr', 'Hibiscus Ln', '5th St', 'Harbor Dr'];
 export const SIGN_WORDS = ['HOTEL', 'CAFE', 'MOTEL', 'BAR', 'SURF', 'TACOS', 'DELI', 'GELATO', 'BOOKS', 'RECORDS', 'LIQUOR', 'PHARMACY', 'DINER', 'SALON', 'BAKERY', 'SUSHI'];
 
 export function createGen(THREE, seed, region) {
@@ -233,6 +234,29 @@ export function createGen(THREE, seed, region) {
     const zA = lz + front * width / 2, zB = lz - front * width / 2; // keep the text reading left-to-right
     quad(G, 'sign', P(lx, y0, zA), P(lx, y0, zB), P(lx, y0 + height, zB), P(lx, y0 + height, zA), n, [[u0, v0], [u1, v0], [u1, v1], [u0, v1]], WHITE);
   }
+  function atlasQuad(G, name, x, y, z, rot, lx, y0, lz, width, height, front, cell, n) {
+    const cs = Math.cos(rot), sn = Math.sin(rot), P = (px, py, pz) => [x + px * cs + pz * sn, y + py, z - px * sn + pz * cs];
+    const c = cell % n, rr = (cell / n) | 0, u0 = c / n, u1 = (c + 1) / n, v0 = 1 - (rr + 1) / n, v1 = 1 - rr / n;
+    const nn = [front * cs, 0, -front * sn], zA = lz + front * width / 2, zB = lz - front * width / 2;
+    quad(G, name, P(lx, y0, zA), P(lx, y0, zB), P(lx, y0 + height, zB), P(lx, y0 + height, zA), nn, [[u0, v0], [u1, v0], [u1, v1], [u0, v1]], WHITE);
+  }
+  function rooftop(G, r, x, y, z, rot, w, d, H) { // AC units, a water tank, sometimes a billboard
+    const B = (name, lx, ly, lz, sx, sy, sz, color) => box(G, name, x, y, z, rot, lx, ly, lz, sx, sy, sz, color, null, { ao: false });
+    for (let k = 0; k < 2 + ((r() * 3) | 0); k++) B('trim', (r() - 0.5) * (d - 3), H + 0.8, (r() - 0.5) * (w - 3), 1.2 + r(), 0.8, 1 + r() * 0.6, METAL);
+    if (r() < 0.35) {
+      const cs = Math.cos(rot), sn = Math.sin(rot), lx = (r() - 0.5) * d * 0.4, lz = (r() - 0.5) * w * 0.4, X = x + lx * cs + lz * sn, Z = z - lx * sn + lz * cs;
+      for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(G, 'trim', X, y + H + 0.8, Z, rot, a * 0.9, 0, b * 0.9, 0.12, 2.2, 0.12, DARK, null, { ao: false });
+      tpl(G, 'trim', T.cyl, X, y + H + 3.0, Z, 0, 1.3, 2.6, [col('#8a6a4a'), C0, C0]);
+      tpl(G, 'trim', T.hipRoof, X, y + H + 5.6, Z, rot, 2.7, 0.9, [col('#6a5038'), C0, C0]);
+    }
+    if (r() < 0.3 && w > 12) { // billboard facing the street
+      const bw = Math.min(10, w - 2), bh = bw * 0.42, lx = 0;
+      for (const zz of [-bw * 0.35, bw * 0.35]) B('trim', lx, H + 0.8, zz, 0.18, 2.4, 0.18, DARK);
+      B('trim', lx - 0.1, H + 3.0, 0, 0.12, bh + 0.3, bw + 0.3, DARK);
+      atlasQuad(G, 'billboard', x, y, z, rot, lx + 0.02, H + 3.15, 0, bw, bh, 1, (r() * 4) | 0, 2);
+      atlasQuad(G, 'billboard', x, y, z, rot, lx - 0.22, H + 3.15, 0, bw, bh, -1, (r() * 4) | 0, 2);
+    }
+  }
   function building(G, r, x, y, z, rot, w, d, kind, front, hMul = 1, hero = true) {
     const B = (name, lx, ly, lz, sx, sy, sz, color, uv, opts) => box(G, name, x, y, z, rot, lx, ly, lz, sx, sy, sz, color, uv, opts);
     const f = front;
@@ -261,7 +285,7 @@ export function createGen(THREE, seed, region) {
         tpl(G, 'neon', T.cyl, x + lx * cs + lz * sn, y + H + 0.6, z - lx * sn + lz * cs, 0, 1.75, 0.08, [neon, neon, neon]);
       }
       sign(G, x, y, z, rot, f * (d / 2 + 2.03), 3.25, 0, Math.min(w - 2.5, 6.5), 1.3, f, (r() * 16) | 0);
-      for (let k = 0; k < 2; k++) B('trim', (r() - 0.5) * d * 0.5, H + 0.8, (r() - 0.5) * w * 0.5, 1.4, 0.9, 1.1, METAL);
+      rooftop(G, r, x, y, z, rot, w, d, H);
     } else if (kind === 'condo') {
       const nf = Math.round((5 + ((r() * 10) | 0)) * hMul), FH = 3.2, H = nf * FH;
       const c = pickOf(r, CONDO), acc = pickOf(r, ACCENT);
@@ -277,6 +301,7 @@ export function createGen(THREE, seed, region) {
         if (r() < 0.6) B('trim', 0, 0, (r() < 0.5 ? -1 : 1) * (w / 2 + 0.06), d * 0.3, H + 0.8, 0.14, acc);
       }
       B('trim', (r() - 0.5) * d * 0.4, H + 1, (r() - 0.5) * w * 0.4, 3, 2.8, 3.5, WHITE);
+      if (hero) rooftop(G, r, x, y, z, rot, w, d, H + 0.2);
       const cs = Math.cos(rot), sn = Math.sin(rot), tx = -f * d * 0.25, tz = w * 0.25;
       tpl(G, 'trim', T.cyl8, x + tx * cs + tz * sn, y + H + 1, z - tx * sn + tz * cs, 0, 1.1, 2.4, [METAL, METAL, METAL]);
     } else if (kind === 'tower') {
@@ -320,6 +345,7 @@ export function createGen(THREE, seed, region) {
       const H = 4.8, c = pickOf(r, DECO);
       B('facade_deco', 0, 0, 0, d, H, w, c, [0, 0, 0.02, 0.98]);
       B('trim', 0, H, 0, d + 0.3, 1.1, w + 0.3, WHITE);
+      rooftop(G, r, x, y, z, rot, w, d, H + 0.3);
       const units = Math.max(1, Math.round(w / 8)), uw = w / units;
       for (let i = 0; i < units; i++) {
         const uz = -w / 2 + uw * (i + 0.5);
@@ -651,6 +677,10 @@ export function createGen(THREE, seed, region) {
         const hd = RP(sb - side * 7.4, side * 1.8);
         box(G, 'trim', hd.x, hd.y + 0.17, hd.z, hd.h, 0, 4.6, 0, 0.4, 1.3, 0.4, col('#2c3a2c'), null, { ao: false });
         // the lamps themselves are drawn live by the game so they can cycle
+        const nameIdx = Math.abs((m * 7 + (side > 0 ? 3 : 0)) % 16);
+        box(G, 'trim', sg.x, sg.y + 0.17, sg.z, sg.h, side * 0.0, 3.2, 0, 0.06, 0.04, 0.04, DARK, null, { ao: false });
+        atlasQuad(G, 'streetsign', sg.x, sg.y + 0.17, sg.z, sg.h + Math.PI / 2, 0, 3.0, 0, 1.6, 0.34, 1, nameIdx, 4);
+        atlasQuad(G, 'streetsign', sg.x, sg.y + 0.17, sg.z, sg.h + Math.PI / 2, -0.01, 3.0, 0, 1.6, 0.34, -1, nameIdx, 4);
       }
     }
     // ---- street furniture along the corridor
@@ -668,6 +698,32 @@ export function createGen(THREE, seed, region) {
             tpl(G, 'props', tp, p.x, p.y + 0.17, p.z, r * 6, 0.9 + r * 0.2, (CA ? 1.0 : 0.85) + r * 0.3,
               CA ? [col(0x7a5444), col(0x3f7a4a), col(0x5a3f30)] : isBeach ? [col(0x8a6a50), col(0x4f923f), col(0x6a4a2a)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r);
             box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, -0.02, 0, 1.4, 0.06, 1.4, col('#5a4a3a'), null, { ao: false });
+          }
+          const furn = (i * 7 + (side > 0 ? 3 : 0)) % 29, idist = W.intersectionDist(s);
+          if (furn === 5) { // bench
+            const p = RP(s, side * (ROAD_EDGE + 2.9));
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, 0.42, 0, 0.45, 0.06, 1.8, col('#7a5a3a'), null, { ao: false });
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, side * 0.22, 0.5, 0, 0.05, 0.42, 1.8, col('#7a5a3a'), null, { ao: false });
+            for (const zz of [-0.75, 0.75]) box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, 0, zz, 0.4, 0.42, 0.06, DARK, null, { ao: false });
+          } else if (furn === 11 || furn === 23) { // trash can
+            const p = RP(s, side * (ROAD_EDGE + 0.55));
+            tpl(G, 'trim', T.cyl8, p.x, p.y + 0.17, p.z, 0, 0.28, 0.9, [col('#2f4a3a'), C0, C0]);
+          } else if (furn === 17 && i % 58 < 29 && side > 0 && idist > 20) { // bus shelter
+            const p = RP(s, side * (ROAD_EDGE + 2.2));
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, 2.5, 0, 1.6, 0.1, 3.6, METAL, null, { ao: false });
+            box(G, 'rail', p.x, p.y + 0.17, p.z, p.h, side * 0.75, 0.1, 0, 0.04, 2.3, 3.4, WHITE, null, { ao: false });
+            for (const zz of [-1.7, 1.7]) box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, side * 0.75, 0, zz, 0.08, 2.5, 0.08, METAL, null, { ao: false });
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, side * 0.5, 0.42, 0, 0.35, 0.06, 2.6, METAL, null, { ao: false });
+            box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, -side * 0.9, 0, 2.2, 0.06, 2.6, 0.06, METAL, null, { ao: false });
+            box(G, 'neon', p.x, p.y + 0.17, p.z, p.h, -side * 0.9, 2.3, 2.2, 0.05, 0.5, 0.5, col('#2a6ad8'), null, { ao: false });
+          }
+          if (idist > 10.5 && idist < 12.6 && i % 2 === 0) { // hydrant and newspaper boxes near each corner
+            const p = RP(s, side * (ROAD_EDGE + 0.6));
+            tpl(G, 'trim', T.cyl8, p.x, p.y + 0.17, p.z, 0, 0.13, 0.62, [col('#d8382a'), C0, C0]);
+            tpl(G, 'trim', T.cyl8, p.x, p.y + 0.79, p.z, 0, 0.16, 0.08, [col('#d8382a'), C0, C0]);
+            const q = RP(s + 1.2, side * (ROAD_EDGE + 0.5));
+            box(G, 'trim', q.x, q.y + 0.17, q.z, q.h, 0, 0, 0, 0.45, 1.05, 0.45, col(['#2a6ad8', '#e8c040', '#d8382a', '#3a8a5a'][i % 4]), null, { ao: false });
+            box(G, 'trim', q.x, q.y + 0.17, q.z, q.h, 0, 0, 0.6, 0.45, 1.0, 0.45, col(['#e8c040', '#3a8a5a', '#2a6ad8', '#d8382a'][i % 4]), null, { ao: false });
           }
           if ((i + (side > 0 ? 8 : 0)) % 16 === 0) { // streetlights, alternating sides
             const p = RP(s, side * (ROAD_EDGE + 0.7));

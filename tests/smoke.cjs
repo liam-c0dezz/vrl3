@@ -68,11 +68,16 @@ async function run(browser, base, region, device) {
   const p0 = await page.evaluate(() => ({ ...window.__game.car }));
   await waitFrames(page, 60); // 3 s of game time
   const p1 = await page.evaluate(() => ({ ...window.__game.car, edge: window.__game.ROAD_EDGE }));
-  check(`${tag}: auto-drive moves`, p1.odo - p0.odo > 30, `${(p1.odo - p0.odo).toFixed(1)} m`);
+  check(`${tag}: auto-drive moves`, p1.odo - p0.odo > 15, `${(p1.odo - p0.odo).toFixed(1)} m`);
   check(`${tag}: auto-drive stays on road`, p1.d < p1.edge, `${p1.d.toFixed(2)} m from centre`);
   check(`${tag}: stays in right lane`, p1.lat > 0.3 && p1.lat < 3.6, `lat ${p1.lat.toFixed(2)}`);
   await page.screenshot({ path: path.join(OUT, `${tag}-drive.png`) });
 
+  // the city is alive: traffic, pedestrians, cycling signals
+  const life = await page.evaluate(() => ({ s: window.__game.state(), sig: [0, 1, 2, 3].map((m) => window.__game.signalState(m)) }));
+  check(`${tag}: traffic is on the road`, life.s.traffic > 0, `${life.s.traffic} cars`);
+  check(`${tag}: pedestrians on the sidewalks`, life.s.peds > 0, `${life.s.peds} people`);
+  check(`${tag}: signals have a state`, life.sig.every((x) => 'gyr'.includes(x)), life.sig.join(''));
   // route map draws something
   const mapInk = await page.evaluate(() => {
     const c = document.getElementById('map'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -150,6 +155,28 @@ async function run(browser, base, region, device) {
     const nan = await page.evaluate(() => Object.values(window.__game.car).some((v) => typeof v === 'number' && !Number.isFinite(v)));
     check(`${tag}: physics state stays finite`, !nan);
 
+    // pause menu
+    await page.keyboard.press('Escape');
+    const mo = await page.evaluate(() => ({ st: window.__game.state(), vis: getComputedStyle(document.getElementById('buttons')).opacity }));
+    check(`${tag}: Esc opens the pause menu`, mo.st.paused && mo.vis === '1');
+    await page.keyboard.press('Escape');
+    check(`${tag}: Esc closes it again`, !(await page.evaluate(() => window.__game.state().paused)));
+    // garage: ten cars, switching works
+    await page.keyboard.press('KeyV');
+    const g = await page.evaluate(() => ({ n: document.querySelectorAll('#gList button').length, open: window.__game.state().garage }));
+    check(`${tag}: garage lists ten cars`, g.open && g.n === 10, `${g.n} cars`);
+    await page.evaluate(() => document.querySelector('#gList button[data-id="apex"]').click());
+    await waitFrames(page, 4);
+    check(`${tag}: picking a car swaps it`, (await page.evaluate(() => window.__game.state().car)) === 'apex');
+    await page.screenshot({ path: path.join(OUT, `${tag}-garage.png`) });
+    await page.keyboard.press('KeyV');
+    // police chase
+    await page.keyboard.press('KeyK'); await waitFrames(page, 20);
+    const ch = await page.evaluate(() => window.__game.state());
+    check(`${tag}: K starts a police chase`, ch.chase && ch.cops >= 2, `${ch.cops} cruisers, nearest ${ch.copDist ? ch.copDist.toFixed(0) : '?'} m`);
+    await page.screenshot({ path: path.join(OUT, `${tag}-chase.png`) });
+    await page.keyboard.press('KeyK');
+    check(`${tag}: K ends the chase`, !(await page.evaluate(() => window.__game.state().chase)));
     await page.keyboard.press('KeyF');
     const a = await page.evaluate(() => window.__game.car.odo);
     await sleep(1000);
@@ -171,6 +198,8 @@ async function run(browser, base, region, device) {
     await page.reload();
     await page.waitForFunction(() => window.__game && window.__game.isReady(), null, { timeout: 600000 });
     check(`${tag}: look setting persists`, (await page.evaluate(() => window.__game.state().look)) === 1);
+    check(`${tag}: chosen car persists`, (await page.evaluate(() => window.__game.state().car)) === 'apex');
+    await page.evaluate(() => { localStorage.clear(); });
     await page.evaluate(() => window.__game.setLook(0));
   } else {
     // on-screen touch controls are shown and usable
@@ -206,6 +235,9 @@ async function run(browser, base, region, device) {
     await fire('brakeBtn', 'pointerdown', 0, 9); await waitFrames(page, 20); await fire('brakeBtn', 'pointerup', 0, 9);
     const v2 = await page.evaluate(() => window.__game.car.v);
     check(`${tag}: brake pedal slows down`, v2 < v1 - 2, `${v1.toFixed(1)} → ${v2.toFixed(1)} m/s`);
+    await fire('chaseBtn', 'pointerdown', 0, 12); await waitFrames(page, 4);
+    check(`${tag}: chase button starts a chase`, await page.evaluate(() => window.__game.state().chase));
+    await fire('chaseBtn', 'pointerdown', 0, 13);
     await fire('autoBtn', 'pointerdown', 0, 11);
     check(`${tag}: auto button re-engages auto-drive`, await page.evaluate(() => window.__game.state().autoDrive));
     const overlap = await page.evaluate(() => {

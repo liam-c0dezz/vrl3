@@ -3,7 +3,7 @@
 // seasons & weather, audio, UI. World geometry is generated in a worker (gen-worker.js).
 import * as THREE from 'three';
 import { createWorld, mulberry32, makeNoise2D, clamp, lerp, smooth, sstep, wrapAngle, K } from './world.js';
-import { createGen, SIGN_WORDS } from './gen.js';
+import { createGen, SIGN_WORDS, STREET_NAMES } from './gen.js';
 import { createCars, CARS, PAINT_SWATCHES } from './cars.js';
 
 // ---------------------------------------------------------------------------
@@ -450,6 +450,36 @@ const signTex = canvasTex(1024, 1024, (g, W) => {
   });
 }, true, false);
 
+// Street-name plates (4×4 atlas) and rooftop billboards (2×2 atlas of original posters)
+const streetSignTex = canvasTex(1024, 512, (g, W, H) => {
+  const cw = W / 4, ch = H / 4;
+  STREET_NAMES.forEach((name, i) => {
+    const x = (i % 4) * cw, y = ((i / 4) | 0) * ch;
+    g.fillStyle = '#1f6a44'; g.fillRect(x, y, cw, ch);
+    g.strokeStyle = '#f4f1ec'; g.lineWidth = 4; g.strokeRect(x + 6, y + 6, cw - 12, ch - 12);
+    g.fillStyle = '#f4f1ec'; g.font = `700 ${ch * 0.42}px Archivo, Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(name, x + cw / 2, y + ch / 2 + 2);
+  });
+}, true, false);
+const billboardTex = canvasTex(1024, 1024, (g, W) => {
+  const c = W / 2;
+  const ads = [
+    { bg: ['#ff8a5b', '#ffcf6a'], ink: '#1b1d2a', big: 'SUNSET', small: 'Open late on the boardwalk' },
+    { bg: ['#1b2a4a', '#3a6ad8'], ink: '#f4f1ec', big: 'NIGHT SWIM', small: 'Rooftop pool · Fridays' },
+    { bg: ['#f4f1ec', '#d8e8e0'], ink: '#1f6a44', big: 'COLD BREW', small: 'Corner of Palm & 2nd' },
+    { bg: ['#2b2d33', '#ff4f8b'], ink: '#f4f1ec', big: 'SURF CO.', small: 'Boards · Wax · Lessons' },
+  ];
+  ads.forEach((a, i) => {
+    const x = (i % 2) * c, y = ((i / 2) | 0) * c, h = c * 0.42, y0 = y + (c - h) / 2;
+    const gr = g.createLinearGradient(x, y0, x + c, y0 + h); gr.addColorStop(0, a.bg[0]); gr.addColorStop(1, a.bg[1]);
+    g.fillStyle = gr; g.fillRect(x, y, c, c);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.arc(x + c * 0.82, y + c * 0.5, c * 0.2, 0, Math.PI * 2); g.fill();
+    g.fillStyle = a.ink; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.font = `800 ${c * 0.13}px Archivo, Arial, sans-serif`; g.fillText(a.big, x + c * 0.07, y + c * 0.52);
+    g.font = `500 ${c * 0.045}px Archivo, Arial, sans-serif`; g.fillText(a.small, x + c * 0.07, y + c * 0.6);
+  });
+}, true, false);
+
 // ---------------------------------------------------------------------------
 // Materials (+ seasons, wind and wet-ground shader hooks)
 // ---------------------------------------------------------------------------
@@ -528,9 +558,11 @@ const MATS = {
   road2: std({ color: 0x3a3c41, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
   paint: std({ color: 0xeeeeea, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }),
   sidewalk: std({ map: sidewalkTex, roughness: 0.9 }),
+  streetsign: std({ map: streetSignTex, roughness: 0.6, side: THREE.DoubleSide }),
+  billboard: std({ map: billboardTex, roughness: 0.5, emissive: 0xffffff, emissiveMap: billboardTex, emissiveIntensity: 0 }),
   facade_deco: facadeMat(FAC.deco), facade_condo: facadeMat(FAC.condo), facade_tower: facadeMat(FAC.tower, 0.55), facade_house: facadeMat(FAC.house),
 };
-const NO_SHADOW = new Set(['neon', 'sign', 'paint', 'road', 'road2', 'sidewalk', 'rail', 'pool']);
+const NO_SHADOW = new Set(['neon', 'sign', 'paint', 'road', 'road2', 'sidewalk', 'rail', 'pool', 'streetsign', 'billboard']);
 const FACADES = [MATS.facade_deco, MATS.facade_condo, MATS.facade_tower, MATS.facade_house];
 
 // ---------------------------------------------------------------------------
@@ -1208,6 +1240,7 @@ function updateSky(dt) {
   const nightGlow = Math.max(night, rain * 0.4);
   for (const m of FACADES) m.emissiveIntensity = nightGlow * 1.1;
   MATS.glass.emissiveIntensity = nightGlow * 0.22; // shop windows light up
+  MATS.billboard.emissiveIntensity = nightGlow * 0.9;
   MATS.neon.color.setScalar(lerp(1.3, 2.6, nightGlow));
   MATS.sign.color.setScalar(lerp(0.8, 1.8, nightGlow));
   MATS.pool.emissiveIntensity = 0.15 + night * 1.2;
@@ -1339,6 +1372,9 @@ const audio = {
     const rf = ctx.createBiquadFilter(); rf.type = 'highpass'; rf.frequency.value = 1800;
     this.rainG = ctx.createGain(); this.rainG.gain.value = 0;
     rs.connect(rf); rf.connect(this.rainG); this.rainG.connect(this.master); rs.start();
+    this.sirenO = ctx.createOscillator(); this.sirenO.type = 'triangle'; this.sirenO.frequency.value = 700;
+    this.sirenG = ctx.createGain(); this.sirenG.gain.value = 0;
+    this.sirenO.connect(this.sirenG); this.sirenG.connect(this.master); this.sirenO.start();
     radio.init(ctx, this.master);
   },
   update(v, thr, offroad) {
@@ -1354,6 +1390,9 @@ const audio = {
     this.wind.gain.setTargetAtTime(Math.min(0.55, (av / 45) ** 2 * (CA ? 0.55 : 0.32)) + (offroad ? Math.min(0.35, av / 40) : 0), t, 0.2);
     this.wf.frequency.setTargetAtTime(offroad ? 160 : 380 + av * 12, t, 0.2);
     this.rainG.gain.setTargetAtTime(rain * 0.08, t, 0.5);
+    const near = chase.on && chase.minD < 400 ? 1 - chase.minD / 400 : 0;
+    this.sirenG.gain.setTargetAtTime(near * 0.07, t, 0.2);
+    if (near > 0) this.sirenO.frequency.setTargetAtTime(Math.floor(t * 1.6) % 2 ? 960 : 680, t, 0.04);
   },
   horn() {
     if (!this.ctx) return;
