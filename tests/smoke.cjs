@@ -132,6 +132,7 @@ async function run(browser, base, region, device) {
     const back = await page.evaluate(() => ({ lat: window.__game.car.lat, d: window.__game.car.d }));
     check(`${tag}: R returns to the road`, Math.abs(back.lat - 1.8) < 0.4 && back.d < 2.5, `lat ${off.lat.toFixed(1)} → ${back.lat.toFixed(2)}`);
     // handbrake scrubs speed
+    await page.keyboard.down('KeyW'); await waitFrames(page, 40); await page.keyboard.up('KeyW'); // get some speed up first
     const hv0 = await page.evaluate(() => window.__game.car.v);
     await page.keyboard.down('Space'); await waitFrames(page, 20); await page.keyboard.up('Space');
     const hv1 = await page.evaluate(() => window.__game.car.v);
