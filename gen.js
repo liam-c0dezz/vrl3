@@ -29,7 +29,7 @@ export function createGen(THREE, seed, region) {
     out() { return { position: new Float32Array(this.p), normal: new Float32Array(this.n), uv: new Float32Array(this.u), color: new Float32Array(this.c), aSea: new Float32Array(this.s) }; }
   }
   class Groups {
-    constructor(ox, oz) { this.ox = ox; this.oz = oz; this.m = {}; }
+    constructor(ox, oz) { this.ox = ox; this.oz = oz; this.m = {}; this.foot = []; } // foot: solid footprints [x, z, rot, halfX, halfZ]
     g(name) { return this.m[name] || (this.m[name] = new Acc()); }
     out() {
       const groups = {}, transfer = [];
@@ -38,7 +38,9 @@ export function createGen(THREE, seed, region) {
         const o = this.m[k].out(); groups[k] = o;
         for (const kk in o) transfer.push(o[kk].buffer);
       }
-      return { groups, transfer };
+      const foot = new Float32Array(this.foot);
+      transfer.push(foot.buffer);
+      return { groups, transfer, foot };
     }
   }
   // A world-space quad (a,b,c,d) with an outward normal; the winding is fixed up automatically.
@@ -234,6 +236,7 @@ export function createGen(THREE, seed, region) {
   function building(G, r, x, y, z, rot, w, d, kind, front, hMul = 1, hero = true) {
     const B = (name, lx, ly, lz, sx, sy, sz, color, uv, opts) => box(G, name, x, y, z, rot, lx, ly, lz, sx, sy, sz, color, uv, opts);
     const f = front;
+    G.foot.push(x, z, rot, (kind === 'tower' ? d + 5 : d) / 2 + 0.2, (kind === 'tower' ? w + 5 : w) / 2 + 0.2);
     B('trim', 0, -2, 0, d + 0.4, 2.05, w + 0.4, CONCRETE, null, { ao: false }); // plinth below grade
     if (kind === 'deco') {
       const nf = 2 + ((r() * 3) | 0), FH = 3.4, H = nf * FH;
@@ -401,10 +404,10 @@ export function createGen(THREE, seed, region) {
     const sample = (lx, lz) => { const gi = clamp(Math.round(lx / st), 0, RES), gj = clamp(Math.round(lz / st), 0, RES); return (gj + 1) * NB + (gi + 1); };
     if (CA && W.districtAt(oz + CHUNK / 2) === 'coast') caPlants(G, rr, ox, oz, st, sample);
     else sfChunk(G, rr, cx, cz, ox, oz, st, sample);
-    const { groups, transfer } = G.out();
+    const { groups, transfer, foot } = G.out();
     const terrain = { position: pos, normal: nrm, color: cols, aSea: sea, index: idx };
     transfer.push(pos.buffer, nrm.buffer, cols.buffer, sea.buffer, idx.buffer);
-    return { msg: { type: 'chunk', cx, cz, ox, oz, terrain, groups }, transfer };
+    return { msg: { type: 'chunk', cx, cz, ox, oz, terrain, groups, foot }, transfer };
   }
 
   function caPlants(G, rr, ox, oz, st, sample) {
@@ -480,6 +483,15 @@ export function createGen(THREE, seed, region) {
       }
     }
     const beachy = dist === 'deco' || dist === 'beach';
+    for (let t = 2; t < CHUNK; t += 6) { // dashed centre lines on this block's west and south streets
+      for (const [lx, lz, along] of [[0, t, 'z'], [t, 0, 'x']]) {
+        if (!okAt(lx + 6, lz + 6)) continue;
+        const b = sample(lx, lz), y = hBuf[b] + 0.04, x0 = ox + lx, z0 = oz + lz;
+        const L = 2.6, Wd = 0.14;
+        if (along === 'z') quad(G, 'paint', [x0 - Wd, y, z0], [x0 + Wd, y, z0], [x0 + Wd, y, z0 + L], [x0 - Wd, y, z0 + L], [0, 1, 0], null, col('#e8c25a'));
+        else quad(G, 'paint', [x0, y, z0 - Wd], [x0 + L, y, z0 - Wd], [x0 + L, y, z0 + Wd], [x0, y, z0 + Wd], [0, 1, 0], null, col('#e8c25a'));
+      }
+    }
     const park = noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || beachy && noise(cx * 0.5, cz * 0.5) > 0.3;
     if (park) {
       for (let t = 0; t < 14; t++) {
@@ -568,8 +580,8 @@ export function createGen(THREE, seed, region) {
     }
     if (CA) caSegmentProps(G, i0, i1);
     sfSegment(G, k, i0, i1, s0, s1, lights); // city furniture & buildings wherever a district is urban
-    const { groups, transfer } = G.out();
-    return { msg: { type: 'segment', k, ox, oz, groups, lights }, transfer };
+    const { groups, transfer, foot } = G.out();
+    return { msg: { type: 'segment', k, ox, oz, groups, lights, foot }, transfer };
   }
 
   function caSegmentProps(G, i0, i1) {
@@ -630,7 +642,7 @@ export function createGen(THREE, seed, region) {
       }
       for (const side of [-1, 1]) {
         if (!W.citySide(pc.z, side)) continue;
-        const a = RP(sb - 5.2, side * ROAD_EDGE), b = RP(sb + 5.2, side * ROAD_EDGE), c = RP(sb + 5.2, side * 60), d = RP(sb - 5.2, side * 60);
+        const a = RP(sb - 5.2, side * ROAD_EDGE), b = RP(sb + 5.2, side * ROAD_EDGE), c = RP(sb + 5.2, side * 78), d = RP(sb - 5.2, side * 78);
         quad(G, 'road2', [a.x, a.y + 0.02, a.z], [b.x, b.y + 0.02, b.z], [c.x, c.y - 0.1, c.z], [d.x, d.y - 0.1, d.z], [0, 1, 0], null, WHITE);
         // signal pole on the near-side corner, arm reaching over the lanes
         const sg = RP(sb - side * 7.4, side * (ROAD_EDGE + 0.8));

@@ -602,11 +602,11 @@ function upload(m) {
     terrain.position.set(m.ox, 0, m.oz); terrain.receiveShadow = true;
     terrain.matrixAutoUpdate = false; terrain.updateMatrix();
     scene.add(terrain);
-    chunks.set(key, { cx: m.cx, cz: m.cz, meshes: [terrain, ...meshesFrom(m.groups, m.ox, m.oz)] });
+    chunks.set(key, { cx: m.cx, cz: m.cz, meshes: [terrain, ...meshesFrom(m.groups, m.ox, m.oz)], foot: m.foot });
   } else if (m.type === 'segment') {
     pending.delete('s' + m.k);
     if (segments.has(m.k) || !segWanted(m.k)) return;
-    segments.set(m.k, { meshes: meshesFrom(m.groups, m.ox, m.oz), lights: m.lights });
+    segments.set(m.k, { meshes: meshesFrom(m.groups, m.ox, m.oz), lights: m.lights, foot: m.foot });
   }
 }
 function dispose(entry) { for (const mesh of entry.meshes) { scene.remove(mesh); mesh.geometry.dispose(); } }
@@ -798,9 +798,7 @@ function curvatureAhead(s, dist) {
   return maxC;
 }
 function wallLimit(z, side, s) {
-  if (world.districtAt(z) === 'causeway') return ROAD_EDGE - 0.6;
-  if (!world.citySide(z, side) || world.intersectionDist(s) < 6.5) return Infinity;
-  return K.WALL;
+  return world.districtAt(z) === 'causeway' ? ROAD_EDGE - 0.6 : Infinity;
 }
 const spring = (x, v, target, w, zeta, dt) => { v += (w * w * (target - x) - 2 * zeta * w * v) * dt; return [x + v * dt, v]; };
 function physicsStep(dt) {
@@ -832,7 +830,7 @@ function physicsStep(dt) {
   }
   throttle += (thr - throttle) * (1 - Math.exp(-dt * 5));
   brake = brk;
-  const onRoad = car.d < ROAD_EDGE + 0.3;
+  const onRoad = car.d < ROAD_EDGE + 0.3 || (world.citySide(car.z, 1) && world.baseH(car.x, car.z) > 0.8); // city streets & plazas count as paved
   const inWater = groundAt(car.x, car.z) < WATER - 0.3;
   const vmax = CA ? 50 : 54;
   let acc = throttle * (CA ? 6.2 : 7.0) * Math.max(0, 1 - vF / vmax);
@@ -872,6 +870,7 @@ function physicsStep(dt) {
       }
     }
   }
+  collideBuildings();
   // suspension: each wheel finds the ground; the body rides on damped springs
   const hw = WB / 2, tr = player.track;
   const gFL = groundAt(car.x + nfx * hw + nlx * tr, car.z + nfz * hw + nlz * tr), gFR = groundAt(car.x + nfx * hw - nlx * tr, car.z + nfz * hw - nlz * tr);
@@ -889,6 +888,45 @@ function physicsStep(dt) {
   car.spin += (vF * dt) / player.R;
   wetTime = inWater ? wetTime + dt : 0; // drove into the sea? back to the road
   if (wetTime > 1.6) { returnToRoad(); toast('back on the road'); }
+}
+// Solid buildings: the car is two circles (front/back) tested against nearby oriented footprints.
+const nearFoot = [];
+function gatherFootprints() {
+  nearFoot.length = 0;
+  const add = (f) => {
+    if (!f) return;
+    for (let i = 0; i < f.length; i += 5) {
+      const dx = f[i] - car.x, dz = f[i + 1] - car.z, r = Math.max(f[i + 3], f[i + 4]) + 45;
+      if (dx * dx + dz * dz < r * r) nearFoot.push(f[i], f[i + 1], f[i + 2], f[i + 3], f[i + 4]);
+    }
+  };
+  for (const c of chunks.values()) if (Math.abs((c.cx + 0.5) * CHUNK - car.x) < 110 && Math.abs((c.cz + 0.5) * CHUNK - car.z) < 110) add(c.foot);
+  for (const sg of segments.values()) add(sg.foot);
+}
+function collideBuildings() {
+  const fx = Math.sin(car.h), fz = Math.cos(car.h), RAD = 1.0;
+  for (const off of [1.25, -1.25]) {
+    const px = car.x + fx * off, pz = car.z + fz * off;
+    for (let i = 0; i < nearFoot.length; i += 5) {
+      const cs = Math.cos(nearFoot[i + 2]), sn = Math.sin(nearFoot[i + 2]), hx = nearFoot[i + 3], hz = nearFoot[i + 4];
+      const dx = px - nearFoot[i], dz = pz - nearFoot[i + 1];
+      const lx = dx * cs - dz * sn, lz = dx * sn + dz * cs;
+      if (Math.abs(lx) > hx + RAD || Math.abs(lz) > hz + RAD) continue;
+      let nx, nz, pen;
+      const qx = clamp(lx, -hx, hx), qz = clamp(lz, -hz, hz), ox = lx - qx, oz = lz - qz, dist = Math.hypot(ox, oz);
+      if (dist > 1e-4) { if (dist >= RAD) continue; nx = ox / dist; nz = oz / dist; pen = RAD - dist; }
+      else if (hx - Math.abs(lx) < hz - Math.abs(lz)) { nx = Math.sign(lx) || 1; nz = 0; pen = hx - Math.abs(lx) + RAD; }
+      else { nx = 0; nz = Math.sign(lz) || 1; pen = hz - Math.abs(lz) + RAD; }
+      const wx = nx * cs + nz * sn, wz = -nx * sn + nz * cs; // back to world space
+      car.x += wx * pen; car.z += wz * pen;
+      const vn = car.vx * wx + car.vz * wz;
+      if (vn < 0) {
+        car.vx -= wx * vn * 1.3; car.vz -= wz * vn * 1.3;
+        car.vx *= 0.9; car.vz *= 0.9;
+        if (-vn > 3) { shake = Math.min(1, -vn * 0.07); thud(-vn); }
+      }
+    }
+  }
 }
 function savePrev() { prev.x = car.x; prev.y = car.y; prev.z = car.z; prev.h = car.h; prev.pitch = car.pitch; prev.roll = car.roll; prev.steer = car.steer; prev.spin = car.spin; }
 function stepPhysics(dt) {
@@ -1609,7 +1647,7 @@ function frame(now) {
     let dT = timeTarget - timeOfDay; if (dT < -0.5) dT += 1; if (dT > 0.5) dT -= 1;
     timeOfDay = (timeOfDay + dT * Math.min(1, dt * (dayCycle ? 10 : 1.4)) + 1) % 1;
     if (autoSeasons) { seasonTimer += dt; if (seasonTimer > 90) { seasonTimer = 0; setSeason(seasonIdx + 1); } }
-    if (ready && !frozen) { stepPhysics(dt); updateTraffic(dt); }
+    if (ready && !frozen) { gatherFootprints(); stepPhysics(dt); updateTraffic(dt); }
   }
   applyCarPose();
   updateSky(paused ? 0 : dt);
