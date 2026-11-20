@@ -798,7 +798,6 @@ function curvatureAhead(s, dist) {
   return maxC;
 }
 function wallLimit(z, side, s) {
-  if (!SF) return Infinity;
   if (world.districtAt(z) === 'causeway') return ROAD_EDGE - 0.6;
   if (!world.citySide(z, side) || world.intersectionDist(s) < 6.5) return Infinity;
   return K.WALL;
@@ -1046,7 +1045,7 @@ function updateSky(dt) {
 }
 
 // Street lights near the camera light the road at night
-const streetLights = Array.from({ length: SF ? 6 : 0 }, () => { const l = new THREE.PointLight(0xffc98a, 0, 30, 1.6); scene.add(l); return l; });
+const streetLights = Array.from({ length: 6 }, () => { const l = new THREE.PointLight(0xffc98a, 0, 30, 1.6); scene.add(l); return l; });
 function updateStreetLights() {
   if (!streetLights.length) return;
   const cand = [], fx = Math.sin(R.h), fz = Math.cos(R.h);
@@ -1104,9 +1103,9 @@ function updateCamera(dt) {
     if (!cine.set || car.s > cine.s + 45 || Math.hypot(R.x - cine.x, R.z - cine.z) > 260) {
       const s = car.s + 110 + Math.random() * 90;
       if (s / STEP < road.nFinal - 2) {
-        const side = Math.random() < 0.5 ? -1 : 1, lat = SF && world.districtAt(roadPoint(s).z) !== 'causeway' ? 4.3 : 10 + Math.random() * 18;
+        const side = Math.random() < 0.5 ? -1 : 1, lat = world.citySide(roadPoint(s).z, side) ? 4.3 : 10 + Math.random() * 18;
         const p = roadPoint(s, side * lat);
-        cine.x = p.x; cine.z = p.z; cine.y = Math.max(groundAt(p.x, p.z), WATER) + 1.1 + Math.random() * (SF ? 1.6 : 5); cine.s = s; cine.set = true;
+        cine.x = p.x; cine.z = p.z; cine.y = Math.max(groundAt(p.x, p.z), WATER) + 1.1 + Math.random() * (lat < 5 ? 1.6 : 5); cine.s = s; cine.set = true;
       }
     }
     camera.position.set(cine.x, cine.y, cine.z);
@@ -1282,7 +1281,7 @@ const radio = {
 // Route map
 // ---------------------------------------------------------------------------
 const mapCv = document.getElementById('map'), mapCtx = mapCv.getContext('2d');
-const MAP_THEME = CA ? { bg: '#f3e2c4', sea: '#5a86c8', ink: '#2a1830', behind: 'rgba(42,24,48,.35)', car: '#ff6b57', grid: 'rgba(0,0,0,0)' }
+const MAP_THEME = CA ? { bg: '#f3e2c4', sea: '#5a86c8', ink: '#2a1830', behind: 'rgba(42,24,48,.35)', car: '#ff6b57', grid: 'rgba(42,24,48,.12)' }
   : { bg: '#ece6dc', sea: '#3fa7c8', ink: '#1b1d2a', behind: 'rgba(27,29,42,.35)', car: '#ff3d9a', grid: 'rgba(27,29,42,.12)' };
 let mapTimer = 0;
 function drawMap() {
@@ -1295,7 +1294,7 @@ function drawMap() {
   const fx = Math.sin(R.h), fz = Math.cos(R.h), rx = -Math.cos(R.h), rz = Math.sin(R.h);
   const P = (x, z) => { const dx = x - R.x, dz = z - R.z; return [Rm + (dx * rx + dz * rz) * scale, Rm - (dx * fx + dz * fz) * scale]; };
   const ci = clamp(Math.floor(car.s / STEP), 0, road.nFinal - 1), i0 = Math.max(0, ci - 300), i1 = Math.min(road.nFinal - 1, ci + 320);
-  if (SF) {
+  if (world.citySide(R.z, 1)) {
     g.strokeStyle = MAP_THEME.grid; g.lineWidth = 1;
     const x0 = Math.floor((R.x - 560) / CHUNK) * CHUNK, z0 = Math.floor((R.z - 560) / CHUNK) * CHUNK;
     for (let x = x0; x < R.x + 560; x += CHUNK) { const [a, b] = P(x, R.z - 560), [c, d] = P(x, R.z + 560); g.beginPath(); g.moveTo(a, b); g.lineTo(c, d); g.stroke(); }
@@ -1507,7 +1506,9 @@ canvas.addEventListener('wheel', (e) => { if (photo.on) { photo.dist = clamp(pho
 }
 addEventListener('resize', resize);
 
-const BASE_LL = CA ? [34.0259, -118.7798] : [25.7907, -80.13];
+const BASE_LL = CA ? [34.0195, -118.4912] : [25.7907, -80.13];
+const PLACE = CA ? { downtown: 'Downtown LA', beach: 'LA beach cities', resid: 'Los Angeles', coast: 'Pacific coast' }
+  : { downtown: 'Downtown', deco: 'Art deco strip', resid: 'South Florida', causeway: 'Causeway' };
 const fmtCoord = (v, pos, neg) => Math.abs(v).toFixed(4) + '°' + (v >= 0 ? pos : neg);
 function updateHud() {
   ui.spd.textContent = String(Math.round(Math.hypot(car.vx, car.vz) * 2.23694)).padStart(2, '0');
@@ -1518,6 +1519,7 @@ function updateHud() {
   const mins = Math.floor(timeOfDay * 24 * 60);
   ui.clock.textContent = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
   ui.seasonName.textContent = SEASONS[seasonIdx] + (rain > 0.3 ? ' · rain' : '');
+  ui.region.textContent = PLACE[world.districtAt(car.z)] || (CA ? 'California' : 'South Florida');
 }
 
 // ---------------------------------------------------------------------------

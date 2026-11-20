@@ -166,7 +166,7 @@ export function createGen(THREE, seed, region) {
   T.post = bake([[new THREE.BoxGeometry(0.14, 1.0, 0.14).translate(0, 0.5, 0), 2, 0, true], [new THREE.BoxGeometry(0.15, 0.14, 0.15).translate(0, 0.86, 0), 1, 0, true]]);
   T.rock = bake([[new THREE.DodecahedronGeometry(1, 1).scale(1.3, 0.8, 1.1).translate(0, 0.25, 0), 2, S.NONE, true]]);
   T.shrub = bake([[ball(0.95, 1.3, 0.7, 1.3, 0, 0.3), 1, S.EVER], [ball(0.6, 1.2, 0.7, 1.2, 0.6, 0.55, 0.3), 1, S.EVER]]);
-  if (CA) {
+  {
     T.fanPalm = palm(13, 12, 3.0, 0.45, 1, 0.15, 0.6, 0.18, { head: 0.55, r0: 0.28, r1: 0.18 });
     T.datePalm = palm(6.5, 18, 4.2, 0.55, 0.4, -0.25, 0.55, 0.22, { head: 0.65, r0: 0.4, r1: 0.32 });
     T.oak = bake([[stick(0.34, 0.2, 2.4), 0, 0], [ball(2.4, 1.25, 0.8, 1.2, 0, 3.4), 1, S.DECID], [ball(1.7, 1.2, 0.85, 1, 1.8, 3.0, 0.6), 1, S.DECID], [ball(1.6, 1.2, 0.85, 1, -1.7, 2.9, -0.6), 1, S.DECID], [ball(1.3, 1.1, 0.8, 1.1, 0.2, 4.3, 1.1), 1, S.DECID]]);
@@ -177,7 +177,8 @@ export function createGen(THREE, seed, region) {
     T.euc = bake([[stick(0.3, 0.16, 11), 2, 0], [ball(1.7, 0.9, 1.7, 0.9, 0.3, 10.6), 1, S.EVER], [ball(1.4, 0.9, 1.5, 0.9, -0.9, 8.6, 0.5), 1, S.EVER], [ball(1.2, 0.9, 1.3, 0.9, 0.9, 7.4, -0.6), 1, S.EVER]]);
     T.yucca = bake((() => { const p = []; for (let k = 0; k < 11; k++) p.push([frondGeo(1.4, 0.12, k * 0.62, 0.9 - (k % 3) * 0.25, 0.1, 0, 0.1, 0), 1, S.EVER, true]); return p; })());
     T.sycamore = bake([[stick(0.35, 0.22, 4), 2, 0], [ball(2.6, 1.1, 1.0, 1.1, 0, 5.4), 1, S.DECID], [ball(1.9, 1.1, 0.9, 1.1, 1.6, 4.6, 0.8), 1, S.DECID], [ball(1.8, 1, 0.9, 1, -1.5, 4.8, -0.6), 1, S.DECID]]);
-  } else {
+  }
+  {
     T.royal = palm(14, 13, 4.2, 0.55, 0.15, 0.55, -0.25, 0.28, { shaft: 2.0, r0: 0.34, r1: 0.26 });
     T.coconut = palm(9, 15, 3.8, 0.5, 2.4, 0.35, -0.55, 0.38, { nuts: true, r0: 0.25, r1: 0.18 });
     T.banyan = bake([
@@ -376,7 +377,7 @@ export function createGen(THREE, seed, region) {
       dBuf[j * NB + i] = _cq.d;
     }
     const pos = new Float32Array(N1 * N1 * 3), nrm = new Float32Array(N1 * N1 * 3), cols = new Float32Array(N1 * N1 * 3), sea = new Float32Array(N1 * N1 * 2);
-    const cityAt = (d) => (SF ? sstep(44, 52, d) : 0);
+    const cityAt = (d) => sstep(44, 52, d);
     for (let j = 0; j < N1; j++) for (let i = 0; i < N1; i++) {
       const b = (j + 1) * NB + (i + 1), v = j * N1 + i, h = hBuf[b];
       pos[v * 3] = i * st; pos[v * 3 + 1] = h; pos[v * 3 + 2] = j * st;
@@ -384,7 +385,8 @@ export function createGen(THREE, seed, region) {
       const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
       nrm[v * 3] = nx; nrm[v * 3 + 1] = ny; nrm[v * 3 + 2] = nz;
       const x = ox + i * st, z = oz + j * st;
-      const [c, s] = CA ? caGround(x, z, h, ny, dBuf[b]) : sfGround(x, z, h, dBuf[b], i * st, j * st, W.districtAt(z) === 'causeway' ? 0 : cityAt(dBuf[b]));
+      const dz = W.districtAt(z), isCity = dz !== 'coast' && dz !== 'causeway';
+      const [c, s] = CA && !isCity ? caGround(x, z, h, ny, dBuf[b]) : sfGround(x, z, h, dBuf[b], i * st, j * st, isCity ? cityAt(dBuf[b]) : 0);
       cols[v * 3] = c[0]; cols[v * 3 + 1] = c[1]; cols[v * 3 + 2] = c[2];
       sea[v * 2] = s; sea[v * 2 + 1] = 0.5 + 0.5 * noise(x / 13, z / 13);
     }
@@ -397,7 +399,7 @@ export function createGen(THREE, seed, region) {
     const G = new Groups(ox, oz);
     const rr = mulberry32((cx * 73856093) ^ (cz * 19349663) ^ seed);
     const sample = (lx, lz) => { const gi = clamp(Math.round(lx / st), 0, RES), gj = clamp(Math.round(lz / st), 0, RES); return (gj + 1) * NB + (gi + 1); };
-    if (CA) caPlants(G, rr, ox, oz, st, sample);
+    if (CA && W.districtAt(oz + CHUNK / 2) === 'coast') caPlants(G, rr, ox, oz, st, sample);
     else sfChunk(G, rr, cx, cz, ox, oz, st, sample);
     const { groups, transfer } = G.out();
     const terrain = { position: pos, normal: nrm, color: cols, aSea: sea, index: idx };
@@ -435,18 +437,19 @@ export function createGen(THREE, seed, region) {
   function sfChunk(G, rr, cx, cz, ox, oz, st, sample) {
     const zc = oz + CHUNK / 2, dist = W.districtAt(zc);
     const C = (a, b) => mix3(col(a), col(b), rr());
-    const palmC = () => [col(0x9a8f84), C(0x3f8a4a, 0x55a058), col(0x6a8a3a)];
+    const palmC = () => CA ? [col(0x7a5444), C(0x3f7a4a, 0x4f8a50), col(0x5a3f30)] : [col(0x9a8f84), C(0x3f8a4a, 0x55a058), col(0x6a8a3a)];
     const cocoC = () => [col(0x8a6a50), C(0x4a8a3a, 0x63a048), col(0x6a4a2a)];
+    const STREET_PALM = CA ? T.fanPalm : T.royal, BEACH_PALM = CA ? T.fanPalm : T.coconut;
     // shoreline & beach dressing
     for (let t = 0; t < 70; t++) {
       const lx = rr() * CHUNK, lz = rr() * CHUNK, x = ox + lx, z = oz + lz, b = sample(lx, lz);
       const h = hBuf[b], d = dBuf[b];
       if (d < ROAD_EDGE + 6) continue;
       const u = (x - W.roadXAtZ(z)) * W.OCEAN_SIDE, c0 = W.coastDist(z);
-      if (h > -0.6 && h < 0.7 && rr() < 0.5) { tpl(G, 'props', T.mangrove, x, h, z, rr() * 6, 0.8 + rr() * 0.5, 0.8 + rr() * 0.4, [col(0x5a4a3a), C(0x2f5a3a, 0x3f6a40), C0], rr()); continue; }
+      if (SF && h > -0.6 && h < 0.7 && rr() < 0.5) { tpl(G, 'props', T.mangrove, x, h, z, rr() * 6, 0.8 + rr() * 0.5, 0.8 + rr() * 0.4, [col(0x5a4a3a), C(0x2f5a3a, 0x3f6a40), C0], rr()); continue; }
       if (u > c0 - 70 && h > 0.7 && h < 1.9) { // the beach
         const k = rr();
-        if (k < 0.08) tpl(G, 'props', T.coconut, x, h - 0.1, z, rr() * 6, 0.9 + rr() * 0.3, 0.9 + rr() * 0.3, cocoC(), rr());
+        if (k < 0.08) tpl(G, 'props', BEACH_PALM, x, h - 0.1, z, rr() * 6, 0.9 + rr() * 0.3, 0.9 + rr() * 0.3, CA ? palmC() : cocoC(), rr());
         else if (k < 0.16 && u < c0 - 15) tpl(G, 'props', T.seagrape, x, h, z, rr() * 6, 1 + rr() * 0.4, 1, [C0, C(0x4a7a3a, 0x5f8a40), C0], rr());
         else if (k < 0.3 && u > c0 - 50) tpl(G, 'trim', T.umbrella, x, h, z, rr() * 6, 1, 1, [WHITE, pickOf(rr, ACCENT), pickOf(rr, DECO)], 0);
       }
@@ -458,7 +461,7 @@ export function createGen(THREE, seed, region) {
         tpl(G, 'trim', T.hut, x, h, z, W.OCEAN_SIDE > 0 ? -Math.PI / 2 : Math.PI / 2, 1, 1, [WHITE, pickOf(rr, DECO), pickOf(rr, ACCENT)], 0);
       }
     }
-    if (dist === 'causeway') return;
+    if (dist === 'causeway' || dist === 'coast') return;
     // city blocks: the chunk is a block; streets run along its edges
     const okAt = (lx, lz) => {
       const b = sample(lx, lz), h = hBuf[b], d = dBuf[b], x = ox + lx, z = oz + lz;
@@ -470,20 +473,21 @@ export function createGen(THREE, seed, region) {
       const lx = e === 0 ? 4.6 : e === 1 ? CHUNK - 4.6 : t, lz = e === 2 ? 4.6 : e === 3 ? CHUNK - 4.6 : t;
       if (!okAt(lx, lz)) continue;
       const b = sample(lx, lz);
-      if ((t / 16 + e) % 2 === 0) tpl(G, 'props', T.royal, ox + lx, hBuf[b] - 0.1, oz + lz, rr() * 6, 0.85 + rr() * 0.2, 0.75 + rr() * 0.25, palmC(), rr());
+      if ((t / 16 + e) % 2 === 0) tpl(G, 'props', STREET_PALM, ox + lx, hBuf[b] - 0.1, oz + lz, rr() * 6, 0.85 + rr() * 0.2, 0.75 + rr() * 0.25, palmC(), rr());
       else if (rr() < 0.5) {
         box(G, 'trim', ox + lx, hBuf[b], oz + lz, 0, 0, 0, 0, 0.16, 6.5, 0.16, METAL, null, { ao: false });
         box(G, 'neon', ox + lx, hBuf[b], oz + lz, 0, 0, 6.5, 0, 0.5, 0.25, 0.5, LAMP, null, { ao: false });
       }
     }
-    const park = noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || dist === 'deco' && noise(cx * 0.5, cz * 0.5) > 0.3;
+    const beachy = dist === 'deco' || dist === 'beach';
+    const park = noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || beachy && noise(cx * 0.5, cz * 0.5) > 0.3;
     if (park) {
       for (let t = 0; t < 14; t++) {
         const lx = 8 + rr() * 48, lz = 8 + rr() * 48;
         if (!okAt(lx, lz)) continue;
         const b = sample(lx, lz), x = ox + lx, z = oz + lz, k = rr();
         if (k < 0.2) tpl(G, 'props', T.banyan, x, hBuf[b] - 0.2, z, rr() * 6, 0.8 + rr() * 0.3, 0.8 + rr() * 0.3, [col(0x6a5a4a), C(0x3a6a3a, 0x4a7a40), C0], rr());
-        else if (k < 0.6) tpl(G, 'props', rr() < 0.5 ? T.royal : T.coconut, x, hBuf[b] - 0.1, z, rr() * 6, 0.9, 0.85 + rr() * 0.3, palmC(), rr());
+        else if (k < 0.6) tpl(G, 'props', CA ? (rr() < 0.6 ? T.fanPalm : T.datePalm) : rr() < 0.5 ? T.royal : T.coconut, x, hBuf[b] - 0.1, z, rr() * 6, 0.9, 0.85 + rr() * 0.3, palmC(), rr());
         else tpl(G, 'props', T.bougainvillea, x, hBuf[b], z, rr() * 6, 1, 1, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr());
       }
       return;
@@ -492,7 +496,7 @@ export function createGen(THREE, seed, region) {
     if (dist === 'downtown') {
       if (rr() < 0.5) lots.push([32, 32, 36, 36, 'tower']);
       else { lots.push([19, 32, 22, 40, 'tower']); lots.push([45, 32, 22, 40, rr() < 0.5 ? 'tower' : 'condo']); }
-    } else if (dist === 'deco') {
+    } else if (beachy) {
       for (const [a, b] of [[19, 19], [45, 19], [19, 45], [45, 45]]) lots.push([a, b, 18, 18, rr() < 0.6 ? 'deco' : 'condo']);
     } else {
       for (const [a, b] of [[19, 19], [45, 19], [19, 45], [45, 45]]) lots.push([a, b, 13, 12, rr() < 0.82 ? 'house' : 'condo']);
@@ -504,7 +508,7 @@ export function createGen(THREE, seed, region) {
       const hm = kind === 'tower' ? 0.6 + 0.9 * sstep(-0.1, 0.6, noise(cx * 0.21 + 4, cz * 0.19)) : kind === 'condo' ? 0.6 : 1;
       building(G, rr, ox + lx, y, oz + lz, 0, w, d, kind, front, hm, kind !== 'tower' && kind !== 'condo');
       if (kind === 'house') {
-        tpl(G, 'props', rr() < 0.5 ? T.coconut : T.royal, ox + lx + front * (d / 2 + 2), y, oz + lz + w * 0.45, rr() * 6, 0.8, 0.7 + rr() * 0.3, palmC(), rr());
+        tpl(G, 'props', CA ? T.fanPalm : rr() < 0.5 ? T.coconut : T.royal, ox + lx + front * (d / 2 + 2), y, oz + lz + w * 0.45, rr() * 6, 0.8, 0.7 + rr() * 0.3, palmC(), rr());
         tpl(G, 'props', T.bougainvillea, ox + lx + front * (d / 2 + 1.2), y, oz + lz - w * 0.45, rr() * 6, 0.9, 0.9, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr());
       }
     }
@@ -524,7 +528,7 @@ export function createGen(THREE, seed, region) {
       const dist = W.districtAt(p.z);
       let kind, w, d, gap = 0.6;
       if (dist === 'downtown') { kind = r() < 0.55 ? 'tower' : 'condo'; w = kind === 'tower' ? 26 + r() * 10 : 18 + r() * 10; d = kind === 'tower' ? 22 + r() * 8 : 16 + r() * 6; }
-      else if (dist === 'deco') { kind = r() < 0.8 ? 'deco' : 'shop'; w = kind === 'deco' ? 14 + r() * 8 : 24 + r() * 14; d = 14 + r() * 6; gap = 0.3; }
+      else if (dist === 'deco' || dist === 'beach') { kind = r() < (CA ? 0.55 : 0.8) ? 'deco' : 'shop'; w = kind === 'deco' ? 14 + r() * 8 : 24 + r() * 14; d = 14 + r() * 6; gap = 0.3; }
       else { const k = r(); kind = k < 0.55 ? 'house' : k < 0.8 ? 'shop' : 'condo'; w = kind === 'house' ? 12 + r() * 3 : kind === 'shop' ? 22 + r() * 16 : 18 + r() * 8; d = kind === 'house' ? 11 + r() * 2 : 15 + r() * 4; gap = kind === 'house' ? 5 + r() * 3 : 1.5; }
       w = Math.min(w, end - s);
       if (w < 7) break;
@@ -552,8 +556,8 @@ export function createGen(THREE, seed, region) {
         const l = Math.hypot(dx, dz); dx /= l; dz /= l;
         const city = [W.citySide(road.zs[i], -1), W.citySide(road.zs[i], 1)];
         rows.push(lats.map((lt, c) => {
-          const flat = SF && (c === 0 ? city[0] : c === 3 ? city[1] : true);
-          const dy = c === 1 || c === 2 || flat ? 0.03 : -0.13;
+          const flat = c === 1 || c === 2 || (c === 0 ? city[0] : city[1]);
+          const dy = flat ? 0.03 : -0.13;
           return [road.xs[i] - dz * lt, road.ys[i] + dy, road.zs[i] + dx * lt, us[c], (i * STEP) / 16];
         }));
       }
@@ -563,7 +567,7 @@ export function createGen(THREE, seed, region) {
       }
     }
     if (CA) caSegmentProps(G, i0, i1);
-    else sfSegment(G, k, i0, i1, s0, s1, lights);
+    sfSegment(G, k, i0, i1, s0, s1, lights); // city furniture & buildings wherever a district is urban
     const { groups, transfer } = G.out();
     return { msg: { type: 'segment', k, ox, oz, groups, lights }, transfer };
   }
@@ -571,6 +575,7 @@ export function createGen(THREE, seed, region) {
   function caSegmentProps(G, i0, i1) {
     for (let i = i0; i < i1; i++) {
       const s = i * STEP;
+      if (W.citySide(road.zs[i], 1)) continue; // LA stretches get the full city treatment instead
       const town = sstep(0.25, 0.45, noise(s / 1600 + 31, 4.4));
       if (town > 0.5 && i % 15 === 0) {
         for (const side of [-1, 1]) {
@@ -647,9 +652,10 @@ export function createGen(THREE, seed, region) {
           if (i % 7 === 0) { // palms down both sidewalks
             const p = RP(s, side * (ROAD_EDGE + 2.5));
             const r = mulberry32(i * 131 + side * 7)();
-            const isBeach = dist === 'deco' && side === W.OCEAN_LAT;
-            tpl(G, 'props', isBeach ? T.coconut : T.royal, p.x, p.y + 0.17, p.z, r * 6, 0.9 + r * 0.2, 0.85 + r * 0.3,
-              isBeach ? [col(0x8a6a50), col(0x4f923f), col(0x6a4a2a)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r);
+            const isBeach = (dist === 'deco' || dist === 'beach') && side === W.OCEAN_LAT;
+            const tp = CA ? T.fanPalm : isBeach ? T.coconut : T.royal;
+            tpl(G, 'props', tp, p.x, p.y + 0.17, p.z, r * 6, 0.9 + r * 0.2, (CA ? 1.0 : 0.85) + r * 0.3,
+              CA ? [col(0x7a5444), col(0x3f7a4a), col(0x5a3f30)] : isBeach ? [col(0x8a6a50), col(0x4f923f), col(0x6a4a2a)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r);
             box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, -0.02, 0, 1.4, 0.06, 1.4, col('#5a4a3a'), null, { ao: false });
           }
           if ((i + (side > 0 ? 8 : 0)) % 16 === 0) { // streetlights, alternating sides
@@ -660,7 +666,7 @@ export function createGen(THREE, seed, region) {
             box(G, 'neon', hp.x, hp.y + 0.17, hp.z, hp.h, 0, 7.75, 0, 0.6, 0.18, 0.32, LAMP, null, { ao: false });
             lights.push(hp.x, hp.y + 7.6, hp.z);
           }
-          if (dist === 'deco' && side === W.OCEAN_LAT && i % 2 === 0) { // low coral-stone seawall on the promenade
+          if ((dist === 'deco' || dist === 'beach') && side === W.OCEAN_LAT && i % 2 === 0) { // low coral-stone seawall on the promenade
             const a = RP(s, side * (ROAD_EDGE + SIDEWALK + 0.25)), b = RP(s + 2 * STEP, side * (ROAD_EDGE + SIDEWALK + 0.25));
             const len = Math.hypot(b.x - a.x, b.z - a.z);
             box(G, 'trim', (a.x + b.x) / 2, a.y + 0.1, (a.z + b.z) / 2, a.h, 0, 0, 0, 0.5, 0.75, len + 0.02, col('#e8d8c0'), null, { ao: false });
@@ -703,7 +709,7 @@ export function createGen(THREE, seed, region) {
           building(G, r, p.x, p.y + 0.17, p.z, p.h, lot.w, lot.d, lot.kind, side, 1, true);
           if (lot.kind === 'house') {
             const q = W.roadPoint(lot.s + lot.w / 2 + 2.5, side * (SETBACK + 3));
-            tpl(G, 'props', r() < 0.5 ? T.coconut : T.royal, q.x, q.y, q.z, r() * 6, 0.85, 0.75 + r() * 0.3, [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r());
+            tpl(G, 'props', CA ? T.fanPalm : r() < 0.5 ? T.coconut : T.royal, q.x, q.y, q.z, r() * 6, 0.85, 0.75 + r() * 0.3, CA ? [col(0x7a5444), col(0x3f7a4a), col(0x5a3f30)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r());
             const q2 = W.roadPoint(lot.s - lot.w / 2 - 1.5, side * (SETBACK + 1.5));
             tpl(G, 'props', T.bougainvillea, q2.x, q2.y, q2.z, r() * 6, 1, 1, [C0, col(0x46703a), C0], r());
           }

@@ -4,7 +4,7 @@ An endless 3D driving game for the browser. The road, terrain, plants and a whol
 
 ## Regions
 
-- **California:** a coast road with the Pacific on your left, beaches and cliffs, golden hills with chaparral, oaks, sycamores, eucalyptus, wind-bent cypress and palm-lined stretches. You drive a pastel convertible with whitewall tyres, and the radio plays lo-fi on *101.9 Coastline FM*.
+- **Los Angeles / California:** the drive starts in LA (Downtown LA towers, the beach cities, palm-lined neighbourhoods) and runs out onto a coast road with the Pacific on your left, beaches and cliffs, golden hills with chaparral, oaks, sycamores, eucalyptus, wind-bent cypress and palm-lined stretches. You drive a pastel convertible with whitewall tyres, and the radio plays lo-fi on *101.9 Coastline FM*.
 - **South Florida:** an endless city with five districts:
   - **Downtown:** glass towers with podiums, setbacks, lit crowns and red beacons.
   - **Art deco beach strip:** pastel hotels with eyebrow ledges, neon fins, rounded corners and neon signs, opposite a promenade, palms and the beach.

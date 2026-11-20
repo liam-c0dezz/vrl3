@@ -91,10 +91,11 @@ export function createWorld(seed, region) {
     const u = (x - roadXAtZ(z)) * OCEAN_SIDE;
     const m = mountainFactor(x, z);
     let h = Math.max(caLand(x, z) + sstep(20, 420, -u) * (45 + 85 * m), 3.5);
-    const c = coastDist(z);
+    const c = coastDist(z), la = laK(z);
+    if (la > 0) h = lerp(h, 9 + 2.5 * noise(x / 400, z / 400) + sstep(700, 1600, -u) * 60 * m, la); // the flat LA basin
     if (u > 0) h = lerp(h, 9 + 5 * noise(x / 160, z / 160), sstep(0, c * 0.6, u));
     if (u > c - 140) {
-      const width = lerp(120, 16, cliffiness(z));
+      const width = lerp(lerp(120, 16, cliffiness(z)), 95, la); // wide sandy beaches in LA
       const shore = 1.6 - (u - c) * (u > c ? 0.16 : 0.02) + noise(x / 30, z / 30) * 0.4;
       h = lerp(h, shore, sstep(c - width, c, u));
     }
@@ -102,8 +103,14 @@ export function createWorld(seed, region) {
   }
   // South Florida: flat city on a barrier coast; long causeways cross the bay.
   function causewayK(z) { return SF ? sstep(0.34, 0.46, noise(z / 1900 + 3.1, 7.7)) : 0; }
+  // California: Los Angeles stretches (the drive always starts in LA) alternate with open coast.
+  function laK(z) { return CA ? Math.max(sstep(0.02, 0.22, noise(z / 2600 + 41.3, 5.5)), sstep(3600, 2600, z)) : 0; }
   function districtAt(z) {
-    if (CA) return 'none';
+    if (CA) {
+      if (laK(z) < 0.5) return 'coast';
+      const d = noise(z / 1100 - 8.1, 3.3) + 0.12 * noise(z / 380, 1.9);
+      return d > 0.22 ? 'downtown' : d < -0.15 ? 'beach' : 'resid';
+    }
     if (causewayK(z) > 0.5) return 'causeway';
     const d = noise(z / 1300 - 5.2, 2.2) + 0.15 * noise(z / 400, 9.9);
     return d > 0.18 ? 'downtown' : d < -0.22 ? 'deco' : 'resid';
@@ -119,7 +126,7 @@ export function createWorld(seed, region) {
   }
   const baseH = CA ? caHeight : sfHeight;
   function roadRawHeight(x, z, s) {
-    if (CA) return clamp(8 + 0.3 * (caLand(x, z) - 16) + 3 * Math.sin(s / 140), 6, 30);
+    if (CA) return lerp(clamp(8 + 0.3 * (caLand(x, z) - 16) + 3 * Math.sin(s / 140), 6, 30), 9.2, laK(z));
     return 2.4 + 0.25 * noise(z / 600, 1.1);
   }
 
@@ -202,21 +209,20 @@ export function createWorld(seed, region) {
   const intersectionDist = (s) => Math.abs(s - Math.round(s / BLOCK) * BLOCK);
   // Is there a sidewalk + buildings on this side (+1 right / -1 left) of the road here?
   function citySide(z, side) {
-    if (!SF) return false;
     const d = districtAt(z);
-    if (d === 'causeway') return false;
-    return true;
+    return d !== 'causeway' && d !== 'coast';
   }
   function buildingSide(z, side) {
     if (!citySide(z, side)) return false;
-    return !(districtAt(z) === 'deco' && side === OCEAN_LAT); // the beach side of the deco strip is a promenade
+    const d = districtAt(z);
+    return !((d === 'deco' || d === 'beach') && side === OCEAN_LAT); // beachfront districts have a promenade on the ocean side
   }
   const _gq = Q();
   function groundAt(x, z) { // the drivable surface
     const h = heightAt(x, z, _gq);
     const d = _gq.d;
     if (d < ROAD_HALF) return _gq.y + 0.03;
-    if (SF && d < ROAD_EDGE + SIDEWALK && citySide(z, Math.sign(_gq.lat)) && intersectionDist(_gq.s) > 5.5) {
+    if (d < ROAD_EDGE + SIDEWALK && citySide(z, Math.sign(_gq.lat)) && intersectionDist(_gq.s) > 5.5) {
       return d < ROAD_EDGE ? _gq.y + 0.03 : _gq.y + 0.17;
     }
     if (d < ROAD_EDGE) return lerp(_gq.y + 0.03, _gq.y - 0.12, (d - ROAD_HALF) / (ROAD_EDGE - ROAD_HALF));
@@ -231,7 +237,7 @@ export function createWorld(seed, region) {
 
   return {
     CA, SF, region, seed, noise, fbm, road, OCEAN_SIDE, OCEAN_LAT,
-    roadXAtZ, coastDist, cliffiness, mountainFactor, caLand, causewayK, districtAt, baseH, headingAt,
+    roadXAtZ, coastDist, cliffiness, mountainFactor, caLand, causewayK, laK, districtAt, baseH, headingAt,
     addRoadSample, ensureRoadIndex, ensureRoadZ, Q, roadQuery, heightAt, groundAt, roadPoint,
     intersectionDist, citySide, buildingSide,
   };
