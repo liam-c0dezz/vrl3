@@ -867,7 +867,8 @@ function physicsStep(dt) {
       car.x -= rx * side * push; car.z -= rz * side * push;
       const vOut = (car.vx * rx + car.vz * rz) * side;
       if (vOut > 0) {
-        car.vx -= rx * side * vOut * 1.25; car.vz -= rz * side * vOut * 1.25; car.vx *= 0.97; car.vz *= 0.97;
+        const fr = Math.exp(-dt * 1.5); // scraping along a wall costs a little speed, per second not per step
+        car.vx = (car.vx - rx * side * vOut * 1.25) * fr; car.vz = (car.vz - rz * side * vOut * 1.25) * fr;
         if (vOut > 3) { shake = Math.min(1, vOut * 0.08); thud(vOut); }
       }
     }

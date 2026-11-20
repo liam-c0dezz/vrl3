@@ -194,6 +194,9 @@ async function run(browser, base, region, device) {
     check(`${tag}: steering pad takes over`, !s.st.autoDrive);
     check(`${tag}: dragging left turns left`, s.h > h0, `heading +${(s.h - h0).toFixed(3)} rad`);
     check(`${tag}: releasing the pad centres it`, s.st.axis === 0);
+    await fire('resetBtn', 'pointerdown', 0, 10); await waitFrames(page, 2);
+    const back = await page.evaluate(() => window.__game.car.lat);
+    check(`${tag}: reset button returns to the lane`, Math.abs(back - 1.8) < 0.4, `lat ${back.toFixed(2)}`);
     // gas, then brake (two fingers at once must not interfere)
     const v0 = await page.evaluate(() => window.__game.car.v);
     await fire('gasBtn', 'pointerdown', 0, 8); await waitFrames(page, 30);
@@ -203,9 +206,6 @@ async function run(browser, base, region, device) {
     await fire('brakeBtn', 'pointerdown', 0, 9); await waitFrames(page, 20); await fire('brakeBtn', 'pointerup', 0, 9);
     const v2 = await page.evaluate(() => window.__game.car.v);
     check(`${tag}: brake pedal slows down`, v2 < v1 - 2, `${v1.toFixed(1)} → ${v2.toFixed(1)} m/s`);
-    await fire('resetBtn', 'pointerdown', 0, 10); await waitFrames(page, 2);
-    const back = await page.evaluate(() => window.__game.car.lat);
-    check(`${tag}: reset button returns to the lane`, Math.abs(back - 1.8) < 0.4, `lat ${back.toFixed(2)}`);
     await fire('autoBtn', 'pointerdown', 0, 11);
     check(`${tag}: auto button re-engages auto-drive`, await page.evaluate(() => window.__game.state().autoDrive));
     const overlap = await page.evaluate(() => {
