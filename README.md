@@ -1,75 +1,122 @@
-# EasyBid — Construction Estimate
+# Two Lanes
 
-iOS app (SwiftUI) for contractors to build estimates, send invoices and manage
-clients, backed by Supabase, plus a web portal for clients to view estimates.
+An endless 3D driving game for the browser. The road, terrain, plants and a whole city are generated as you drive, so the road never ends and every seed is different.
 
-## Repository layout
+## Regions
 
+- **California:** a coast road with the Pacific on your left, beaches and cliffs, golden hills with chaparral, oaks, sycamores, eucalyptus, wind-bent cypress and palm-lined stretches. You drive a pastel convertible with whitewall tyres, and the radio plays lo-fi on *101.9 Coastline FM*.
+- **South Florida:** an endless city with five districts:
+  - **Downtown:** glass towers with podiums, setbacks, lit crowns and red beacons.
+  - **Art deco beach strip:** pastel hotels with eyebrow ledges, neon fins, rounded corners and neon signs, opposite a promenade, palms and the beach.
+  - **Residential:** houses with hip roofs and pools.
+  - **Shop strips:** awnings and neon signs.
+  - **Causeways:** long crossings over the bay on piers.
+
+  The corridor has sidewalks, crosswalks and traffic signals at every block, cross streets, royal palms and streetlights. Beyond it, a street grid fills with more buildings, parks with banyan trees, beaches with lifeguard huts and umbrellas, mangroves at the waterline, and a skyline on the horizon that lights up at night. You drive an '80s wedge coupe, and the radio plays *104.3 Neon Coast*: synth pads, a tumbao bass line, clave and congas.
+
+## Graphics
+
+- **Lighting and materials:** physically based materials lit by the sun with soft shadows, plus reflections of the live sky. Glass towers, wet roads and clear-coated car paint all reflect the sky.
+- **Post-processing:** HDR rendering with multi-level bloom, filmic (ACES) tone mapping, colour grading, subtle chromatic aberration, grain and a vignette.
+- **Sky:** procedural clouds lit by the sun, a sun disc, a moon and stars.
+- **Water:** an ocean and bay that reflect the sky.
+- **Weather:** rain with falling streaks, wet and shiny roads, darker skies and denser fog.
+- **Night:** lit windows, glowing shop fronts, neon, streetlights that light the road, headlights and tail lights.
+- **Details:** foliage that sways in the wind, and soft shading at building bases.
+- **Cars:** extruded bodies with wheel arches, lathed tyres, five-spoke rims and suspension that moves each wheel.
+
+Press **X** to switch between three looks: **Cinematic** (default), **Poster** (ink outlines and flat tones) and **Riso** (a risograph print).
+
+## Seasons
+
+**Z** moves to the next season, and **Shift+Z** makes the seasons cycle by themselves, changing every 90 seconds. Transitions blend smoothly. The game starts in the real-world season.
+
+| | California | South Florida |
+| --- | --- | --- |
+| Spring | Green hills with wildflowers, blossom on the trees | Bougainvillea in full bloom |
+| Summer | Golden hills, clear skies | Lush, with afternoon thunderstorms |
+| Fall | Orange and red oaks and sycamores | Breezy, with occasional rain |
+| Winter | Green hills, rain, snow on the high peaks | Clear and dry; holiday lights on the palms at night |
+
+## Driving
+
+- **Physics** runs at a fixed 120 Hz and is interpolated for rendering, so motion stays smooth at any frame rate.
+- **Handling:** the car has real velocity and grip; the handbrake lets the back end slide.
+- **Suspension:** springs on body height, pitch and roll, so the car leans in corners and dips under braking.
+- **The camera** follows on springs and leans into slides.
+- **World generation** runs in a Web Worker and is uploaded in small pieces each frame, so building the city never stalls a frame.
+- **Collisions:** buildings and causeway barriers are solid. Oncoming traffic gives you a bump if you hit it.
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| A D / ← → | Steer (takes over from auto-drive) |
+| W S / ↑ ↓ | Gas / brake; in auto-drive, cruise speed up/down |
+| Space | Handbrake |
+| R | Back on the road |
+| E | Auto-drive on/off |
+| C | Camera: chase, driver, cinematic |
+| Z / Shift+Z | Next season / seasons cycle by themselves |
+| T / Y | Next time of day / day cycle on/off |
+| X | Look: cinematic, poster, riso |
+| F | Photo mode (drag to orbit, scroll to zoom, Enter saves a PNG) |
+| L / J | Headlights auto/on/off / horn |
+| Q / V / M | Radio / all sound / route map |
+| G / N | Switch region / new road |
+| U / P | Hide interface / pause |
+
+On touch screens, hold the left or right half of the screen to steer.
+
+## Run it
+
+It's a static site with no build step:
+
+```bash
+python3 -m http.server 8000
 ```
-Construction Estimate.xcodeproj   Xcode project (open this)
-Construction Estimate/            iOS app sources (Xcode synchronized folder)
-├── App/                          App entry point and root tab container
-├── Core/
-│   ├── Components/               Shared UI (top nav bar, language toggle)
-│   ├── DesignSystem/             Brand colors, grays, haptics
-│   ├── Errors/                   User-safe error messages
-│   ├── Localization/             In-app English ⇄ Spanish switching
-│   └── Privacy/                  Privacy center, AI consent
-├── Models/                       Estimate, Invoice, Project, Client, Render
-├── Services/                     Supabase client & data store, Superwall, portal
-├── Features/
-│   ├── Onboarding/               First-run onboarding flow (EN/ES toggle, top right)
-│   ├── Auth/                     Sign in / sign up / password recovery
-│   ├── Home/                     Dashboard, project list, notifications
-│   ├── Projects/                 Project detail, documents, renders, sending
-│   ├── Chat/                     AI estimate chat, photo/voice inputs
-│   ├── Retention/                Notifications, streaks, recap, review prompt, Live Activity
-│   ├── Invoices/                 Invoice list, editor, rich text
-│   ├── Clients/                  Client list & pickers
-│   ├── Settings/                 Settings & business setup
-│   └── Estimator/                Apache estimator preview & acceptance runner
-├── Resources/                    Bundled JSON/PNG, licenses, privacy manifest
-├── Info.plist
-└── Construction_Estimate.entitlements
-Shared/                           Code compiled into both the app and the widget
-EasyBidWidget/                    Widget extension (home/Lock Screen widget, Live Activity)
-Construction EstimateTests/       Unit tests
-Construction EstimateUITests/     UI tests
-Media.xcassets/                   App icon and image assets
-estimate-portal/                  Client-facing estimate web portal (vinext)
-supabase/                         Edge functions, migrations, SQL tests
-construction-scope-flow/          Estimating research harness and evaluations
-scripts/                          Admin/import helper scripts (Python)
-third_party/                      Upstream licensed code and notices
-distribution/                     App Store export settings from past archives
-docs/                             Release notes, privacy, operations docs
+
+Then open http://localhost:8000.
+
+URL options:
+
+| Option | What it does |
+| --- | --- |
+| `?region=ca` or `?region=sf` | Pick the region |
+| `?seed=1234` | Replay a specific road |
+| `?view=5` | Shorter draw distance, for weak GPUs |
+| `?dynres=0` | Turn off automatic resolution scaling |
+
+Links can also use `#sf` or `#sf-1234`.
+
+## Tests
+
+`tests/smoke.cjs` runs both regions on a desktop viewport and a mobile (touch) viewport in headless Chromium. It checks that:
+
+- the world builds in the worker, and auto-drive stays in its lane;
+- the map renders, and the looks and cameras switch;
+- cruise control, steering takeover, braking and the handbrake work;
+- R returns the car to the road;
+- all four seasons cycle;
+- the physics state stays finite;
+- photo mode freezes the drive and saves a PNG;
+- settings persist;
+- touch steering works and the buttons fit on a phone screen;
+- the page logs no errors.
+
+It saves screenshots to `tests/output/`.
+
+```bash
+node tests/smoke.cjs
 ```
 
-The app target uses Xcode's synchronized folder groups, so any file added under
-`Construction Estimate/` is picked up automatically — no project file edits
-needed. `Features/Chat/LiveWalkthroughView.swift` is intentionally excluded from
-the target (see the exception set in the project file).
+## Files
 
-## Retention
+| File | What it holds |
+| --- | --- |
+| `world.js` | Noise, terrain heights, the endless road and its queries. Shared by the main thread and the worker. |
+| `gen.js` | Geometry for terrain chunks, plants, buildings, sidewalks and street furniture. |
+| `gen-worker.js` | Runs `gen.js` in a background thread. |
+| `game.js` | Rendering and post-processing, sky and weather, seasons, vehicle physics, camera, audio, the map and the UI. |
 
-Push notifications, weekly streaks with streak freezes, the home-screen
-widget, Live Activities, lifecycle email and win-back are described in
-[docs/RETENTION.md](docs/RETENTION.md), including the few one-time setup steps.
-
-## Language
-
-The whole app switches between English and Spanish instantly with the animated
-EN/ES toggle — top-right during onboarding, and under **Settings → Language**.
-
-- `Core/Localization/AppLanguage.swift` — `LanguageStore` (observable current
-  language) and `L(...)`, which translates an English string at render time.
-- `Resources/Localization/Translations-es.json` — English → Spanish table.
-  Missing entries fall back to English.
-- The choice is saved as the app's `AppleLanguages` override (the same setting
-  iOS uses for per-app language), so it defaults to the device language and
-  system screens (photo picker, share sheet) follow it after the next launch.
-
-To translate new UI: write `Text(L("New label"))` (or
-`L("%@ items", "\(count)")` for values) and add the Spanish string to the JSON.
-Keep stored data values (statuses such as "Draft", payment terms) in English and
-translate them where they are displayed.
+Three.js r160 is vendored in `vendor/` (MIT, see `vendor/THREE-LICENSE`).
