@@ -78,18 +78,20 @@ export function createCars(THREE, VM) {
   }
   // Sculpt an extruded side profile into a body: narrower toward the roof (tumblehome), tapered at nose and
   // tail in plan view, tucked under at the sills; then smooth normals except across real creases.
+  const sculptF = (y, z, o) => {
+    const ty = Math.min(1, Math.max(0, (y - o.belt) / Math.max(0.05, o.top - o.belt)));
+    const tz = Math.min(1, Math.abs(z) / o.half);
+    let f = 1 - o.tumble * ty * ty * (3 - 2 * ty);
+    f *= 1 - o.plan * Math.pow(tz, 2.6);
+    const tail = Math.min(1, Math.max(0, (Math.abs(z) / o.half - 0.82) / 0.18)); // round off the corners at nose and tail
+    f *= 1 - 0.12 * tail * tail;
+    if (y < 0.4) f *= 0.965 + 0.035 * (y / 0.4);
+    return f;
+  };
   function sculpt(geo, W, opts = {}) {
-    const p = geo.attributes.position, belt = opts.belt ?? 0.72, top = opts.top ?? 1.3, half = opts.half ?? 2.3;
-    const tumble = opts.tumble ?? 0.3, plan = opts.plan ?? 0.2;
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-      const ty = Math.min(1, Math.max(0, (y - belt) / Math.max(0.05, top - belt)));
-      const tz = Math.min(1, Math.abs(z) / half);
-      let f = 1 - tumble * ty * ty * (3 - 2 * ty);
-      f *= 1 - plan * Math.pow(tz, 3.2);
-      if (y < 0.4) f *= 0.965 + 0.035 * (y / 0.4);
-      p.setX(i, x * f);
-    }
+    const p = geo.attributes.position;
+    const o = { belt: 0.72, top: 1.3, half: 2.3, tumble: 0.3, plan: 0.2, ...opts };
+    for (let i = 0; i < p.count; i++) p.setX(i, p.getX(i) * sculptF(p.getY(i), p.getZ(i), o));
     geo.deleteAttribute('normal'); geo.deleteAttribute('uv');
     return toCreasedNormals(geo, opts.crease ?? 0.75);
   }
@@ -143,7 +145,8 @@ export function createCars(THREE, VM) {
     const fz = wb / 2, rz = -wb / 2, ar = R + 0.06;
     const arches = [[fz, ar, R], [rz, ar, R]];
     const yTop = Math.max(...(spec.roof || spec.top).map((q) => q[1])), belt = Math.max(...spec.top.map((q) => q[1])) - 0.12;
-    const so = { belt, top: yTop + 0.05, half: L / 2 + 0.05, tumble: 0.16, plan: 0.22 };
+    const so = { belt, top: yTop + 0.05, half: L / 2 + 0.05, tumble: 0.16, plan: 0.24 };
+    const onSkin = (x, y, z) => x * sculptF(y, z, so); // place details on the sculpted surface
     add(sculpt(extrudeSide(sideShape(spec.top, clr, arches, spec.top[0][0], spec.top[spec.top.length - 1][0]), W, lod ? 0.05 : 0.12, lod ? 2 : 6, lod ? 1 : 4), W, so), paint);
     if (spec.glass && !spec.open) add(sculpt(extrudeSide(polyShape(smoothPts(spec.glass, 4)), W - 0.18, 0.06, lod ? 1 : 3, lod ? 1 : 3), W, { ...so, tumble: 0.34, crease: 0.9 }), VM.glass);
     if (spec.roof && !spec.open) add(sculpt(extrudeSide(polyShape(spec.roof), W - 0.3, 0.04, 2, 3), W, { ...so, tumble: 0.34, crease: 0.9 }), spec.targa ? black : paint);
@@ -163,8 +166,8 @@ export function createCars(THREE, VM) {
       const noseY = spec.top[spec.top.length - 2][1];
       // lights
       if (spec.lights === 'strip' || spec.lights === 'bar') {
-        for (const x of [1, -1]) add(new THREE.BoxGeometry(0.5, 0.05, 0.12), VM.head, x * (W / 2 - 0.42), noseY - 0.06, front - 0.18, -0.2);
-        if (spec.lights === 'bar') add(new THREE.BoxGeometry(W - 0.5, 0.025, 0.04), VM.head, 0, noseY - 0.02, front - 0.08);
+        for (const x of [1, -1]) add(new THREE.BoxGeometry(0.5, 0.05, 0.12), VM.head, onSkin(x * (W / 2 - 0.42), noseY - 0.06, front - 0.18), noseY - 0.06, front - 0.18, -0.2);
+        if (spec.lights === 'bar') add(new THREE.BoxGeometry(onSkin(W - 0.6, noseY, front - 0.1), 0.025, 0.04), VM.head, 0, noseY - 0.02, front - 0.1);
       } else if (spec.lights === 'round') {
         for (const x of [1, -1]) { add(new THREE.CylinderGeometry(0.13, 0.13, 0.08, 20).rotateX(Math.PI / 2 - 0.4), VM.chrome, x * (W / 2 - 0.36), noseY - 0.02, front - 0.24); add(new THREE.CylinderGeometry(0.105, 0.105, 0.09, 20).rotateX(Math.PI / 2 - 0.4), VM.head, x * (W / 2 - 0.36), noseY - 0.01, front - 0.22); }
       } else if (spec.lights === 'quad') {
@@ -172,8 +175,9 @@ export function createCars(THREE, VM) {
       } else { // pop-ups (shown open)
         for (const x of [1, -1]) { add(new THREE.BoxGeometry(0.42, 0.14, 0.24), paint, x * (W / 2 - 0.38), noseY + 0.06, front - 0.55); add(new THREE.BoxGeometry(0.36, 0.1, 0.02), VM.head, x * (W / 2 - 0.38), noseY + 0.06, front - 0.42); }
       }
-      if (spec.lights === 'bar' || spec.lights === 'strip') add(new THREE.BoxGeometry(W - 0.3, 0.05, 0.05), VM.tail, 0, spec.top[1][1] - 0.08, rear - 0.02);
-      else for (const x of [1, -1]) add(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 18).rotateX(Math.PI / 2), VM.tail, x * (W / 2 - 0.35), spec.top[1][1] - 0.12, rear - 0.01);
+      const ty = spec.top[1][1] - 0.1;
+      if (spec.lights === 'bar' || spec.lights === 'strip') add(new THREE.BoxGeometry(onSkin(W - 0.2, ty, rear), 0.05, 0.05), VM.tail, 0, ty, rear - 0.015);
+      else for (const x of [1, -1]) for (const dx of [0, 0.22]) add(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 18).rotateX(Math.PI / 2), VM.tail, onSkin(x * (W / 2 - 0.32 - dx), ty, rear), ty, rear - 0.01);
       // aero
       if (spec.splitter) add(new THREE.BoxGeometry(W - 0.1, 0.04, 0.35), carbon, 0, clr + 0.02, front - 0.12);
       if (spec.canards) for (const x of [1, -1]) add(new THREE.BoxGeometry(0.06, 0.03, 0.3), carbon, x * (W / 2 - 0.02), clr + 0.22, front - 0.3, 0, 0, x * 0.4);
