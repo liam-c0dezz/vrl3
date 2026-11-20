@@ -173,21 +173,46 @@ async function run(browser, base, region, device) {
     check(`${tag}: look setting persists`, (await page.evaluate(() => window.__game.state().look)) === 1);
     await page.evaluate(() => window.__game.setLook(0));
   } else {
-    // touch steering on the left half disengages auto-drive and turns left
+    // on-screen touch controls are shown and usable
+    const pad = await page.evaluate(() => {
+      const vis = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; };
+      return { shown: getComputedStyle(document.getElementById('touchpad')).opacity === '1', steer: vis('steerZone'), gas: vis('gasBtn'), brake: vis('brakeBtn') };
+    });
+    check(`${tag}: touch controls are on screen`, pad.shown && pad.steer && pad.gas && pad.brake, JSON.stringify(pad));
+    const fire = (id, type, x, pid = 7) => page.evaluate(([id, type, x, pid]) => {
+      const el = document.getElementById(id), r = el.getBoundingClientRect();
+      el.dispatchEvent(new PointerEvent(type, { pointerId: pid, pointerType: 'touch', clientX: r.left + r.width / 2 + x, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+    }, [id, type, x, pid]);
+    // drag the steering pad left: analog steer, takes over from auto-drive, turns left
     const h0 = await page.evaluate(() => window.__game.car.h);
-    await page.evaluate(() => {
-      const c = document.getElementById('game');
-      c.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 7, pointerType: 'touch', clientX: 60, clientY: 500, bubbles: true }));
+    await fire('steerZone', 'pointerdown', 0); await fire('steerZone', 'pointermove', -40);
+    const axis = await page.evaluate(() => window.__game.state().axis);
+    await waitFrames(page, 12);
+    await fire('steerZone', 'pointerup', -40);
+    const s = await page.evaluate(() => ({ st: window.__game.state(), h: window.__game.car.h }));
+    check(`${tag}: steering pad is analog`, axis > 0.2 && axis < 0.95, `axis ${axis.toFixed(2)} at 40px`);
+    check(`${tag}: steering pad takes over`, !s.st.autoDrive);
+    check(`${tag}: dragging left turns left`, s.h > h0, `heading +${(s.h - h0).toFixed(3)} rad`);
+    check(`${tag}: releasing the pad centres it`, s.st.axis === 0);
+    // gas, then brake (two fingers at once must not interfere)
+    const v0 = await page.evaluate(() => window.__game.car.v);
+    await fire('gasBtn', 'pointerdown', 0, 8); await waitFrames(page, 30);
+    const v1 = await page.evaluate(() => window.__game.car.v);
+    await fire('gasBtn', 'pointerup', 0, 8);
+    check(`${tag}: gas pedal accelerates`, v1 > v0 + 1, `${v0.toFixed(1)} → ${v1.toFixed(1)} m/s`);
+    await fire('brakeBtn', 'pointerdown', 0, 9); await waitFrames(page, 20); await fire('brakeBtn', 'pointerup', 0, 9);
+    const v2 = await page.evaluate(() => window.__game.car.v);
+    check(`${tag}: brake pedal slows down`, v2 < v1 - 2, `${v1.toFixed(1)} → ${v2.toFixed(1)} m/s`);
+    await fire('resetBtn', 'pointerdown', 0, 10); await waitFrames(page, 2);
+    const back = await page.evaluate(() => window.__game.car.lat);
+    check(`${tag}: reset button returns to the lane`, Math.abs(back - 1.8) < 0.4, `lat ${back.toFixed(2)}`);
+    await fire('autoBtn', 'pointerdown', 0, 11);
+    check(`${tag}: auto button re-engages auto-drive`, await page.evaluate(() => window.__game.state().autoDrive));
+    const overlap = await page.evaluate(() => {
+      const a = document.getElementById('hud').getBoundingClientRect(), b = document.getElementById('steerZone').getBoundingClientRect();
+      return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
     });
-    await sleep(600);
-    await page.evaluate(() => {
-      const c = document.getElementById('game');
-      c.dispatchEvent(new PointerEvent('pointerup', { pointerId: 7, pointerType: 'touch', clientX: 60, clientY: 500, bubbles: true }));
-    });
-    const s = await page.evaluate(() => ({ st: window.__game.state(), h: window.__game.car.h, v: window.__game.car.v }));
-    check(`${tag}: touch steering takes over`, !s.st.autoDrive);
-    check(`${tag}: touch left turns left`, s.h > h0, `heading +${(s.h - h0).toFixed(3)} rad`);
-    check(`${tag}: touch keeps cruising`, s.v > 5, `${s.v.toFixed(1)} m/s`);
+    check(`${tag}: HUD clears the touch controls`, !overlap);
     // buttons fit on screen
     const overflow = await page.evaluate(() => [...document.querySelectorAll('#buttons button')].some((b) => b.getBoundingClientRect().right > innerWidth + 1));
     check(`${tag}: buttons fit the screen`, !overflow);
@@ -207,7 +232,7 @@ async function run(browser, base, region, device) {
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
   try {
-    for (const region of regions) for (const device of ['desktop', 'mobile']) await run(browser, base, region, device);
+    for (const region of regions) for (const device of (process.argv[3] ? [process.argv[3]] : ['desktop', 'mobile'])) await run(browser, base, region, device);
   } finally {
     await browser.close();
     server.close();

@@ -782,7 +782,7 @@ const trafficRng = mulberry32(SEED ^ 0x7a1);
 // ---------------------------------------------------------------------------
 const car = { x: 0, z: 0, y: 0, h: 0, vx: 0, vz: 0, yawRate: 0, steer: 0, pitch: 0, roll: 0, pv: 0, rv: 0, yv: 0, spin: 0, s: 0, lat: 0, d: 0, odo: 0, v: 0, vL: 0, comp: [0, 0, 0, 0] };
 const prev = { x: 0, y: 0, z: 0, h: 0, pitch: 0, roll: 0, steer: 0, spin: 0 };
-const input = { up: false, down: false, left: false, right: false, touchL: false, touchR: false, hand: false };
+const input = { up: false, down: false, left: false, right: false, hand: false, axis: 0 }; // axis: analog steering from the touch pad (-1..1, + = left)
 let autoDrive = true, throttle = 0, brake = 0, shake = 0, cruise = CA ? 24.6 : 20.1, wetTime = 0;
 const WB = player.wheelBase, PHYS_DT = 1 / 120;
 let physAcc = 0, alpha = 0;
@@ -807,8 +807,8 @@ const spring = (x, v, target, w, zeta, dt) => { v += (w * w * (target - x) - 2 *
 function physicsStep(dt) {
   roadQuery(car.x, car.z, _cq);
   if (_cq.d !== Infinity) { car.s = _cq.s; car.lat = _cq.lat; car.d = _cq.d; } else car.d = 99;
-  const manualSteer = (input.left || input.touchL ? 1 : 0) - (input.right || input.touchR ? 1 : 0);
-  if (manualSteer !== 0 && autoDrive) setAuto(false);
+  const manualSteer = clamp((input.left ? 1 : 0) - (input.right ? 1 : 0) + input.axis, -1, 1);
+  if (Math.abs(manualSteer) > 0.08 && autoDrive) setAuto(false);
   const fx = Math.sin(car.h), fz = Math.cos(car.h), lx = Math.cos(car.h), lz = -Math.sin(car.h);
   let vF = car.vx * fx + car.vz * fz, vL = car.vx * lx + car.vz * lz;
   let thr = 0, brk = 0;
@@ -826,10 +826,9 @@ function physicsStep(dt) {
     car.steer += (steerTarget - car.steer) * (1 - Math.exp(-dt * 6));
   } else {
     const steerTarget = manualSteer * (0.55 / (1 + Math.abs(vF) / 13));
-    if (touchCruise && vF < 20) thr = 0.6;
     if (input.up) thr = 1;
     if (input.down) brk = 1;
-    const rate = manualSteer === 0 ? 2.4 : 1.5; // returns to centre a bit faster than it turns in
+    const rate = input.axis !== 0 ? 3.2 : manualSteer === 0 ? 2.4 : 1.5; // analog pad follows the finger; keys ease in, return faster
     car.steer += clamp(steerTarget - car.steer, -rate * dt, rate * dt);
   }
   throttle += (thr - throttle) * (1 - Math.exp(-dt * 5));
@@ -1067,7 +1066,7 @@ function updateStreetLights() {
 // ---------------------------------------------------------------------------
 const CAM_MODES = ['chase', 'driver', 'cinematic'];
 let camMode = 0, camYaw = 0, camInit = false, camFov = 62;
-const look = { yaw: 0, pitch: 0, dragging: false, lastX: 0, lastY: 0, idle: 99 };
+const look = { yaw: 0, pitch: 0, dragging: false, pointer: null, lastX: 0, lastY: 0, idle: 99 };
 const cine = { x: 0, y: 0, z: 0, set: false, s: 0 };
 const photo = { on: false, yaw: 0, pitch: 0.25, dist: 10, save: false };
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), lookPos = new THREE.Vector3();
@@ -1335,12 +1334,14 @@ function drawMap() {
 // ---------------------------------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const ui = { hud: $('hud'), buttons: $('buttons'), help: $('help'), title: $('title'), spd: $('spd'), dist: $('dist'), mode: $('mode'), paused: $('paused'),
-  station: $('station'), region: $('regionName'), toast: $('toast'), coords: $('coords'), clock: $('clock'), seasonName: $('seasonName'), photobar: $('photobar'), mapWrap: $('mapwrap'), topleft: $('topleft') };
+  station: $('station'), region: $('regionName'), toast: $('toast'), coords: $('coords'), clock: $('clock'), seasonName: $('seasonName'), photobar: $('photobar'), mapWrap: $('mapwrap'), topleft: $('topleft'), touchpad: $('touchpad') };
 const LS_KEY = 'twolanes.settings.v3';
 const settings = { look: 0, radio: true, sound: true, map: true, cam: 0, season: null, autoSeasons: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) { /* storage unavailable */ }
 function saveSettings() { try { localStorage.setItem(LS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
-let started = false, paused = false, uiHidden = false, touchCruise = false, ready = false, simT = 0;
+let started = false, paused = false, uiHidden = false, ready = false, simT = 0;
+let TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+document.body.classList.toggle('touch', TOUCH);
 const btn = (a) => ui.buttons.querySelector(`[data-act="${a}"]`);
 document.body.classList.add('region-' + REGION_ID);
 ui.region.textContent = CA ? 'California' : 'South Florida';
@@ -1349,7 +1350,7 @@ $('seedLabel').textContent = 'SEED ' + String(SEED).padStart(9, '0');
 for (const b of document.querySelectorAll('.region')) b.classList.toggle('current', b.dataset.region === REGION_ID);
 let toastTimer = 0;
 function toast(msg) { ui.toast.textContent = msg; ui.toast.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(() => ui.toast.classList.add('hidden'), 1500); }
-function setAuto(on) { autoDrive = on; btn('auto').classList.toggle('on', on); }
+function setAuto(on) { autoDrive = on; btn('auto').classList.toggle('on', on); $('autoBtn').classList.toggle('on', on); }
 function setCam(i) { camMode = ((i % CAM_MODES.length) + CAM_MODES.length) % CAM_MODES.length; cine.set = false; settings.cam = camMode; saveSettings(); btn('cam').textContent = 'Cam · ' + CAM_MODES[camMode]; }
 function setLook(i) { settings.look = ((i % LOOKS.length) + LOOKS.length) % LOOKS.length; saveSettings(); compU.look.value = settings.look; btn('look').textContent = 'Look · ' + LOOKS[settings.look]; }
 function nextTime() { presetIdx = (presetIdx + 1) % PRESETS.length; timeTarget = PRESETS[presetIdx]; dayCycle = false; toast(PRESET_NAMES[presetIdx]); }
@@ -1377,6 +1378,7 @@ function applyChrome() {
   const hide = uiHidden || photo.on || !started;
   ui.hud.classList.toggle('hidden', hide); ui.buttons.classList.toggle('hidden', hide); ui.topleft.classList.toggle('hidden', hide);
   ui.mapWrap.classList.toggle('hidden', hide || !settings.map); ui.photobar.classList.toggle('hidden', !photo.on);
+  ui.touchpad.classList.toggle('hidden', hide || !TOUCH);
   if (hide) ui.help.classList.add('hidden');
 }
 function toggleUI() { uiHidden = !uiHidden; applyChrome(); }
@@ -1452,23 +1454,56 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) input[k] = false; });
 addEventListener('blur', () => { for (const k in input) input[k] = false; });
-const activeTouches = new Map();
 canvas.addEventListener('pointerdown', (e) => {
   if (!started) { start(); return; }
-  if (e.pointerType === 'touch' && !photo.on) { activeTouches.set(e.pointerId, e.clientX < innerWidth / 2 ? 'L' : 'R'); touchCruise = true; updateTouch(); }
-  else { look.dragging = true; look.lastX = e.clientX; look.lastY = e.clientY; try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } }
+  if (e.pointerType === 'touch' && !TOUCH) { TOUCH = true; document.body.classList.add('touch'); applyChrome(); }
+  look.dragging = true; look.pointer = e.pointerId; look.lastX = e.clientX; look.lastY = e.clientY;
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (!look.dragging) return;
+  if (!look.dragging || e.pointerId !== look.pointer) return;
   const dx = e.clientX - look.lastX, dy = e.clientY - look.lastY;
   if (photo.on) { photo.yaw -= dx * 0.008; photo.pitch = clamp(photo.pitch + dy * 0.005, -0.05, 1.3); }
   else { look.yaw = clamp(look.yaw - dx * 0.006, -Math.PI, Math.PI); look.pitch = clamp(look.pitch + dy * 0.004, -0.3, 0.8); }
   look.lastX = e.clientX; look.lastY = e.clientY; look.idle = 0;
 });
-const endPointer = (e) => { if (activeTouches.has(e.pointerId)) { activeTouches.delete(e.pointerId); updateTouch(); } look.dragging = false; look.idle = 0; };
+const endPointer = (e) => { if (e.pointerId === look.pointer) { look.dragging = false; look.idle = 0; } };
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('wheel', (e) => { if (photo.on) { photo.dist = clamp(photo.dist * (1 + e.deltaY * 0.001), 4, 60); e.preventDefault(); } }, { passive: false });
-function updateTouch() { const v = [...activeTouches.values()]; input.touchL = v.includes('L'); input.touchR = v.includes('R'); }
+
+// ---- touch controls: an analog steering pad and pedal buttons, each tracking its own finger
+{
+  const pad = $('steerZone'), knob = $('steerKnob'), RANGE = 70;
+  let sid = null, sx = 0;
+  const setKnob = (dx) => { knob.style.transform = `translateX(${dx}px)`; };
+  pad.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (sid !== null) return;
+    sid = e.pointerId; sx = e.clientX;
+    try { pad.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+    pad.classList.add('active');
+  });
+  pad.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== sid) return;
+    const dx = clamp(e.clientX - sx, -RANGE, RANGE);
+    const a = dx / RANGE;
+    input.axis = -Math.sign(a) * Math.pow(Math.abs(a), 1.4); // finer control near the centre
+    setKnob(dx);
+  });
+  const endSteer = (e) => { if (e.pointerId !== sid) return; sid = null; input.axis = 0; setKnob(0); pad.classList.remove('active'); };
+  pad.addEventListener('pointerup', endSteer); pad.addEventListener('pointercancel', endSteer);
+  const hold = (id, key) => {
+    const el = $(id), ids = new Set();
+    const on = (e) => { e.preventDefault(); e.stopPropagation(); ids.add(e.pointerId); try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } input[key] = true; el.classList.add('active'); if ((key === 'hand' || key === 'down') && autoDrive) setAuto(false); };
+    const off = (e) => { ids.delete(e.pointerId); if (!ids.size) { input[key] = false; el.classList.remove('active'); } };
+    el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off);
+  };
+  hold('gasBtn', 'up'); hold('brakeBtn', 'down'); hold('handBtn', 'hand');
+  const tap = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(); });
+  tap('autoBtn', () => setAuto(!autoDrive));
+  tap('resetBtn', () => { returnToRoad(); toast('back on the road'); });
+  $('touchpad').addEventListener('contextmenu', (e) => e.preventDefault());
+}
 addEventListener('resize', resize);
 
 const BASE_LL = CA ? [34.0259, -118.7798] : [25.7907, -80.13];
@@ -1553,5 +1588,5 @@ window.__game = {
   car, road, chunks, segments, traffic, stats, SEED, REGION_ID, ROAD_EDGE, world,
   isReady: () => ready, start, returnToRoad, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
   setTime: (t) => { timeOfDay = timeTarget = t; }, setCam, setLook, setPhoto, setMap,
-  state: () => ({ autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
+  state: () => ({ autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
 };

@@ -43,6 +43,14 @@
 
 <div id="mapwrap" class="hidden"><canvas id="map"></canvas></div>
 
+<div id="touchpad" class="hidden">
+  <div id="steerZone" aria-label="Steer: drag left or right"><span class="rail"></span><span id="steerKnob"></span><span class="lbl">drag to steer</span></div>
+  <div id="pedals">
+    <div class="row small"><button id="autoBtn" class="on">Auto</button><button id="resetBtn">Reset</button></div>
+    <div class="row"><button id="handBtn">Hand<br>brake</button><button id="brakeBtn">Brake</button><button id="gasBtn">Gas</button></div>
+  </div>
+</div>
+
 <div id="photobar" class="hidden">
   <span class="label">Photo mode</span>
   <span class="hint">drag to orbit · scroll to zoom</span>
@@ -73,7 +81,7 @@
     <tr><td>G / N</td><td>Switch California ⇄ South Florida / new road</td></tr>
     <tr><td>U / P</td><td>Hide interface / pause</td></tr>
   </table>
-  <p>Touch: hold the left or right half of the screen to steer.</p>
+  <p>Touch: drag the pad at bottom left to steer; Gas, Brake and Handbrake are at bottom right. Drag anywhere else to look around.</p>
 </div>
 
 <div id="title">
