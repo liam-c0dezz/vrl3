@@ -6,10 +6,13 @@ import * as THREE from 'three';
 // Params, seed, RNG, noise
 // ---------------------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const SEED = (parseInt(params.get('seed'), 10) || ((Math.random() * 1e9) | 0)) >>> 0;
-const REGION_ID = params.get('region') === 'fl' ? 'fl' : 'ca';
+// Region/seed come from ?region=fl&seed=123 or, where query strings can't be used, from #fl-123.
+const HASH = (location.hash || '').slice(1).match(/^(ca|fl)(?:-(\d+))?$/);
+const SEED = (parseInt(params.get('seed'), 10) || (HASH && parseInt(HASH[2], 10)) || ((Math.random() * 1e9) | 0)) >>> 0;
+const REGION_ID = (params.get('region') || (HASH && HASH[1])) === 'fl' ? 'fl' : 'ca';
 const CA = REGION_ID === 'ca', FL = !CA;
-const AUTOGO = params.get('go') === '1';
+let AUTOGO = params.get('go') === '1';
+try { if (sessionStorage.getItem('twolanes.go') === '1') { AUTOGO = true; sessionStorage.removeItem('twolanes.go'); } } catch (e) { /* storage unavailable */ }
 const DYNRES = params.get('dynres') !== '0';
 
 function mulberry32(a) {
@@ -1445,8 +1448,21 @@ function nextTime() { presetIdx = (presetIdx + 1) % PRESETS.length; timeTarget =
 function setSound(on) { settings.sound = on; saveSettings(); audio.setOn(on); btn('sound').classList.toggle('on', on); }
 function setRadio(on) { settings.radio = on; saveSettings(); radio.setOn(on); btn('radio').classList.toggle('on', on); ui.station.classList.toggle('off', !on); }
 function setMap(on) { settings.map = on; saveSettings(); btn('map').classList.toggle('on', on); applyChrome(); }
-function gotoRegion(id) { const u = new URL(location.href); u.searchParams.set('region', id); u.searchParams.delete('seed'); u.searchParams.set('go', '1'); location.href = u.toString(); }
-function newRoad() { const u = new URL(location.href); u.searchParams.set('seed', (Math.random() * 1e9) | 0); u.searchParams.set('go', '1'); location.href = u.toString(); }
+function navigate(region, seed) {
+  if (params.has('region') || params.has('seed') || params.has('go')) {
+    const u = new URL(location.href);
+    u.searchParams.set('region', region);
+    if (seed) u.searchParams.set('seed', seed); else u.searchParams.delete('seed');
+    u.searchParams.set('go', '1');
+    location.href = u.toString();
+    return;
+  }
+  try { sessionStorage.setItem('twolanes.go', '1'); } catch (e) { /* storage unavailable */ }
+  location.hash = seed ? `${region}-${seed}` : region;
+  location.reload();
+}
+function gotoRegion(id) { navigate(id, 0); }
+function newRoad() { navigate(REGION_ID, ((Math.random() * 1e9) | 0) >>> 0); }
 function toggleHelp() { ui.help.classList.toggle('hidden'); btn('help').classList.toggle('on', !ui.help.classList.contains('hidden')); }
 function applyChrome() {
   const hide = uiHidden || photo.on || !started;
