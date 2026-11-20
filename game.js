@@ -441,7 +441,7 @@ const signTex = canvasTex(1024, 1024, (g, W) => {
   SIGN_WORDS.forEach((word, i) => {
     const cx = (i % 4) * cs + cs / 2, cy = ((i / 4) | 0) * cs + cs / 2, color = cols[i % cols.length];
     const size = Math.min(cs * 0.36, (cs * 1.6) / word.length);
-    g.font = `800 ${size}px "Syne", "Arial Black", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `800 ${size}px "Archivo", "Arial Black", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.shadowColor = color; g.shadowBlur = 22; g.fillStyle = color; g.fillText(word, cx, cy);
     g.shadowBlur = 0; g.fillStyle = '#ffffff'; g.fillText(word, cx, cy);
     g.strokeStyle = color; g.lineWidth = 4; g.shadowColor = color; g.shadowBlur = 14;
@@ -1325,7 +1325,7 @@ function drawMap() {
   g.strokeStyle = MAP_THEME.ink; g.lineWidth = 2; g.beginPath(); g.arc(Rm, Rm, Rm - 2, 0, Math.PI * 2); g.stroke();
   const lx = Rm + Math.sin(R.h) * (Rm - 14), ly = Rm - Math.cos(R.h) * (Rm - 14);
   g.fillStyle = MAP_THEME.ink; g.beginPath(); g.arc(lx, ly, 9, 0, 7); g.fill();
-  g.fillStyle = MAP_THEME.bg; g.font = '700 10px "Space Grotesk", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = MAP_THEME.bg; g.font = '600 10px "JetBrains Mono", ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText('N', lx, ly + 0.5);
 }
 
@@ -1411,7 +1411,7 @@ btn('sound').classList.toggle('on', settings.sound); btn('radio').classList.togg
 audio.on = settings.sound; radio.on = settings.radio; ui.station.classList.toggle('off', !settings.radio);
 
 function wakeAudio() { audio.init(); if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume(); }
-function start() { if (started || !ready) return; started = true; ui.title.classList.add('hidden'); applyChrome(); wakeAudio(); }
+function start() { if (started || !ready) return; started = true; ui.title.classList.add('hidden'); clearInterval(postcardTimer); applyChrome(); wakeAudio(); }
 for (const b of document.querySelectorAll('.region')) b.addEventListener('click', (e) => { e.stopPropagation(); if (b.dataset.region === REGION_ID) start(); else gotoRegion(b.dataset.region); });
 ui.title.addEventListener('click', start);
 addEventListener('pointerdown', wakeAudio);
@@ -1532,17 +1532,63 @@ function updateHud() {
   car.vx = Math.sin(p.h) * 16; car.vz = Math.cos(p.h) * 16;
   savePrev(); applyCarPose();
 }
-let last = performance.now(), bootFrames = 0, frameEma = 1 / 60, resTimer = 0;
+let last = performance.now(), bootFrames = 0, frameEma = 1 / 60, resTimer = 0, loadPct = 0;
+function renderFrame() {
+  compU.time.value = simT % 1000; compU.near.value = camera.near; compU.far.value = camera.far;
+  renderer.setRenderTarget(rtHDR);
+  renderer.render(scene, camera);
+  compU.tBloom.value = renderBloom().texture;
+  pass(compMat, null);
+}
+// Loading screen: rotating tips while the world builds, then three postcards shot in the real world.
+const TIPS = ['Press K to start a police chase.', 'V opens the garage: ten cars to choose from.', 'R puts you back on the road.', 'Shift+Z lets the seasons cycle on their own.',
+  'F opens photo mode.', 'Space is the handbrake. Slide it.', 'Side streets are open: turn off the main road and explore.', 'T changes the time of day.'];
+let tipIdx = Math.floor(Math.random() * TIPS.length);
+const showTip = () => { const el = $('tip'); el.style.opacity = 0; setTimeout(() => { el.textContent = TIPS[tipIdx++ % TIPS.length]; el.style.opacity = 0.85; }, 400); };
+showTip();
+const tipTimer = setInterval(showTip, 3600);
+function capturePostcards() {
+  const keep = { t: timeOfDay, tt: timeTarget };
+  const figs = document.querySelectorAll('#title .pc');
+  const clock = (t) => { const m = Math.floor(t * 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  const shots = [
+    { s: car.s + 8.5, lat: -2.6, up: 0.9, look: -8.5, t: PRESETS[2], aim: 0.55 }, // hero shot of the car, golden hour
+    { s: car.s + 40, lat: 0, up: 46, look: 190, t: PRESETS[1], aim: 0 },          // over the road, midday
+    { s: car.s + 150, lat: 4.4, up: 1.6, look: 70, t: PRESETS[3], aim: 3.0 },    // the street at sunset
+  ];
+  shots.forEach((sh, i) => {
+    timeOfDay = timeTarget = sh.t; updateSky(0); updateEnv(true);
+    const p = roadPoint(sh.s, sh.lat), q = roadPoint(sh.s + sh.look, sh.look < 0 ? LANE : 0);
+    camera.position.set(p.x, Math.max(groundAt(p.x, p.z), WATER) + sh.up, p.z);
+    camera.lookAt(q.x, q.y + sh.aim, q.z);
+    camera.fov = sh.up > 10 ? 55 : 46; camera.updateProjectionMatrix();
+    updateStreetLights();
+    renderFrame();
+    const cv = figs[i].querySelector('canvas'), g = cv.getContext('2d');
+    const W = canvas.width, H = canvas.height, ar = cv.width / cv.height;
+    let sw = W, shh = W / ar; if (shh > H) { shh = H; sw = H * ar; }
+    g.drawImage(canvas, (W - sw) / 2, (H - shh) / 2, sw, shh, 0, 0, cv.width, cv.height);
+    figs[i].querySelector('figcaption').textContent = `${PLACE[world.districtAt(p.z)] || ''} · ${clock(sh.t)}`;
+  });
+  timeOfDay = keep.t; timeTarget = keep.tt; updateSky(0); updateEnv(true); camInit = false;
+  document.body.classList.add('shots');
+  let front = 0;
+  postcardTimer = setInterval(() => { figs.forEach((f, k) => f.classList.toggle('front', k === front)); front = (front + 1) % figs.length; }, 3200);
+}
+let postcardTimer = 0;
 const stats = { frames: 0 };
 function frame(now) {
   const rawDt = (now - last) / 1000, dt = Math.min(0.1, rawDt);
   last = now; stats.frames++;
   if (!ready) {
     const left = streamWorld(30, 6);
-    $('loadfill').style.width = Math.min(100, 100 * (1 - left / (Math.PI * QUALITY.view * QUALITY.view + 12))) + '%';
+    const pct = Math.max(loadPct, Math.min(99, Math.round(100 * (1 - left / (Math.PI * QUALITY.view * QUALITY.view + 12)))));
+    loadPct = pct; $('loadfill').style.width = pct + '%'; $('loadpct').textContent = pct + '%';
     bootFrames++;
     if ((left === 0 && bootFrames > 10) || bootFrames > 2400) {
-      ready = true; document.body.classList.add('ready'); $('start').textContent = 'Choose a coast';
+      ready = true; document.body.classList.add('ready'); $('start').textContent = 'Choose where to drive';
+      clearInterval(tipTimer);
+      if (!AUTOGO) capturePostcards();
       updateEnv(true);
       if (AUTOGO) start();
     }
@@ -1571,11 +1617,7 @@ function frame(now) {
   updateStreetLights();
   audio.update(frozen ? 0 : car.v, frozen ? 0 : throttle, car.d > ROAD_EDGE + 0.3);
   if (started) { updateHud(); mapTimer -= dt; if (settings.map && mapTimer <= 0 && !photo.on && !uiHidden) { mapTimer = 0.1; drawMap(); } }
-  compU.time.value = simT % 1000; compU.near.value = camera.near; compU.far.value = camera.far;
-  renderer.setRenderTarget(rtHDR);
-  renderer.render(scene, camera);
-  compU.tBloom.value = renderBloom().texture;
-  pass(compMat, null);
+  renderFrame();
   if (photo.save) {
     photo.save = false;
     const a = document.createElement('a');

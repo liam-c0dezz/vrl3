@@ -6,7 +6,7 @@
 <title>Two Lanes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -85,16 +85,25 @@
 </div>
 
 <div id="title">
-  <div class="poster">
-    <header class="row top">
-      <span>N° 002 — An endless drive</span>
-      <span id="seedLabel">SEED</span>
-    </header>
-    <h1>Two<br>Lanes</h1>
-    <p class="sub">Roll the windows down. There's nowhere to be.</p>
+  <div class="sky"><div class="sun"></div><div class="haze"></div></div>
+  <div class="grain"></div>
+  <div class="collage">
+    <figure class="pc pc1"><canvas width="560" height="360"></canvas><figcaption>&nbsp;</figcaption></figure>
+    <figure class="pc pc2"><canvas width="560" height="360"></canvas><figcaption>&nbsp;</figcaption></figure>
+    <figure class="pc pc3"><canvas width="560" height="360"></canvas><figcaption>&nbsp;</figcaption></figure>
+  </div>
+  <div class="brand">
+    <div class="kicker"><span>An endless drive</span><span class="dot">●</span><span id="seedLabel">SEED</span></div>
+    <h1><span class="w1">Two</span><em class="w2">Lanes</em></h1>
+    <p class="sub">Los Angeles <i>·</i> the Pacific coast <i>·</i> South Florida</p>
+  </div>
+  <div class="loadrow">
     <div id="loadbar"><div id="loadfill"></div></div>
-    <p id="start">Paving the road…</p>
-    <div class="regions">
+    <span id="loadpct">0%</span>
+  </div>
+  <p id="start">Building the city…</p>
+  <p id="tip"></p>
+  <div class="regions">
       <button class="region" data-region="ca">
         <span class="idx">01</span>
         <b>Los Angeles</b>
@@ -110,11 +119,6 @@
         <span class="chips"><i style="--c:#ff5f8f"></i><i style="--c:#34c3d8"></i><i style="--c:#f6c6cf"></i><i style="--c:#bfe6dc"></i><i style="--c:#1b1d2a"></i></span>
       </button>
     </div>
-    <footer class="row bottom">
-      <span>WASD drive · Space handbrake · R reset · Z season · F photo · H help</span>
-      <span>Press 1 / 2</span>
-    </footer>
-  </div>
 </div>
 
 <div id="paused" class="hidden">Paused</div>
