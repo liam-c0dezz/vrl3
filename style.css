@@ -5,9 +5,9 @@
   --sans: "Space Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
   --mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
-body.region-fl { --ink: #14241e; --paper: #f6f4e6; --accent: #e0533a; --accent2: #cfe39a; }
+body.region-sf { --ink: #1b1d2a; --paper: #fff4f6; --accent: #ff3d9a; --accent2: #34c3d8; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #ffd9a2; }
-body.region-fl { background: #f6eec8; }
+body.region-sf { background: #ffd2dc; }
 body { font-family: var(--sans); color: var(--paper); user-select: none; -webkit-user-select: none; }
 canvas#game { display: block; width: 100vw; height: 100vh; touch-action: none; }
 .hidden { opacity: 0 !important; pointer-events: none !important; }
@@ -85,7 +85,7 @@ body.ready #loadbar { display: none; }
 body.ready .regions { opacity: 1; pointer-events: auto; }
 .region { position: relative; display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer; padding: 14px 16px 16px; border: 0; border-radius: 0;
   background: var(--paper); color: #2a1830; box-shadow: 5px 5px 0 #2a1830; transition: transform .12s, box-shadow .12s; }
-.region[data-region="fl"] { color: #14241e; box-shadow: 5px 5px 0 #14241e; }
+.region[data-region="sf"] { color: #14241e; box-shadow: 5px 5px 0 #14241e; }
 .region:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 currentColor; }
 .region .idx { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; }
 .region b { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1; letter-spacing: -.5px; text-transform: uppercase; }
@@ -95,7 +95,7 @@ body.ready .regions { opacity: 1; pointer-events: auto; }
 .region .chips i { width: 26px; height: 14px; background: var(--c); }
 .region.current::after { content: "PLAY ▸"; position: absolute; top: 12px; right: 14px; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; background: currentColor; padding: 3px 6px; }
 .region.current::after { color: #fff4e4; background: #2a1830; }
-.region[data-region="fl"].current::after { background: #14241e; color: #f6f4e6; }
+.region[data-region="sf"].current::after { background: #14241e; color: #f6f4e6; }
 
 @media (max-width: 700px) {
   #topleft { top: 12px; left: 14px; }

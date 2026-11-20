@@ -15,16 +15,18 @@
 <!-- top-left wordmark + clock -->
 <div id="topleft" class="hidden">
   <div class="mark">TWO LANES</div>
-  <div class="meta"><span id="regionName"></span><span class="sep">/</span><span id="clock">17:28</span></div>
+  <div class="meta"><span id="regionName"></span><span class="sep">/</span><span id="seasonName"></span><span class="sep">/</span><span id="clock">17:28</span></div>
 </div>
 
 <div id="buttons" class="hidden">
   <button data-act="auto" title="Auto-drive (E)">Auto</button>
   <button data-act="cam" title="Camera (C)">Cam</button>
   <button data-act="time" title="Time of day (T)">Time</button>
+  <button data-act="season" title="Season (Z · Shift+Z cycles)">Season</button>
   <button data-act="look" title="Visual style (X)">Look</button>
   <button data-act="photo" title="Photo mode (F)">Photo</button>
-  <button data-act="radio" title="Radio (R)">Radio</button>
+  <button data-act="reset" title="Back on the road (R)">Reset</button>
+  <button data-act="radio" title="Radio (Q)">Radio</button>
   <button data-act="map" title="Route map (M)">Map</button>
   <button data-act="sound" title="All sound (V)">Sound</button>
   <button data-act="region" title="Switch region (G)">Region</button>
@@ -46,6 +48,7 @@
   <span class="hint">drag to orbit · scroll to zoom</span>
   <button data-act="look">Look</button>
   <button data-act="time">Time</button>
+  <button data-act="season">Season</button>
   <button data-act="shoot" class="primary">Save PNG</button>
   <button data-act="exit">Exit</button>
 </div>
@@ -57,16 +60,17 @@
   <table>
     <tr><td>A D / ← →</td><td>Steer (takes over from auto-drive)</td></tr>
     <tr><td>W S / ↑ ↓</td><td>Gas / brake — in auto-drive: cruise speed</td></tr>
+    <tr><td>Space</td><td>Handbrake (slide it)</td></tr>
+    <tr><td>R</td><td>Back on the road</td></tr>
     <tr><td>E</td><td>Auto-drive on/off</td></tr>
     <tr><td>C</td><td>Camera: chase · driver · cinematic</td></tr>
-    <tr><td>X</td><td>Look: poster · riso · clean</td></tr>
-    <tr><td>F</td><td>Photo mode (Enter saves a PNG)</td></tr>
+    <tr><td>Z / Shift+Z</td><td>Next season / seasons cycle by themselves</td></tr>
     <tr><td>T / Y</td><td>Time of day / day cycle</td></tr>
-    <tr><td>R</td><td>Radio</td></tr>
-    <tr><td>M</td><td>Route map</td></tr>
-    <tr><td>V</td><td>All sound</td></tr>
-    <tr><td>G</td><td>Switch California ⇄ Florida</td></tr>
-    <tr><td>N</td><td>New road</td></tr>
+    <tr><td>X</td><td>Look: cinematic · poster · riso</td></tr>
+    <tr><td>F</td><td>Photo mode (Enter saves a PNG)</td></tr>
+    <tr><td>L / J</td><td>Headlights auto/on/off / horn</td></tr>
+    <tr><td>Q / V / M</td><td>Radio / all sound / route map</td></tr>
+    <tr><td>G / N</td><td>Switch California ⇄ South Florida / new road</td></tr>
     <tr><td>U / P</td><td>Hide interface / pause</td></tr>
   </table>
   <p>Touch: hold the left or right half of the screen to steer.</p>
@@ -90,16 +94,16 @@
         <span class="desc">Pacific cliffs, golden hills, palms. Convertible. Lo-fi on 101.9.</span>
         <span class="chips"><i style="--c:#f3a9b8"></i><i style="--c:#ffd9a2"></i><i style="--c:#f0b552"></i><i style="--c:#5079c6"></i><i style="--c:#3b3350"></i></span>
       </button>
-      <button class="region" data-region="fl">
+      <button class="region" data-region="sf">
         <span class="idx">02</span>
-        <b>North Florida</b>
-        <span class="ll">30.44°N 84.28°W</span>
-        <span class="desc">Pine flatwoods, live oaks, cypress swamps. Pickup. Country on 88.3.</span>
-        <span class="chips"><i style="--c:#bfe2d2"></i><i style="--c:#f6eec8"></i><i style="--c:#8fc25a"></i><i style="--c:#2f6a4f"></i><i style="--c:#3a6a60"></i></span>
+        <b>South Florida</b>
+        <span class="ll">25.79°N 80.13°W</span>
+        <span class="desc">Art deco strip, glass towers, causeways and beaches. '80s coupe. Neon Coast on 104.3.</span>
+        <span class="chips"><i style="--c:#ff5f8f"></i><i style="--c:#34c3d8"></i><i style="--c:#f6c6cf"></i><i style="--c:#bfe6dc"></i><i style="--c:#1b1d2a"></i></span>
       </button>
     </div>
     <footer class="row bottom">
-      <span>WASD drive · E auto · C cam · X look · F photo · H help</span>
+      <span>WASD drive · Space handbrake · R reset · Z season · F photo · H help</span>
       <span>Press 1 / 2</span>
     </footer>
   </div>

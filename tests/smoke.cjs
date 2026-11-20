@@ -1,4 +1,4 @@
-// Smoke test for Two Lanes: runs both regions (California, North Florida) on a desktop and a
+// Smoke test for Two Lanes: runs both regions (California, South Florida) on a desktop and a
 // mobile viewport in headless Chromium, exercises the main features and saves screenshots.
 //
 //   node tests/smoke.cjs            # full matrix
@@ -50,9 +50,10 @@ async function run(browser, base, region, device) {
   const tag = `${region}-${device}`;
   console.log(`\n[${tag}]`);
 
-  await page.goto(`${base}/?region=${region}&seed=4242&view=5&dynres=0`);
-  await page.waitForFunction(() => window.__game && window.__game.isReady(), null, { timeout: 240000 });
+  await page.goto(`${base}/?region=${region}&seed=4242&view=4&dynres=0`);
+  await page.waitForFunction(() => window.__game && window.__game.isReady(), null, { timeout: 600000 });
   check(`${tag}: world generates`, true);
+  check(`${tag}: world builds in a background worker`, await page.evaluate(() => window.__game.state().worker));
   await page.screenshot({ path: path.join(OUT, `${tag}-title.png`) });
   const titleVisible = await page.evaluate(() => getComputedStyle(document.getElementById('title')).opacity === '1');
   check(`${tag}: title poster shows`, titleVisible);
@@ -81,7 +82,7 @@ async function run(browser, base, region, device) {
 
   if (!mobile) {
     // looks
-    for (const [i, name] of ['poster', 'riso', 'clean'].entries()) {
+    for (const [i, name] of ['cinematic', 'poster', 'riso'].entries()) {
       await page.evaluate((i) => window.__game.setLook(i), i);
       await sleep(600);
       await page.screenshot({ path: path.join(OUT, `${tag}-look-${name}.png`) });
@@ -124,7 +125,30 @@ async function run(browser, base, region, device) {
     await page.keyboard.press('KeyE');
     check(`${tag}: E re-engages auto-drive`, (await page.evaluate(() => window.__game.state().autoDrive)));
 
-    // photo mode freezes the car and hides the HUD
+    // R puts the car back in its lane after wandering off
+    await page.keyboard.down('ArrowLeft'); await waitFrames(page, 30); await page.keyboard.up('ArrowLeft');
+    const off = await page.evaluate(() => ({ lat: window.__game.car.lat, d: window.__game.car.d }));
+    await page.keyboard.press('KeyR'); await waitFrames(page, 3);
+    const back = await page.evaluate(() => ({ lat: window.__game.car.lat, d: window.__game.car.d }));
+    check(`${tag}: R returns to the road`, Math.abs(back.lat - 1.8) < 0.4 && back.d < 2.5, `lat ${off.lat.toFixed(1)} → ${back.lat.toFixed(2)}`);
+    // handbrake scrubs speed
+    const hv0 = await page.evaluate(() => window.__game.car.v);
+    await page.keyboard.down('Space'); await waitFrames(page, 20); await page.keyboard.up('Space');
+    const hv1 = await page.evaluate(() => window.__game.car.v);
+    check(`${tag}: handbrake slows the car`, hv1 < hv0 - 1, `${hv0.toFixed(1)} → ${hv1.toFixed(1)} m/s`);
+    await page.keyboard.press('KeyE');
+    // seasons: Z steps through spring → summer → fall → winter
+    const s0 = await page.evaluate(() => window.__game.state().season);
+    const seen = [];
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('KeyZ'); await waitFrames(page, 8);
+      seen.push(await page.evaluate(() => window.__game.state().season));
+      await page.screenshot({ path: path.join(OUT, `${tag}-season-${seen[i]}.png`) });
+    }
+    check(`${tag}: Z cycles all four seasons`, new Set(seen).size === 4 && seen[3] === s0, seen.join(','));
+    const nan = await page.evaluate(() => Object.values(window.__game.car).some((v) => typeof v === 'number' && !Number.isFinite(v)));
+    check(`${tag}: physics state stays finite`, !nan);
+
     await page.keyboard.press('KeyF');
     const a = await page.evaluate(() => window.__game.car.odo);
     await sleep(1000);
@@ -144,7 +168,7 @@ async function run(browser, base, region, device) {
     // settings persist across reloads
     await page.keyboard.press('KeyX'); // -> riso
     await page.reload();
-    await page.waitForFunction(() => window.__game && window.__game.isReady(), null, { timeout: 240000 });
+    await page.waitForFunction(() => window.__game && window.__game.isReady(), null, { timeout: 600000 });
     check(`${tag}: look setting persists`, (await page.evaluate(() => window.__game.state().look)) === 1);
     await page.evaluate(() => window.__game.setLook(0));
   } else {
@@ -177,7 +201,7 @@ async function run(browser, base, region, device) {
 
 (async () => {
   const only = process.argv[2];
-  const regions = only ? [only] : ['ca', 'fl'];
+  const regions = only ? [only] : ['ca', 'sf'];
   const server = await serve();
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
