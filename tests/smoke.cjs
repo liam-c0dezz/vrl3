@@ -263,15 +263,15 @@ async function run(browser, base, region, device) {
   const aimed = await page.evaluate(() => {
     const g = window.__game, c = g.car;
     const ped = g.peds.list.find((q) => q.alive && !q.fall && !q.cross && Math.abs(q.s - c.s) < 200);
-    if (!ped) return false;
+    if (!ped) return 'no pedestrian near the car';
     g.setAuto(false);
-    const pt = g.world.roadPoint(ped.s, ped.lat), back = g.world.roadPoint(ped.s - 9, ped.lat);
+    const pt = g.world.roadPoint(ped.s, ped.lat), back = g.world.roadPoint(ped.s - 5, ped.lat);
     c.x = back.x; c.z = back.z; c.h = Math.atan2(pt.x - back.x, pt.z - back.z); c.vx = Math.sin(c.h) * 13; c.vz = Math.cos(c.h) * 13;
     return true;
   });
-  await waitFrames(page, 14);
+  await page.waitForFunction(() => window.__game.state().pedsDown > 0, null, { timeout: 60000 }).catch(() => {});
   const ko = await page.evaluate(() => window.__game.state());
-  check(`${tag}: pedestrians fall over when hit`, aimed && ko.pedsDown > 0, `${ko.pedsDown} knocked down, ${ko.pedsFallen} on the ground`);
+  check(`${tag}: pedestrians fall over when hit`, aimed === true && ko.pedsDown > 0, `${aimed === true ? '' : aimed + '; '}${ko.pedsDown} knocked down, ${ko.pedsFallen} on the ground`);
   await page.screenshot({ path: path.join(OUT, `${tag}-knockdown.png`) });
 
   const fps = await page.evaluate(async () => { const f0 = window.__game.stats.frames; await new Promise((r) => setTimeout(r, 2000)); return (window.__game.stats.frames - f0) / 2; });

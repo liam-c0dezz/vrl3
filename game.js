@@ -1154,7 +1154,8 @@ function updatePeds(dt) {
     if (p.dodge > 0) { p.dodge -= dt; p.lat += Math.sign(p.lat || 1) * 3.5 * dt; }
     const pt = roadPoint(p.s, p.lat), dx = pt.x - car.x, dz = pt.z - car.z;
     const r2 = dx * dx + dz * dz;
-    if (r2 < 4.8 && carSpd > 2.5) { // hit: they go down
+    const along = dx * Math.sin(car.h) + dz * Math.cos(car.h), across = dx * Math.cos(car.h) - dz * Math.sin(car.h);
+    if (Math.abs(along) < 2.6 && Math.abs(across) < 1.35 && carSpd > 2.5) { // inside the car's footprint: they go down
       const k = 0.75 + pedRng() * 0.3, side = (pedRng() - 0.5) * 3;
       p.fall = { x: pt.x, z: pt.z, y: groundAt(pt.x, pt.z), vx: car.vx * k + Math.cos(car.h) * side, vz: car.vz * k - Math.sin(car.h) * side,
         vy: Math.min(7, 1.6 + carSpd * 0.16), t: 0, ang: 0, yaw: Math.atan2(car.vx, car.vz), roll: 0, spin: (pedRng() - 0.5) * 6 };
