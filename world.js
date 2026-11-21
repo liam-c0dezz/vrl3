@@ -51,17 +51,19 @@ K.SETBACK = K.ROAD_EDGE + K.SIDEWALK + 0.6; // where corridor buildings start
 K.WALL = K.ROAD_EDGE + K.SIDEWALK - 1.0;    // how far the car may drift onto the sidewalk
 
 export function createWorld(seed, region) {
-  const CA = region === 'ca', SF = !CA;
+  const CA = region === 'ca', SF = !CA, MIA = region === 'sf', CHI = region === 'chi', NY = region === 'ny';
   const { ROAD_HALF, ROAD_EDGE, FLAT, BLEND, STEP, SMOOTH_K, WATER, CELL, BLOCK, SIDEWALK } = K;
-  const rng = mulberry32(seed ^ (SF ? 0x5f10 : 0));
+  const rng = mulberry32(seed ^ ({ ca: 0, sf: 0x5f10, chi: 0x3c41, ny: 0x4e59 }[region] || 0));
   const noise = makeNoise2D(rng);
   const fbm = (x, z, oct) => {
     let a = 1, f = 1, s = 0, n = 0;
     for (let o = 0; o < oct; o++) { s += a * noise(x * f + o * 17.3, z * f - o * 9.1); n += a; a *= 0.5; f *= 2.03; }
     return s / n;
   };
-  const OCEAN_SIDE = CA ? 1 : -1; // ocean towards +x (CA, Pacific) / -x (SF, Atlantic)
-  const OCEAN_LAT = CA ? -1 : 1;  // ...the driver's left (CA) / right (SF), heading "north"
+  // Water towards +x = the driver's left heading "north" (the Pacific in LA, the Hudson in New York),
+  // or -x = the right (the Atlantic in Miami, Lake Michigan in Chicago).
+  const OCEAN_SIDE = CA || NY ? 1 : -1;
+  const OCEAN_LAT = -OCEAN_SIDE;
 
   const road = { xs: [], zs: [], ys: [], raw: [], hd: [], n: 0, nFinal: 0 };
   function roadXAtZ(z) {
@@ -77,8 +79,10 @@ export function createWorld(seed, region) {
   // ---- terrain ----
   function mountainFactor(x, z) { const m = 0.5 + 0.5 * noise(x / 1400 - 40.2, z / 1400 + 20.6); return m * m; }
   function coastDist(z) {
-    return CA ? 55 + 110 * (0.5 + 0.5 * noise(z / 1100 + 5.1, 3.3)) + 25 * noise(z / 280, 8.8)
-              : 75 + 120 * (0.5 + 0.5 * noise(z / 1500 + 5.1, 3.3)) + 20 * noise(z / 300, 8.8);
+    if (CA) return 55 + 110 * (0.5 + 0.5 * noise(z / 1100 + 5.1, 3.3)) + 25 * noise(z / 280, 8.8);
+    if (CHI) return 150 + 110 * (0.5 + 0.5 * noise(z / 1500 + 5.1, 3.3)) + 15 * noise(z / 300, 8.8);
+    if (NY) return 170 + 70 * (0.5 + 0.5 * noise(z / 1500 + 5.1, 3.3)) + 10 * noise(z / 300, 8.8);
+    return 75 + 120 * (0.5 + 0.5 * noise(z / 1500 + 5.1, 3.3)) + 20 * noise(z / 300, 8.8);
   }
   function cliffiness(z) { return 0.5 + 0.5 * noise(z / 520, 1.7); }
   function caLand(x, z) {
@@ -92,6 +96,7 @@ export function createWorld(seed, region) {
     const u = (x - roadXAtZ(z)) * OCEAN_SIDE;
     const m = mountainFactor(x, z);
     let h = Math.max(caLand(x, z) + sstep(20, 420, -u) * (45 + 85 * m), 3.5);
+    h = Math.max(h, hillAt(x, z)); // the Hollywood Hills under the sign and the observatory
     const c = coastDist(z), la = laK(z);
     if (la > 0) h = lerp(h, 9 + 2.5 * noise(x / 400, z / 400) + sstep(700, 1600, -u) * 60 * m, la); // the flat LA basin
     if (u > 0) h = lerp(h, 9 + 5 * noise(x / 160, z / 160), sstep(0, c * 0.6, u));
@@ -102,8 +107,13 @@ export function createWorld(seed, region) {
     }
     return Math.max(h, -26);
   }
-  // South Florida: flat city on a barrier coast; long causeways cross the bay.
-  function causewayK(z) { return SF ? sstep(0.34, 0.46, noise(z / 1900 + 3.1, 7.7)) : 0; }
+  // South Florida: flat city on a barrier coast; long causeways cross the bay. New York: the road
+  // sometimes leaves the island on a suspension bridge. Chicago: no crossings, the lake stays beside you.
+  function causewayK(z) {
+    if (MIA) return sstep(0.34, 0.46, noise(z / 1900 + 3.1, 7.7));
+    if (NY) return sstep(0.44, 0.52, noise(z / 2300 + 3.1, 7.7)) * sstep(2900, 3300, z);
+    return 0;
+  }
   // California: Los Angeles stretches (the drive always starts in LA) alternate with open coast.
   function laK(z) { return CA ? Math.max(sstep(0.02, 0.22, noise(z / 2600 + 41.3, 5.5)), sstep(3600, 2600, z)) : 0; }
   function districtAt(z) {
@@ -113,6 +123,11 @@ export function createWorld(seed, region) {
       return d > 0.22 ? 'downtown' : d < -0.15 ? 'beach' : 'resid';
     }
     if (causewayK(z) > 0.5) return 'causeway';
+    if (CHI || NY) { // dense downtown first (where the landmarks are), then neighbourhoods and parks
+      const d = noise(z / 1300 - 5.2, 2.2) + 0.15 * noise(z / 400, 9.9);
+      if (z < 2700 || d > (NY ? -0.05 : 0.05)) return 'downtown';
+      return d < -0.3 ? 'park' : 'resid';
+    }
     const d = noise(z / 1300 - 5.2, 2.2) + 0.15 * noise(z / 400, 9.9);
     return d > 0.18 ? 'downtown' : d < -0.22 ? 'deco' : 'resid';
   }
@@ -128,6 +143,7 @@ export function createWorld(seed, region) {
   const baseH = CA ? caHeight : sfHeight;
   function roadRawHeight(x, z, s) {
     if (CA) return lerp(clamp(8 + 0.3 * (caLand(x, z) - 16) + 3 * Math.sin(s / 140), 6, 30), 9.2, laK(z));
+    if (NY) return 2.4 + 0.25 * noise(z / 600, 1.1) + 15 * causewayK(z); // bridges arch high over the river
     return 2.4 + 0.25 * noise(z / 600, 1.1);
   }
 
@@ -216,6 +232,7 @@ export function createWorld(seed, region) {
   function buildingSide(z, side) {
     if (!citySide(z, side)) return false;
     const d = districtAt(z);
+    if (d === 'park') return CHI ? side !== OCEAN_LAT : side === OCEAN_LAT; // Grant Park by the lake / Central Park inland
     return !((d === 'deco' || d === 'beach') && side === OCEAN_LAT); // beachfront districts have a promenade on the ocean side
   }
   const _gq = Q();
@@ -236,8 +253,63 @@ export function createWorld(seed, region) {
     return { x: x + (-dz / l) * lat, z: z + (dx / l) * lat, y: lerp(road.ys[i], road.ys[i + 1], t), h: Math.atan2(dx, dz) };
   }
 
+  // ---- landmarks: placed once per cycle along the drive, nudged forward off bridges and open coast.
+  // side 'sea' = the water side of the road, 'land' = the other; lat = metres from the centreline
+  // (or 'shore' = out at the waterline); r = how much of the city is cleared around it.
+  const LANDMARKS = {
+    ca: [['usbank', 420, 'land', 48, 36], ['disney', 760, 'sea', 46, 36], ['capitol', 1100, 'land', 34, 22], ['griffith', 1500, 'land', 430, 70],
+      ['theme', 1850, 'sea', 52, 38], ['hollywood', 2150, 'land', 640, 140], ['pier', 2450, 'sea', 'shore', 0]],
+    sf: [['freedom', 380, 'land', 34, 26], ['atlantis', 700, 'sea', 42, 30], ['panorama', 1000, 'land', 42, 30], ['miamitower', 1350, 'land', 46, 32],
+      ['colony', 1700, 'land', 21, 14], ['lifeguard', 2000, 'sea', 'shore', 0]],
+    chi: [['willis', 450, 'land', 54, 44], ['bean', 800, 'land', 42, 32], ['buckingham', 1150, 'sea', 52, 38], ['hancock', 1500, 'land', 48, 38],
+      ['marina', 1850, 'land', 46, 36], ['wrigley', 2150, 'sea', 38, 28], ['navypier', 2500, 'sea', 'shore', 0]],
+    ny: [['esb', 500, 'land', 52, 42], ['flatiron', 850, 'sea', 34, 26], ['timessq', 1200, 'land', 34, 26], ['timessq2', 1200, 'sea', 34, 26],
+      ['chrysler', 1550, 'land', 46, 36], ['wtc', 1950, 'sea', 60, 46], ['liberty', 2300, 'sea', 'shore', 0]],
+  }[region] || [];
+  const LM_PERIOD = 9000, LM_CYCLES = 3;
+  let lmList = null;
+  function landmarks() {
+    if (lmList) return lmList;
+    lmList = [];
+    const okDist = (d) => d !== 'causeway' && d !== 'coast';
+    for (let c = 0; c < LM_CYCLES; c++) {
+      let shift = 0;
+      for (const [id, s0, sideK, latK, r] of LANDMARKS) {
+        let s = s0 + c * LM_PERIOD + shift, tries = 0;
+        ensureRoadIndex(Math.ceil((s + 400) / STEP));
+        while (!okDist(districtAt(roadPoint(s).z)) && tries++ < 60) { s += 150; shift += 150; ensureRoadIndex(Math.ceil((s + 400) / STEP)); }
+        if (tries > 60) continue;
+        const side = sideK === 'sea' ? OCEAN_LAT : -OCEAN_LAT;
+        const p0 = roadPoint(s);
+        const lat = latK === 'shore' ? coastDist(p0.z) + (id === 'liberty' ? 420 : id === 'lifeguard' ? -28 : 25) : latK;
+        const p = roadPoint(s, side * lat);
+        lmList.push({ id, s, side, lat, r, x: p.x, z: p.z, h: p.h, y: p0.y });
+      }
+    }
+    return lmList;
+  }
+  // hills raised under the Hollywood sign and Griffith Observatory (LA only)
+  function hillAt(x, z) {
+    if (!CA || !lmList) return 0;
+    let h = 0;
+    for (const L of lmList) {
+      if (L.id !== 'hollywood' && L.id !== 'griffith') continue;
+      const R = L.id === 'hollywood' ? 330 : 230, top = L.id === 'hollywood' ? 120 : 62;
+      const d = Math.hypot(x - L.x, z - L.z);
+      if (d < R) h = Math.max(h, 9 + top * smooth(1 - d / R) * (0.92 + 0.08 * noise(x / 60, z / 60)));
+    }
+    return h;
+  }
+  function landmarkNear(x, z, pad = 0) { // the landmark whose cleared ground contains (x, z), if any
+    const L = landmarks();
+    for (let i = 0; i < L.length; i++) { const l = L[i]; if (l.r > 0 && Math.abs(x - l.x) < l.r + pad && Math.abs(z - l.z) < l.r + pad) return l; }
+    return null;
+  }
+
+  landmarks(); // fixed at creation so terrain (the hills) and both threads agree
+
   return {
-    CA, SF, region, seed, noise, fbm, road, OCEAN_SIDE, OCEAN_LAT,
+    CA, SF, MIA, CHI, NY, region, landmarks, landmarkNear, hillAt, seed, noise, fbm, road, OCEAN_SIDE, OCEAN_LAT,
     roadXAtZ, coastDist, cliffiness, mountainFactor, caLand, causewayK, laK, districtAt, baseH, headingAt,
     addRoadSample, ensureRoadIndex, ensureRoadZ, Q, roadQuery, heightAt, groundAt, roadPoint,
     intersectionDist, citySide, buildingSide,

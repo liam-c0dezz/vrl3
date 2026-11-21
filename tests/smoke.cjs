@@ -85,6 +85,10 @@ async function run(browser, base, region, device) {
   check(`${tag}: traffic uses inner and outer lanes`, ow.lats.some((l) => Math.abs(l) > 4) && ow.lats.some((l) => Math.abs(l) < 3), `lanes ${ow.lats.join(', ')}`);
   const gridN = await page.waitForFunction(() => window.__game.state().gridCars > 0, null, { timeout: 600000 }).then(() => page.evaluate(() => window.__game.state().gridCars)).catch(() => 0);
   check(`${tag}: cars drive the back-street grid`, gridN > 0, `${gridN} cars`);
+  check(`${tag}: back streets have four lanes`, await page.evaluate(() => window.__game.gridCars.some((c) => c.lo > 4) || window.__game.gridCars.length < 3 || window.__game.gridCars.some((c) => c.lo < 3)));
+  // landmarks: placed along the drive and built into the city
+  const lmk = await page.evaluate(() => { const g = window.__game, L = g.world.landmarks(); return { n: L.length, ids: [...new Set(L.map((l) => l.id))], clear: L.filter((l) => l.r > 0).every((l) => g.world.landmarkNear(l.x, l.z)) }; });
+  check(`${tag}: landmarks are placed`, lmk.n >= 18 && lmk.clear, lmk.ids.join(', '));
   // route map draws something
   const mapInk = await page.evaluate(() => {
     const c = document.getElementById('map'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -169,6 +173,11 @@ async function run(browser, base, region, device) {
     check(`${tag}: Esc opens the pause menu`, mo.st.paused && mo.shown);
     await page.keyboard.press('Escape');
     check(`${tag}: Esc closes it again`, !(await page.evaluate(() => window.__game.state().paused)));
+    await page.keyboard.press('KeyM');
+    await page.waitForTimeout(400);
+    check(`${tag}: M opens the menu`, await page.evaluate(() => window.__game.state().paused && !document.getElementById('buttons').classList.contains('hidden')));
+    await page.keyboard.press('KeyM');
+    check(`${tag}: M closes it`, !(await page.evaluate(() => window.__game.state().paused)));
     // garage: ten cars, switching works
     await page.keyboard.press('KeyV');
     const g = await page.evaluate(() => ({ n: document.querySelectorAll('#gList button').length, open: window.__game.state().garage }));
@@ -283,12 +292,13 @@ async function run(browser, base, region, device) {
 
 (async () => {
   const only = process.argv[2];
-  const regions = only ? [only] : ['ca', 'sf'];
+  const regions = only ? [only] : ['ca', 'sf', 'chi', 'ny'];
   const server = await serve();
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
   try {
-    for (const region of regions) for (const device of (process.argv[3] ? [process.argv[3]] : ['desktop', 'mobile'])) await run(browser, base, region, device);
+    // LA and Miami on desktop and phone; Chicago and New York on desktop (same code paths, new content)
+    for (const region of regions) for (const device of (process.argv[3] ? [process.argv[3]] : region === 'chi' || region === 'ny' ? ['desktop'] : ['desktop', 'mobile'])) await run(browser, base, region, device);
   } finally {
     await browser.close();
     server.close();

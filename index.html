@@ -13,12 +13,12 @@
 <canvas id="game"></canvas>
 
 <!-- top-left wordmark + clock -->
-<button id="menuBtn" class="hidden" aria-label="Menu">Menu<kbd>Esc</kbd></button>
+<button id="menuBtn" class="hidden" aria-label="Menu">Menu<kbd>M</kbd></button>
 <div id="place" class="hidden"><span id="regionName"></span></div>
 
 <div id="buttons" class="hidden" role="menu" aria-label="Menu">
   <div class="m-title">Paused</div>
-  <button data-act="resume">Resume<kbd>Esc</kbd></button>
+  <button data-act="resume">Resume<kbd>M</kbd></button>
   <button data-act="garage">Garage<kbd>V</kbd></button>
   <button data-act="auto">Auto-drive<kbd>E</kbd></button>
   <button data-act="reset">Back on the road<kbd>R</kbd></button>
@@ -31,7 +31,7 @@
   <button data-act="photo">Photo mode<kbd>F</kbd></button>
   <div class="m-sep"></div>
   <button data-act="radio">Radio<kbd>Q</kbd></button>
-  <button data-act="map">Map<kbd>M</kbd></button>
+  <button data-act="map">Map<kbd>B</kbd></button>
   <button data-act="sound">Sound<kbd>⇧V</kbd></button>
   <div class="m-sep"></div>
   <button data-act="region">Switch region<kbd>G</kbd></button>
@@ -103,8 +103,9 @@
     <tr><td>K</td><td>Start or stop a police chase</td></tr>
     <tr><td>L / J</td><td>Headlights auto/on/off / horn</td></tr>
     <tr><td>V</td><td>Garage: ten cars, paint</td></tr>
-    <tr><td>Q / Shift+V / M</td><td>Radio / all sound / route map</td></tr>
-    <tr><td>G / N</td><td>Switch California ⇄ South Florida / new road</td></tr>
+    <tr><td>M / Esc</td><td>Menu</td></tr>
+    <tr><td>Q / Shift+V / B</td><td>Radio / all sound / route map</td></tr>
+    <tr><td>G / N</td><td>Next city (LA → Miami → Chicago → New York) / new road</td></tr>
     <tr><td>U / P</td><td>Hide interface / pause</td></tr>
   </table>
   <p>Touch: drag the pad at bottom left to steer; Gas, Brake and Handbrake are at bottom right. Drag anywhere else to look around.</p>
@@ -121,7 +122,7 @@
   <div class="brand">
     <div class="kicker">An endless drive</div><span id="seedLabel" hidden></span>
     <h1>Two Lanes</h1>
-    <p class="sub">Los Angeles, the Pacific coast and South Florida.</p>
+    <p class="sub">Los Angeles, Miami, Chicago and New York.</p>
   </div>
   <div class="loadrow">
     <div id="loadbar"><div id="loadfill"></div></div>
@@ -132,11 +133,19 @@
   <div class="regions">
       <button class="region" data-region="ca">
         <b>Los Angeles</b>
-        <span class="desc">Downtown LA and the beach cities, then the open Pacific coast.</span>
+        <span class="desc">Downtown, Hollywood, the beach cities, then the open Pacific coast.</span>
       </button>
       <button class="region" data-region="sf">
-        <b>South Florida</b>
-        <span class="desc">Art deco strip, glass towers, causeways over the bay, and beaches.</span>
+        <b>Miami</b>
+        <span class="desc">Ocean Drive deco, Brickell towers, causeways over the bay, South Beach.</span>
+      </button>
+      <button class="region" data-region="chi">
+        <b>Chicago</b>
+        <span class="desc">The Loop under the L, Willis Tower, the Bean, Lake Shore Drive.</span>
+      </button>
+      <button class="region" data-region="ny">
+        <b>New York</b>
+        <span class="desc">Midtown towers, Times Square, brownstones, bridges, Lady Liberty.</span>
       </button>
     </div>
 </div>

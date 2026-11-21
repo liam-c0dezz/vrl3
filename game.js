@@ -3,18 +3,22 @@
 // seasons & weather, audio, UI. World geometry is generated in a worker (gen-worker.js).
 import * as THREE from 'three';
 import { createWorld, mulberry32, makeNoise2D, clamp, lerp, smooth, sstep, wrapAngle, K } from './world.js';
-import { createGen, SIGN_WORDS, STREET_NAMES } from './gen.js';
+import { createGen, SIGN_WORDS, STREET_NAMES_BY_REGION } from './gen.js';
 import { createCars, CARS, PAINT_SWATCHES } from './cars.js';
 
 // ---------------------------------------------------------------------------
 // Params & quality
 // ---------------------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const HASH = (location.hash || '').slice(1).match(/^(ca|sf|fl)(?:-(\d+))?$/);
+const HASH = (location.hash || '').slice(1).match(/^(ca|sf|fl|chi|ny)(?:-(\d+))?$/);
 const SEED = (parseInt(params.get('seed'), 10) || (HASH && parseInt(HASH[2], 10)) || ((Math.random() * 1e9) | 0)) >>> 0;
 const rawRegion = params.get('region') || (HASH && HASH[1]) || 'ca';
-const REGION_ID = rawRegion === 'sf' || rawRegion === 'fl' ? 'sf' : 'ca';
-const CA = REGION_ID === 'ca', SF = !CA;
+const REGION_ID = rawRegion === 'sf' || rawRegion === 'fl' ? 'sf' : rawRegion === 'chi' || rawRegion === 'ny' ? rawRegion : 'ca';
+const CA = REGION_ID === 'ca', SF = !CA, CHI = REGION_ID === 'chi', NY = REGION_ID === 'ny';
+const REGION_ORDER = ['ca', 'sf', 'chi', 'ny'];
+const REGION_NAME = { ca: 'Los Angeles', sf: 'Miami', chi: 'Chicago', ny: 'New York' };
+const nextRegion = () => REGION_ORDER[(REGION_ORDER.indexOf(REGION_ID) + 1) % REGION_ORDER.length];
+const STREET_NAMES = STREET_NAMES_BY_REGION[REGION_ID];
 let AUTOGO = params.get('go') === '1';
 try { if (sessionStorage.getItem('twolanes.go') === '1') { AUTOGO = true; sessionStorage.removeItem('twolanes.go'); } } catch (e) { /* storage unavailable */ }
 const DYNRES = params.get('dynres') !== '0';
@@ -403,15 +407,23 @@ function facadeTextures(style) {
   const win = (i, j) => {
     if (style === 'deco') return [i * cw + cw * 0.3, j * fh + fh * 0.28, cw * 0.4, fh * 0.42];
     if (style === 'condo') return [i * cw + cw * 0.08, j * fh + fh * 0.2, cw * 0.84, fh * 0.6];
+    if (style === 'brick') return [i * cw + cw * 0.24, j * fh + fh * 0.22, cw * 0.52, fh * 0.56];
     if (style === 'tower') return [i * cw + 3, j * fh + fh * 0.16, cw - 6, fh * 0.74];
     return [i * cw + cw * 0.3, j * fh + fh * 0.25, cw * 0.4, fh * 0.48];
   };
   const map = canvasTex(N, N, (g) => {
     g.fillStyle = style === 'tower' ? '#c8ccd0' : '#f2efe8'; g.fillRect(0, 0, N, N);
     speckle(g, 0, 0, N, N, 5000, 0.06, 2);
+    if (style === 'brick') { // running-bond courses: light mortar lines, bricks a touch uneven (the hue comes from vertex colour)
+      for (let y = 0, row = 0; y < N; y += 6, row++) {
+        g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, y, N, 1);
+        for (let x = (row % 2) * 7; x < N; x += 14) { g.fillStyle = `rgba(0,0,0,${(0.03 + r() * 0.1).toFixed(3)})`; g.fillRect(x + 1, y + 1, 12, 5); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(x, y, 1, 6); }
+      }
+    }
     for (const c of cells) {
       const [x, y, w, h] = win(c.i, c.j);
       if (style === 'deco') { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x - 6, y - 7, w + 12, 5); }
+      if (style === 'brick') { g.fillStyle = '#efe8dc'; g.fillRect(x - 5, y - 8, w + 10, 6); g.fillRect(x - 3, y + h + 2, w + 6, 4); } // stone lintel and sill
       if (style === 'house') { g.fillStyle = '#5a8a9a'; g.fillRect(x - 7, y, 6, h); g.fillRect(x + w + 1, y, 6, h); }
       g.fillStyle = '#e8e6e0'; g.fillRect(x - 2, y - 2, w + 4, h + 4);
       const gr = g.createLinearGradient(x, y, x + w, y + h);
@@ -507,6 +519,8 @@ function seasonize(mat, sway) {
         {
           float st = vSea.x, sr = vSea.y; vec3 c = diffuseColor.rgb;
           if (st > 0.5 && st < 1.5) {
+            // winter thins the canopy out to bare twigs instead of turning it into a grey ball
+            if (uSeason.w > 0.01) { float hs = fract(sin(dot(floor(vWP * 2.6), vec3(12.9898, 78.233, 37.719))) * 43758.5453); if (hs < uSeason.w * 0.86) discard; }
             vec3 fall = mix(vec3(0.72, 0.2, 0.03), vec3(0.85, 0.52, 0.06), sr); fall = mix(fall, vec3(0.42, 0.06, 0.04), step(0.82, sr));
             vec3 spring = mix(c * vec3(1.15, 1.3, 1.0), vec3(0.95, 0.55, 0.68), step(0.78, sr) * 0.85);
             vec3 winter = mix(c, vec3(0.3, 0.24, 0.18), 0.55);
@@ -545,7 +559,7 @@ function seasonize(mat, sway) {
   return mat;
 }
 const std = (o) => new THREE.MeshStandardMaterial(o);
-const FAC = { deco: facadeTextures('deco'), condo: facadeTextures('condo'), tower: facadeTextures('tower'), house: facadeTextures('house') };
+const FAC = { deco: facadeTextures('deco'), condo: facadeTextures('condo'), tower: facadeTextures('tower'), house: facadeTextures('house'), brick: facadeTextures('brick') };
 const facadeMat = (t, metal = 0) => std({ map: t.map, roughnessMap: t.rough, emissiveMap: t.lit, emissive: 0xffffff, emissiveIntensity: 0, vertexColors: true, roughness: 1, metalness: metal });
 const MATS = {
   terrain: seasonize(std({ vertexColors: true, roughness: 0.95 }), false),
@@ -562,10 +576,12 @@ const MATS = {
   sidewalk: std({ map: sidewalkTex, roughness: 0.9 }),
   streetsign: std({ map: streetSignTex, roughness: 0.6, side: THREE.DoubleSide }),
   billboard: std({ map: billboardTex, roughness: 0.5, emissive: 0xffffff, emissiveMap: billboardTex, emissiveIntensity: 0 }),
-  facade_deco: facadeMat(FAC.deco), facade_condo: facadeMat(FAC.condo), facade_tower: facadeMat(FAC.tower, 0.55), facade_house: facadeMat(FAC.house),
+  facade_deco: facadeMat(FAC.deco), facade_condo: facadeMat(FAC.condo), facade_tower: facadeMat(FAC.tower, 0.55), facade_house: facadeMat(FAC.house), facade_brick: facadeMat(FAC.brick),
+  chrome: std({ vertexColors: true, metalness: 1, roughness: 0.07 }), // polished steel: the Bean, the Disney Hall sails, the Chrysler crown
+  metal: std({ vertexColors: true, metalness: 0.75, roughness: 0.38 }),
 };
 const NO_SHADOW = new Set(['neon', 'sign', 'paint', 'road', 'road2', 'sidewalk', 'rail', 'pool', 'streetsign', 'billboard']);
-const FACADES = [MATS.facade_deco, MATS.facade_condo, MATS.facade_tower, MATS.facade_house];
+const FACADES = [MATS.facade_deco, MATS.facade_condo, MATS.facade_tower, MATS.facade_house, MATS.facade_brick];
 
 // ---------------------------------------------------------------------------
 // World streaming: requests go to the worker, results become meshes
@@ -729,11 +745,13 @@ function chooseCar(id, paintHex) {
 let WB = 2.8;
 
 // Oncoming traffic: a pool of lower-detail versions of the procedural cars, reused
-const TRAFFIC_COLORS = [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a, 0xb0090f, 0x1f6fff];
+const TRAFFIC_COLORS = NY ? [0xf2b705, 0x2b2d33, 0xf2b705, 0xf4efe4, 0xf2b705, 0xb8bcc4, 0xf2b705, 0x1a2a4a] // yellow cabs
+  : [0xf2c45a, 0x7fd1c7, 0xf4efe4, 0x8fb2f0, 0xe0533a, 0x2b2d33, 0xb8bcc4, 0x5a7a4a, 0xb0090f, 0x1f6fff];
 const traffic = [];
 const makeTrafficCar = (_, i) => {
   const paint = new THREE.MeshPhysicalMaterial({ color: TRAFFIC_COLORS[i % TRAFFIC_COLORS.length], metalness: 0.45, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.08 });
-  const rig = carsLib.buildProcedural(CARS[1 + (i % (CARS.length - 1))], { lod: true, paint });
+  const specs = CARS.filter((c) => !c.model);
+  const rig = carsLib.buildProcedural(specs[(i + 1) % specs.length], { lod: true, paint });
   rig.car.remove(rig.beam, rig.beam.target);
   rig.car.visible = false; scene.add(rig.car);
   return rig.car;
@@ -1037,7 +1055,7 @@ function updateGridCars(dt) {
     for (const o of gridCars) { // and for the car in front on the same street
       if (o === c || o.dx !== c.dx || o.dz !== c.dz) continue;
       const a = (o.x - c.x) * fx + (o.z - c.z) * fz, l = Math.abs((o.x - c.x) * fz - (o.z - c.z) * fx);
-      if (a > 0 && a < 20 && l < 2) want = Math.min(want, Math.max(0, (a - 8) * 0.8));
+      if (a > 0 && a < 20 && Math.abs(o.lo - c.lo) < 1) want = Math.min(want, Math.max(0, (a - 8) * 0.8));
     }
     c.v += clamp(want - c.v, -8 * dt, 2.5 * dt);
     c.x += c.dx * c.v * dt; c.z += c.dz * c.v * dt;
@@ -1051,7 +1069,7 @@ function updateGridCars(dt) {
       c.dx = nx; c.dz = nz; c.nx = c.x + nx * CHUNK; c.nz = c.z + nz * CHUNK;
     }
     // drive on the right: offset from the street's centre line
-    const tx = c.x - c.dz * 2.5, tz = c.z + c.dx * 2.5, k = 1 - Math.exp(-dt * 6);
+    const tx = c.x - c.dz * c.lo, tz = c.z + c.dx * c.lo, k = 1 - Math.exp(-dt * 6); // its lane: inner or outer of the four
     c.rx += (tx - c.rx) * k; c.rz += (tz - c.rz) * k;
     c.h += wrapAngle(Math.atan2(c.dx, c.dz) - c.h) * (1 - Math.exp(-dt * 5));
     c.mesh.position.set(c.rx, groundAt(c.rx, c.rz) + 0.05, c.rz); c.mesh.rotation.y = c.h;
@@ -1072,7 +1090,8 @@ function updateGridCars(dt) {
   const [dx, dz] = dirs[(trafficRng() * dirs.length) | 0];
   const mesh = gridPool.pop(); mesh.visible = true;
   const v0 = 9 + trafficRng() * 4;
-  gridCars.push({ x: ix, z: iz, dx, dz, nx: ix + dx * CHUNK, nz: iz + dz * CHUNK, rx: ix - dz * 2.5, rz: iz + dx * 2.5, h: Math.atan2(dx, dz), v: v0, v0, mesh, hit: false });
+  const lo = trafficRng() < 0.5 ? LANE : K.LANE2;
+  gridCars.push({ lo, x: ix, z: iz, dx, dz, nx: ix + dx * CHUNK, nz: iz + dz * CHUNK, rx: ix - dz * lo, rz: iz + dx * lo, h: Math.atan2(dx, dz), v: v0, v0, mesh, hit: false });
 }
 
 // ---- pedestrians: instanced people on the sidewalks, crossing at crosswalks on red
@@ -1311,7 +1330,7 @@ function setSeason(i, announce = true) {
 const ENV_MATS = [...Object.values(MATS), ...Object.values(VM), waterMat].filter((m) => 'envMapIntensity' in m);
 function updateSky(dt) {
   const ang = (timeOfDay - 0.25) * Math.PI * 2;
-  sunDir.set(-Math.cos(ang) * 0.8 * (CA ? 1 : -1), Math.sin(ang), 0.5).normalize(); // sets over the Pacific; rises over the Atlantic
+  sunDir.set(-Math.cos(ang) * 0.8 * (CA || NY ? 1 : -1), Math.sin(ang), 0.5).normalize(); // sets over the Pacific / the Hudson; rises over the Atlantic / the lake
   const elev = sunDir.y;
   night = sstep(0.03, -0.16, elev);
   samplePalette(elev);
@@ -1617,7 +1636,9 @@ const radio = {
 // Route map
 // ---------------------------------------------------------------------------
 const mapCv = document.getElementById('map'), mapCtx = mapCv.getContext('2d');
-const MAP_THEME = CA ? { bg: '#f3e2c4', sea: '#5a86c8', ink: '#2a1830', behind: 'rgba(42,24,48,.35)', car: '#ff6b57', grid: 'rgba(42,24,48,.12)' }
+const MAP_THEME = CHI ? { bg: '#e8e8e4', sea: '#5a9ab8', ink: '#1a2230', behind: 'rgba(26,34,48,.35)', car: '#e0403a', grid: 'rgba(26,34,48,.12)' }
+  : NY ? { bg: '#ece8e0', sea: '#4a7aa8', ink: '#1b1d22', behind: 'rgba(27,29,34,.35)', car: '#f2b705', grid: 'rgba(27,29,34,.12)' }
+  : CA ? { bg: '#f3e2c4', sea: '#5a86c8', ink: '#2a1830', behind: 'rgba(42,24,48,.35)', car: '#ff6b57', grid: 'rgba(42,24,48,.12)' }
   : { bg: '#ece6dc', sea: '#3fa7c8', ink: '#1b1d2a', behind: 'rgba(27,29,42,.35)', car: '#ff3d9a', grid: 'rgba(27,29,42,.12)' };
 let mapTimer = 0;
 function drawMap() {
@@ -1680,7 +1701,7 @@ let TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 document.body.classList.toggle('touch', TOUCH);
 const btn = (a) => ui.buttons.querySelector(`[data-act="${a}"]`);
 document.body.classList.add('region-' + REGION_ID);
-ui.region.textContent = CA ? 'California' : 'South Florida';
+ui.region.textContent = REGION_NAME[REGION_ID];
 ui.station.textContent = STATION.name;
 $('seedLabel').textContent = 'SEED ' + String(SEED).padStart(9, '0');
 for (const b of document.querySelectorAll('.region')) b.classList.toggle('current', b.dataset.region === REGION_ID);
@@ -1772,7 +1793,7 @@ ui.buttons.addEventListener('click', (e) => {
   e.stopPropagation();
   ({ chase: () => { setMenu(false); setChase(!chase.on); }, resume: () => setMenu(false), auto: () => setAuto(!autoDrive), cam: () => setCam(camMode + 1), time: nextTime, look: () => setLook(settings.look + 1), season: () => setSeason(seasonIdx + 1),
      photo: () => { setMenu(false); setPhoto(true); }, radio: () => setRadio(!radio.on), sound: () => setSound(!audio.on), map: () => setMap(!settings.map),
-     reset: () => { setMenu(false); returnToRoad(); toast('back on the road'); }, garage: () => { setMenu(false); setGarage(true); }, region: () => gotoRegion(CA ? 'sf' : 'ca'), new: newRoad, help: toggleHelp })[a]();
+     reset: () => { setMenu(false); returnToRoad(); toast('back on the road'); }, garage: () => { setMenu(false); setGarage(true); }, region: () => gotoRegion(nextRegion()), new: newRoad, help: toggleHelp })[a]();
   e.target.blur();
 });
 ui.buttons.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1802,7 +1823,7 @@ addEventListener('pointerdown', wakeAudio);
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'hand' };
 addEventListener('keydown', (e) => {
   wakeAudio();
-  if (!started) { if (e.code === 'Digit1') gotoRegion('ca'); else if (e.code === 'Digit2') gotoRegion('sf'); else start(); return; }
+  if (!started) { const d = ['Digit1', 'Digit2', 'Digit3', 'Digit4'].indexOf(e.code); if (d >= 0) gotoRegion(REGION_ORDER[d]); else start(); return; }
   const k = KEYMAP[e.code];
   if (k && !photo.on) { input[k] = true; e.preventDefault(); if (k === 'hand' && autoDrive) setAuto(false); return; }
   if (e.repeat) return;
@@ -1827,14 +1848,15 @@ addEventListener('keydown', (e) => {
     case 'KeyF': setPhoto(true); break;
     case 'KeyQ': setRadio(!radio.on); toast(radio.on ? STATION.name : 'radio off'); break;
     case 'KeyV': if (e.shiftKey) { setSound(!audio.on); toast(audio.on ? 'sound on' : 'muted'); } else setGarage(!garageOpen); break;
-    case 'KeyM': setMap(!settings.map); break;
+    case 'KeyM': setMenu(!menuOpen); break;
+    case 'KeyB': setMap(!settings.map); break;
     case 'KeyL': cycleHeadlights(); break;
     case 'KeyK': setChase(!chase.on); break;
     case 'KeyJ': audio.horn(); break;
     case 'KeyH': toggleHelp(); break;
     case 'KeyU': toggleUI(); break;
     case 'KeyN': newRoad(); break;
-    case 'KeyG': gotoRegion(CA ? 'sf' : 'ca'); break;
+    case 'KeyG': gotoRegion(nextRegion()); break;
     case 'KeyP': togglePause(); break;
     case 'Escape': setMenu(!menuOpen); break;
   }
@@ -1895,9 +1917,20 @@ canvas.addEventListener('wheel', (e) => { if (photo.on) { photo.dist = clamp(pho
 addEventListener('resize', resize);
 
 let lastPlace = '', placeTimer = 0;
-const BASE_LL = CA ? [34.0195, -118.4912] : [25.7907, -80.13];
-const PLACE = CA ? { downtown: 'Downtown LA', beach: 'LA beach cities', resid: 'Los Angeles', coast: 'Pacific coast' }
-  : { downtown: 'Downtown', deco: 'Art deco strip', resid: 'South Florida', causeway: 'Causeway' };
+const BASE_LL = { ca: [34.0195, -118.4912], sf: [25.7907, -80.13], chi: [41.8781, -87.6298], ny: [40.7484, -73.9857] }[REGION_ID];
+const PLACE = {
+  ca: { downtown: 'Downtown LA', beach: 'LA beach cities', resid: 'Los Angeles', coast: 'Pacific coast' },
+  sf: { downtown: 'Downtown Miami', deco: 'Art deco strip', resid: 'Miami', causeway: 'Causeway' },
+  chi: { downtown: 'The Loop', resid: 'Chicago neighbourhoods', park: 'Grant Park' },
+  ny: { downtown: 'Midtown Manhattan', resid: 'Brownstone blocks', park: 'Central Park', causeway: 'Over the river' },
+}[REGION_ID];
+const LANDMARK_NAME = {
+  usbank: 'U.S. Bank Tower', disney: 'Walt Disney Concert Hall', capitol: 'Capitol Records Building', griffith: 'Griffith Observatory', theme: 'LAX Theme Building',
+  hollywood: 'Hollywood Sign', pier: 'Santa Monica Pier', freedom: 'Freedom Tower', atlantis: 'The Atlantis', panorama: 'Panorama Tower', miamitower: 'Miami Tower',
+  colony: 'Ocean Drive', lifeguard: 'South Beach', willis: 'Willis Tower', bean: 'Cloud Gate · Millennium Park', buckingham: 'Buckingham Fountain', hancock: '875 North Michigan',
+  marina: 'Marina City', wrigley: 'Wrigley Building', navypier: 'Navy Pier', esb: 'Empire State Building', flatiron: 'Flatiron Building', timessq: 'Times Square',
+  chrysler: 'Chrysler Building', wtc: 'One World Trade Center', liberty: 'Statue of Liberty',
+};
 const fmtCoord = (v, pos, neg) => Math.abs(v).toFixed(4) + '°' + (v >= 0 ? pos : neg);
 function updateHud() {
   ui.spd.textContent = String(Math.round(Math.hypot(car.vx, car.vz) * 2.23694));
@@ -1908,7 +1941,8 @@ function updateHud() {
   const mins = Math.floor(timeOfDay * 24 * 60);
   ui.clock.textContent = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
   ui.seasonName.textContent = SEASONS[seasonIdx] + (rain > 0.3 ? ' · rain' : '');
-  const place = PLACE[world.districtAt(car.z)] || (CA ? 'California' : 'South Florida');
+  const near = world.landmarks().find((l) => Math.abs(l.s - car.s) < 140 && LANDMARK_NAME[l.id]);
+  const place = near ? LANDMARK_NAME[near.id] : PLACE[world.districtAt(car.z)] || REGION_NAME[REGION_ID];
   if (place !== lastPlace) { lastPlace = place; ui.region.textContent = place; ui.place.classList.remove('hidden'); clearTimeout(placeTimer); placeTimer = setTimeout(() => ui.place.classList.add('hidden'), 4000); }
 }
 
@@ -1934,7 +1968,8 @@ function renderFrame() {
 }
 // Loading screen: rotating tips while the world builds, then three postcards shot in the real world.
 const TIPS = ['Press K to start a police chase.', 'V opens the garage: ten cars to choose from.', 'R puts you back on the road.', 'Shift+Z lets the seasons cycle on their own.',
-  'F opens photo mode.', 'Space is the handbrake. Slide it.', 'Side streets are open: turn off the main road and explore.', 'T changes the time of day.'];
+  'F opens photo mode.', 'Space is the handbrake. Slide it.', 'Side streets are open: turn off the main road and explore.', 'T changes the time of day.',
+  'M opens the menu, B shows the map.', 'G switches city: Los Angeles, Miami, Chicago, New York.', 'Landmarks are named as you pass them.'];
 let tipIdx = Math.floor(Math.random() * TIPS.length);
 const showTip = () => { const el = $('tip'); el.style.opacity = 0; setTimeout(() => { el.textContent = TIPS[tipIdx++ % TIPS.length]; el.style.opacity = 0.85; }, 400); };
 showTip();
@@ -2026,7 +2061,7 @@ requestAnimationFrame(frame);
 // Hooks for the automated tests (tests/smoke.cjs)
 window.__game = {
   car, road, chunks, segments, traffic, gridCars, peds, stats, setAuto, SEED, REGION_ID, ROAD_EDGE, world,
-  isReady: () => ready, start, returnToRoad, setGarage, CARS, setChase, signalState, chaseState: () => chase, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
+  isReady: () => ready, start, returnToRoad, setGarage, CARS, chooseCar, photo, setChase, signalState, chaseState: () => chase, setSeason: (i) => setSeason(i, false), setWeather: (v) => { weatherOverride = v; },
   setTime: (t) => { timeOfDay = timeTarget = t; }, setCam, setLook, setPhoto, setMap,
   state: () => ({ pedsDown, pedsFallen: peds.list.filter((p) => p.fall).length, chase: chase.on, cops: chase.cops.length, copDist: chase.minD, peds: peds.body.count, traffic: traffic.length, gridCars: gridCars.length, car: carSpec.id, garage: garageOpen, heroReady, autoDrive, camMode, look: settings.look, photo: photo.on, map: settings.map, paused, started, prScale, cruise, steer: car.steer, axis: input.axis, season: seasonIdx, rain, worker: !!workerReady, fallback: !!fallbackGen, pending: pending.size }),
 };

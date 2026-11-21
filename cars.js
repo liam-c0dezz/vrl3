@@ -1,4 +1,4 @@
-// The car collection: one detailed glTF model (the hero) plus nine original procedural supercars.
+// The car collection: nine original procedural supercars (four lofted Italian-style designs) plus one detailed glTF concept.
 // No real brands, badges or replicas. Every car exposes the same rig: { car, wheels, beam, R, camH, wheelBase, track }.
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from './vendor/jsm/libs/meshopt_decoder.module.js';
@@ -6,8 +6,27 @@ import { toCreasedNormals } from './vendor/jsm/utils/BufferGeometryUtils.js';
 
 // vmax in m/s, acc in m/s², grip = lateral g budget (m/s²), sound = [base Hz, range Hz, wave]
 export const CARS = [
-  { id: 'rosso', name: 'Rosso Dodici', klass: 'Mid-engine V12 · Italian-style', model: 'assets/cars/hero.glb', color: 0xb0090f,
-    vmax: 72, acc: 9.6, grip: 11, sound: [46, 96, 'sawtooth'], camH: 1.08, credit: 'Concept car model by Eric Chadwick (CC-BY 4.0), from a public-domain original' },
+  // Two families of original designs in the Italian supercar idiom (no real names, badges or replicas):
+  // flowing 'curvy' front-engined and mid-engined berlinettas, and faceted 'angular' V12 wedges.
+  { id: 'rosso', name: 'Rosso Dodici', klass: 'Front-mid V12 berlinetta · Italian-style', color: 0xb0090f, vmax: 75, acc: 10, grip: 11.5, sound: [46, 100, 'sawtooth'], camH: 1.06,
+    loft: 'curvy', L: 4.66, W: 1.99, wb: 2.72, track: 0.85, R: 0.36, Wd: 0.31, clr: 0.12, rim: 'fivey', wing: 'lip',
+    body: [[-2.33, 0.70, 0.6, 0.72, 0.74], [-2.24, 0.86, 0.64, 0.8, 0.84], [-2.0, 0.95, 0.65, 0.87, 0.96], [-1.36, 0.99, 0.64, 0.92, 1.05], [-0.7, 0.94, 0.6, 0.93, 0.97],
+      [0.0, 0.91, 0.58, 0.86, 0.88], [0.7, 0.92, 0.57, 0.78, 0.84], [1.36, 0.965, 0.56, 0.71, 0.86], [1.9, 0.93, 0.52, 0.63, 0.75], [2.2, 0.83, 0.44, 0.53, 0.59], [2.33, 0.64, 0.36, 0.44, 0.46]],
+    cabin: [[-1.95, 0.6, 0.48, 0.9], [-1.3, 0.69, 0.52, 1.1], [-0.55, 0.74, 0.56, 1.23], [0.0, 0.76, 0.56, 1.25], [0.4, 0.76, 0.55, 1.17], [0.9, 0.76, 0.5, 0.86]] },
+  { id: 'saetta', name: 'Saetta LP12', klass: 'V12 wedge · scissor doors', color: 0x4fa832, vmax: 78, acc: 10.8, grip: 12, sound: [50, 112, 'sawtooth'], camH: 1.0,
+    loft: 'angular', L: 4.8, W: 2.03, wb: 2.7, track: 0.87, R: 0.37, Wd: 0.34, clr: 0.11, rim: 'ytwin', wing: 'none', louvres: true,
+    body: [[-2.4, 0.9, 0.6, 0.84, 0.9], [-2.26, 0.99, 0.63, 0.88, 0.97], [-1.35, 1.015, 0.64, 0.9, 1.0], [-0.6, 0.96, 0.6, 0.9, 0.95], [0.3, 0.92, 0.56, 0.79, 0.83],
+      [1.35, 0.96, 0.55, 0.67, 0.79], [2.0, 0.92, 0.45, 0.55, 0.61], [2.4, 0.8, 0.29, 0.37, 0.39]],
+    cabin: [[-1.75, 0.6, 0.44, 0.9], [-0.95, 0.68, 0.48, 1.05], [-0.15, 0.72, 0.5, 1.13], [0.45, 0.74, 0.48, 1.06], [1.3, 0.76, 0.42, 0.8]] },
+  { id: 'spider', name: 'Rosso Spider', klass: 'Mid-engine V8 spider · Italian-style', color: 0xf2c430, vmax: 72, acc: 10.2, grip: 11.8, sound: [56, 118, 'sawtooth'], camH: 1.02,
+    loft: 'curvy', open: true, screenZ: 0.95, L: 4.6, W: 1.98, wb: 2.65, track: 0.85, R: 0.355, Wd: 0.3, clr: 0.11, rim: 'fivey', wing: 'lip',
+    body: [[-2.3, 0.72, 0.64, 0.8, 0.82], [-2.2, 0.88, 0.67, 0.88, 0.92], [-1.9, 0.96, 0.66, 0.92, 1.0], [-1.32, 0.99, 0.64, 0.93, 1.05], [-0.6, 0.95, 0.6, 0.9, 0.98],
+      [0.2, 0.92, 0.57, 0.8, 0.86], [0.9, 0.92, 0.56, 0.74, 0.82], [1.32, 0.95, 0.55, 0.69, 0.84], [1.85, 0.92, 0.5, 0.6, 0.72], [2.15, 0.82, 0.42, 0.5, 0.56], [2.3, 0.62, 0.34, 0.42, 0.44]] },
+  { id: 'furia', name: 'Furia V10', klass: 'V10 wedge · track pack', color: 0xff7a00, vmax: 74, acc: 10.6, grip: 12.8, sound: [60, 130, 'sawtooth'], camH: 1.0,
+    loft: 'angular', L: 4.55, W: 1.95, wb: 2.62, track: 0.84, R: 0.355, Wd: 0.32, clr: 0.11, rim: 'ytwin', wing: 'fixed', louvres: true, roofBlack: true,
+    body: [[-2.27, 0.86, 0.6, 0.84, 0.88], [-2.14, 0.95, 0.63, 0.88, 0.95], [-1.31, 0.975, 0.63, 0.9, 0.98], [-0.6, 0.93, 0.59, 0.9, 0.94], [0.3, 0.89, 0.56, 0.79, 0.82],
+      [1.31, 0.93, 0.54, 0.67, 0.78], [1.9, 0.89, 0.45, 0.55, 0.6], [2.27, 0.77, 0.3, 0.37, 0.39]],
+    cabin: [[-1.65, 0.58, 0.42, 0.9], [-0.9, 0.66, 0.46, 1.05], [-0.15, 0.7, 0.48, 1.12], [0.45, 0.72, 0.46, 1.05], [1.25, 0.74, 0.4, 0.79]] },
   { id: 'apex', name: 'Apex HX', klass: 'Hypercar', color: 0x1f6fff, vmax: 82, acc: 11.5, grip: 12.5, sound: [52, 120, 'sawtooth'], camH: 1.0,
     L: 4.6, W: 2.02, wb: 2.75, track: 0.92, R: 0.36, Wd: 0.34, clr: 0.22,
     top: [[-2.3, 0.5], [-2.36, 0.88], [-2.0, 0.96], [-1.2, 0.98], [0.9, 0.9], [2.15, 0.62], [2.32, 0.42]],
@@ -23,35 +42,18 @@ export const CARS = [
     top: [[-2.4, 0.5], [-2.42, 0.82], [-2.1, 0.9], [-1.2, 0.95], [0.4, 0.95], [1.9, 0.86], [2.38, 0.66], [2.42, 0.45]],
     glass: [[-1.5, 0.93], [-0.7, 1.24], [0.15, 1.27], [0.75, 0.94]], roof: [[-0.8, 1.21], [-0.7, 1.26], [0.15, 1.29], [0.22, 1.25]],
     wing: 'duck', lights: 'quad', exhaust: 'quad', rim: 'mesh', chrome: true },
-  { id: 'spyder', name: 'Brezza Spyder', klass: 'Open roadster', color: 0xf2c45a, vmax: 62, acc: 8.6, grip: 10.5, sound: [48, 90, 'sawtooth'], camH: 1.05,
-    L: 4.2, W: 1.88, wb: 2.5, track: 0.86, R: 0.34, Wd: 0.28, clr: 0.24, open: true,
-    top: [[-2.1, 0.5], [-2.14, 0.84], [-1.8, 0.93], [-0.9, 0.95], [0.35, 0.92], [1.85, 0.78], [2.12, 0.6], [2.16, 0.42]],
-    wing: 'none', lights: 'round', rollbars: true, exhaust: 'twin', rim: 'classic' },
   { id: 'circuit', name: 'Circuit R', klass: 'Track car', color: 0xff6a00, vmax: 70, acc: 10.4, grip: 13.5, sound: [58, 130, 'square'], camH: 0.98,
     L: 4.55, W: 2.05, wb: 2.7, track: 0.95, R: 0.35, Wd: 0.36, clr: 0.18,
     top: [[-2.3, 0.45], [-2.32, 0.86], [-2.0, 0.92], [-1.0, 0.95], [0.8, 0.86], [2.2, 0.55], [2.3, 0.36]],
     glass: [[-1.0, 0.93], [-0.45, 1.13], [0.3, 1.15], [0.9, 0.86]], roof: [[-0.5, 1.1], [-0.45, 1.14], [0.3, 1.17], [0.34, 1.13]],
     wing: 'gt', lights: 'strip', intakes: true, splitter: true, canards: true, diffuser: true, exhaust: 'side', rim: 'center', stripes: true },
-  { id: 'liberty', name: 'Liberty V8', klass: 'American muscle super', color: 0x2b2d33, vmax: 66, acc: 9.8, grip: 9, sound: [32, 70, 'sawtooth'], camH: 1.18,
-    L: 4.7, W: 1.98, wb: 2.8, track: 0.92, R: 0.37, Wd: 0.34, clr: 0.25,
-    top: [[-2.35, 0.5], [-2.38, 0.9], [-2.05, 0.98], [-1.1, 1.0], [0.3, 0.99], [2.2, 0.86], [2.35, 0.55]],
-    glass: [[-1.2, 0.98], [-0.6, 1.27], [0.2, 1.29], [0.75, 0.98]], roof: [[-0.66, 1.25], [-0.6, 1.28], [0.2, 1.31], [0.24, 1.27]],
-    wing: 'duck', lights: 'quad', scoop: true, stripes: true, exhaust: 'quad', rim: 'star' },
   { id: 'volt', name: 'Volta E', klass: 'Electric hyper', color: 0xe8ecef, vmax: 76, acc: 13, grip: 11.5, sound: [120, 260, 'sine'], camH: 1.06,
     L: 4.65, W: 1.98, wb: 2.85, track: 0.9, R: 0.36, Wd: 0.31, clr: 0.22,
     top: [[-2.32, 0.5], [-2.34, 0.86], [-2.0, 0.97], [-1.1, 1.0], [0.8, 0.92], [2.1, 0.66], [2.32, 0.45]],
     glass: [[-1.6, 0.97], [-0.8, 1.2], [0.3, 1.22], [1.0, 0.91]], roof: [[-0.9, 1.18], [-0.8, 1.21], [0.3, 1.24], [0.36, 1.2]],
     wing: 'none', lights: 'bar', diffuser: true, exhaust: 'none', rim: 'aero' },
-  { id: 'targa', name: 'Sole Targa', klass: 'Targa', color: 0x8fd3c7, vmax: 64, acc: 8.7, grip: 10, sound: [44, 88, 'sawtooth'], camH: 1.1,
-    L: 4.4, W: 1.9, wb: 2.6, track: 0.88, R: 0.35, Wd: 0.3, clr: 0.25, targa: true,
-    top: [[-2.2, 0.5], [-2.22, 0.86], [-1.9, 0.95], [-1.0, 0.98], [0.4, 0.96], [1.95, 0.8], [2.2, 0.6], [2.24, 0.44]],
-    glass: [[-1.25, 0.96], [-0.75, 1.2], [0.3, 1.22], [0.95, 0.95]], roof: [[-0.85, 1.18], [-0.75, 1.21], [-0.35, 1.22], [-0.32, 1.18]],
-    wing: 'lip', lights: 'round', exhaust: 'twin', rim: 'classic' },
-  { id: 'brake', name: 'Viaggio Shooting Brake', klass: 'Shooting brake', color: 0x7a1f3d, vmax: 64, acc: 8.2, grip: 9.5, sound: [36, 78, 'sawtooth'], camH: 1.16,
-    L: 4.85, W: 1.96, wb: 2.92, track: 0.9, R: 0.37, Wd: 0.3, clr: 0.25,
-    top: [[-2.42, 0.5], [-2.44, 0.92], [-2.3, 0.98], [-1.0, 0.98], [0.4, 0.96], [1.95, 0.86], [2.4, 0.64], [2.44, 0.45]],
-    glass: [[-2.3, 0.97], [-2.22, 1.26], [0.15, 1.3], [0.85, 0.96]], roof: [[-2.28, 1.24], [-2.2, 1.29], [0.15, 1.33], [0.22, 1.28]],
-    wing: 'none', lights: 'quad', exhaust: 'quad', rim: 'mesh', chrome: true },
+  { id: 'aria', name: 'Aria Concept', klass: 'Design study · detailed model', model: 'assets/cars/hero.glb', color: 0xb8bcc4,
+    vmax: 70, acc: 9.4, grip: 11, sound: [46, 96, 'sawtooth'], camH: 1.08, credit: 'Concept car model by Eric Chadwick (CC-BY 4.0), from a public-domain original' },
 ];
 export const PAINT_SWATCHES = [0xb0090f, 0xf4f1ec, 0x14161a, 0x1f6fff, 0xf2c45a, 0x2f8f6a, 0xff6a00, 0x8fd3c7, 0x7a1f3d, 0xb8bcc4];
 
@@ -62,6 +64,8 @@ export function createCars(THREE, VM) {
   const caliper = std({ color: 0xe0b020, roughness: 0.4, metalness: 0.2 });
   const disc = std({ color: 0x7a7c80, roughness: 0.35, metalness: 0.9 });
   const stripeMat = std({ color: 0xf4f1ec, roughness: 0.3 });
+  const darkRim = std({ color: 0x2a2c30, metalness: 0.85, roughness: 0.3 });
+  const silverRim = std({ color: 0x8a8e94, metalness: 0.9, roughness: 0.28 });
 
   // Catmull-Rom through the profile points, so silhouettes curve instead of kinking
   function smoothPts(pts, per = 6) {
@@ -117,13 +121,18 @@ export function createCars(THREE, VM) {
     const tyre = new THREE.Mesh(new THREE.LatheGeometry(prof, lod ? 12 : 30).rotateZ(Math.PI / 2), VM.rubber); tyre.castShadow = true; grp.add(tyre);
     grp.add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.66, R * 0.66, Wd * 0.7, lod ? 10 : 28).rotateZ(Math.PI / 2), black));
     if (lod) return grp;
-    const face = rim === 'aero' ? VM.white : VM.chrome;
-    const nSp = rim === 'mesh' ? 12 : rim === 'turbine' ? 9 : rim === 'center' ? 6 : 5;
+    const face = rim === 'aero' ? VM.white : rim === 'ytwin' ? darkRim : rim === 'fivey' ? silverRim : VM.chrome;
+    const nSp = rim === 'mesh' ? 12 : rim === 'turbine' ? 9 : rim === 'center' ? 6 : rim === 'ytwin' ? 6 : 5;
     for (let k = 0; k < nSp; k++) {
       const sp = new THREE.Mesh(new THREE.BoxGeometry(Wd * 0.16, R * (rim === 'mesh' ? 0.05 : 0.11), R * 1.24), face);
       sp.position.x = Wd * 0.3; sp.rotation.x = (k / nSp) * Math.PI * 2;
       if (rim === 'turbine') sp.rotation.y = 0.35;
       grp.add(sp);
+      if (rim === 'fivey' || rim === 'ytwin') for (const dv of [-0.16, 0.16]) { // split spokes
+        const s2 = new THREE.Mesh(new THREE.BoxGeometry(Wd * 0.12, R * 0.07, R * 0.36), face);
+        const a = (k / nSp) * Math.PI * 2 + dv;
+        const piv = new THREE.Group(); piv.rotation.x = a; s2.position.set(Wd * 0.3, 0, R * 0.46); piv.add(s2); grp.add(piv);
+      }
     }
     if (rim === 'aero') { const d = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.6, R * 0.6, 0.02, 28).rotateZ(Math.PI / 2), VM.white); d.position.x = Wd * 0.36; grp.add(d); }
     const lip = new THREE.Mesh(new THREE.TorusGeometry(R * 0.64, 0.012, 6, 30).rotateY(Math.PI / 2), VM.chrome); lip.position.x = Wd * 0.34; grp.add(lip);
@@ -134,6 +143,7 @@ export function createCars(THREE, VM) {
 
   // ---- procedural supercar
   function buildProcedural(spec, opts = {}) {
+    if (spec.loft) return buildLoft(spec, opts);
     const lod = !!opts.lod;
     const paint = opts.paint || VM.paint;
     const carG = new THREE.Group(), body = new THREE.Group(); carG.add(body);
@@ -231,6 +241,223 @@ export function createCars(THREE, VM) {
     beam.position.set(0, 0.75, 2.1); beam.target.position.set(0, -1.2, 24);
     carG.add(beam, beam.target);
     return { car: carG, body, wheels, beam, R, camH: spec.camH || 1.1, wheelBase: wb, track, spec };
+  }
+
+  // ---- lofted supercars: the body is swept through cross-sections, like a clay model ----------------
+  // Keyframes along the car (rear → front) give each section's half-width, shoulder, centreline and
+  // fender heights; wheel arches are cut by lifting the sill around each wheel. 'curvy' sections are
+  // superellipses (flowing Italian berlinetta); 'angular' sections are faceted polygons (wedge supercar).
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function keyAt(keys, z, linear) { // interpolate keyframe rows [z, ...values] at z
+    if (z <= keys[0][0]) return keys[0].slice(1);
+    const n = keys.length;
+    if (z >= keys[n - 1][0]) return keys[n - 1].slice(1);
+    let i = 0; while (keys[i + 1][0] < z) i++;
+    const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(n - 1, i + 2)];
+    const t = (z - k1[0]) / (k2[0] - k1[0]);
+    return k1.slice(1).map((_, j) => {
+      const p0 = k0[j + 1], p1 = k1[j + 1], p2 = k2[j + 1], p3 = k3[j + 1];
+      if (linear) return p1 + (p2 - p1) * t;
+      const t2 = t * t, t3 = t2 * t; // Catmull-Rom
+      return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+    });
+  }
+  function bodySection(spec, z) {
+    const ang = spec.loft === 'angular', { R, clr, wb, track, Wd } = spec;
+    let [hw, sh, top, fen] = keyAt(spec.body, z, ang);
+    const ar = R + 0.075, xi = track - Wd / 2 - 0.07;
+    let aY = clr;
+    for (const wz of [wb / 2, -wb / 2]) {
+      const d = Math.abs(z - wz);
+      if (d < ar) { aY = Math.max(aY, R + Math.sqrt(ar * ar - d * d)); hw += 0.025 * Math.cos((d / ar) * Math.PI / 2); }
+      else if (d < ar + 0.12) aY = Math.max(aY, clr + (R + 0.02 - clr) * (1 - (d - ar) / 0.12) * 0.25);
+    }
+    sh = Math.max(sh, aY + 0.06); fen = Math.max(fen, sh + 0.06); top = Math.max(top, clr + 0.12);
+    const yb = Math.max(clr + 0.05, aY), xb = hw * 0.955;
+    const pts = [[0, clr], [xi, clr], [xi, yb], [xb, yb]];
+    if (ang) {
+      pts.push([hw, yb + (sh - yb) * 0.42], [hw * 0.985, sh], [hw * 0.9, fen], [hw * 0.64, fen - (fen - top) * 0.2], [hw * 0.34, top + (fen - top) * 0.22], [0, top]);
+    } else {
+      for (let j = 1; j <= 4; j++) { const t = (j / 4) * Math.PI / 2; pts.push([xb + (hw - xb) * Math.sin(t), yb + (sh - yb) * (1 - Math.cos(t))]); }
+      const n = 2.5, NU = 14;
+      for (let j = 1; j <= NU; j++) {
+        const th = (j / NU) * Math.PI / 2, u = Math.pow(Math.cos(th), 2 / n);
+        const crown = top + (fen - top) * ss(0.12, 0.74, u);
+        pts.push([hw * u, sh + (crown - sh) * Math.pow(Math.sin(th), 2 / n)]);
+      }
+    }
+    return { pts, hw, sh, top, fen, aY };
+  }
+  // y of the upper body surface at lateral offset x (for seating details on the skin)
+  function topY(spec, z, x) {
+    const { pts } = bodySection(spec, z), ax = Math.abs(x);
+    for (let i = pts.length - 1; i > 4; i--) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i - 1];
+      if (ax >= x0 && ax <= x1) return y0 + (y1 - y0) * ((ax - x0) / ((x1 - x0) || 1));
+    }
+    return pts[pts.length - 1][1];
+  }
+  // sweep rings of half-profile points into a closed, capped tube
+  function sweep(rings, zs, flat) {
+    const n = rings[0].length, loop = 2 * n - 2, pos = [], idx = [];
+    for (let k = 0; k < rings.length; k++) {
+      const r = rings[k], z = zs[k];
+      for (let i = 0; i < n; i++) pos.push(r[i][0], r[i][1], z);
+      for (let i = n - 2; i >= 1; i--) pos.push(-r[i][0], r[i][1], z);
+    }
+    for (let k = 0; k < rings.length - 1; k++) for (let i = 0; i < loop; i++) {
+      const a = k * loop + i, b = k * loop + ((i + 1) % loop), c = a + loop, d = b + loop;
+      idx.push(a, b, d, a, d, c);
+    }
+    for (const [k, dir] of [[0, -1], [rings.length - 1, 1]]) { // end caps: a fan from the section's centre
+      const base = k * loop, ci = pos.length / 3;
+      let cy = 0; for (let i = 0; i < loop; i++) cy += pos[(base + i) * 3 + 1];
+      pos.push(0, cy / loop, zs[k]);
+      for (let i = 0; i < loop; i++) { const a = base + i, b = base + ((i + 1) % loop); if (dir > 0) idx.push(ci, a, b); else idx.push(ci, b, a); }
+    }
+    let g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+    if (flat) g = g.toNonIndexed();
+    g.computeVertexNormals();
+    return g;
+  }
+  function loftBody(spec, lod) {
+    const z0 = spec.body[0][0], z1 = spec.body[spec.body.length - 1][0], N = lod ? 26 : 120;
+    const zs = [], rings = [];
+    for (let k = 0; k <= N; k++) { const z = z0 + (z1 - z0) * (k / N); zs.push(z); rings.push(bodySection(spec, z).pts); }
+    return sweep(rings, zs, spec.loft === 'angular');
+  }
+  function loftCabin(spec, lod, roofOnly = false) {
+    const keys = spec.cabin, ang = spec.loft === 'angular', N = lod ? 10 : 44;
+    // the painted roof stops short of the windscreen and the rear glass
+    const z0 = roofOnly ? keys[1][0] : keys[0][0], z1 = roofOnly ? keys[keys.length - 2][0] : keys[keys.length - 1][0];
+    const zs = [], rings = [];
+    for (let k = 0; k <= N; k++) {
+      const z = z0 + (z1 - z0) * (k / N);
+      const [bw, tw, roof] = keyAt(keys, z, ang);
+      const belt = topY(spec, z, bw) - 0.02, H = Math.max(0.012, roof - belt), rc = Math.min(0.09, H * 0.45);
+      const pts = [];
+      if (!roofOnly) {
+        pts.push([0, belt - 0.05], [bw * 0.9, belt - 0.05], [bw, belt]);
+        if (ang) pts.push([tw, belt + H * 0.92]);
+        else for (let j = 1; j <= 3; j++) { const t = j / 4; pts.push([bw + (tw - bw) * t, belt + (H - rc) * t]); }
+      }
+      const NR = ang ? 2 : 6;
+      for (let j = 0; j <= NR; j++) {
+        const th = (j / NR) * Math.PI / 2;
+        const x = tw * (roofOnly ? 0.86 : 1) * Math.pow(Math.cos(th), ang ? 1 : 0.8), y = belt + H - rc + rc * Math.pow(Math.sin(th), ang ? 1 : 0.8);
+        pts.push([x, y + (roofOnly ? 0.012 : 0)]);
+      }
+      if (roofOnly) pts.unshift([tw * 0.86, belt + H - rc - 0.02]);
+      zs.push(z); rings.push(pts);
+    }
+    return sweep(rings, zs, ang);
+  }
+
+  function buildLoft(spec, opts = {}) {
+    const lod = !!opts.lod, paint = opts.paint || VM.paint, ang = spec.loft === 'angular';
+    const carG = new THREE.Group(), body = new THREE.Group(); carG.add(body);
+    const add = (geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz);
+      m.castShadow = !lod; m.receiveShadow = !lod; body.add(m); return m;
+    };
+    const { L, W, wb, track, R, Wd, clr } = spec;
+    const zr = spec.body[0][0], zf = spec.body[spec.body.length - 1][0], fz = wb / 2, rz = -wb / 2;
+    add(loftBody(spec, lod), paint);
+    if (!spec.open) { add(loftCabin(spec, lod), VM.glass); add(loftCabin(spec, lod, true), spec.roofBlack ? black : paint); }
+    add(new THREE.BoxGeometry(W - 0.34, 0.05, L * 0.86), black, 0, clr + 0.03, 0);
+    // dark wheel-well liners so you never see through the arches
+    for (const z of [fz, rz]) for (const x of [1, -1]) add(new THREE.CylinderGeometry(R + 0.07, R + 0.07, Wd + 0.1, lod ? 8 : 20, 1, true, 0, Math.PI).rotateZ(Math.PI / 2).rotateX(Math.PI / 2), black, x * track, R, z);
+    const sec = (z) => bodySection(spec, z);
+    if (lod) {
+      for (const x of [1, -1]) { add(new THREE.BoxGeometry(0.34, 0.05, 0.06), VM.head, x * sec(zf - 0.12).hw * 0.62, sec(zf - 0.12).sh + 0.04, zf - 0.1); add(new THREE.BoxGeometry(0.4, 0.05, 0.04), VM.tail, x * sec(zr + 0.06).hw * 0.6, sec(zr + 0.06).sh + 0.08, zr + 0.02); }
+    } else {
+      // headlights
+      for (const x of [1, -1]) {
+        if (ang) { // Y-shaped running lights in an angular black housing
+          const z = zf - 0.34, s = sec(z), hx = s.hw * 0.66, y = topY(spec, z, hx) + 0.005;
+          add(new THREE.BoxGeometry(0.42, 0.02, 0.26), black, x * hx, y, z, -0.28, x * 0.25);
+          const yy = y + 0.012;
+          add(new THREE.BoxGeometry(0.22, 0.015, 0.025), VM.head, x * (hx - 0.05), yy, z + 0.05, -0.28, x * 0.25);
+          add(new THREE.BoxGeometry(0.16, 0.015, 0.025), VM.head, x * (hx + 0.1), yy, z - 0.02, -0.28, x * 0.9);
+          add(new THREE.BoxGeometry(0.16, 0.015, 0.025), VM.head, x * (hx + 0.1), yy, z + 0.1, -0.28, -x * 0.5);
+        } else { // long swept lamps along the front fenders
+          for (let k = 0; k < 3; k++) {
+            const z = zf - 0.2 - k * 0.15, s = sec(z), hx = s.hw * (0.78 - k * 0.04), y = topY(spec, z, hx) + 0.004;
+            const slope = Math.atan2(topY(spec, z + 0.05, hx) - topY(spec, z - 0.05, hx), 0.1);
+            add(new THREE.BoxGeometry(0.2, 0.025, 0.17), black, x * hx, y, z, -slope, x * 0.35);
+            add(new THREE.BoxGeometry(0.16, 0.012, 0.03), VM.head, x * hx, y + 0.014, z + 0.04, -slope, x * 0.35);
+          }
+        }
+      }
+      // tail lights
+      const tz = zr + 0.05, ts = sec(tz + 0.04);
+      if (ang) {
+        add(new THREE.BoxGeometry(ts.hw * 1.6, 0.025, 0.02), VM.tail, 0, ts.sh + 0.1, tz - 0.01);
+        for (const x of [1, -1]) for (const [dx, rot] of [[0, 0.5], [0.12, -0.5], [0.06, Math.PI / 2]]) add(new THREE.BoxGeometry(0.2, 0.025, 0.02), VM.tail, x * (ts.hw * 0.72 + dx), ts.sh + 0.03, tz - 0.012, 0, 0, x * rot);
+      } else {
+        for (const x of [1, -1]) for (const f of [0.52, 0.8]) {
+          add(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 24).rotateX(Math.PI / 2), black, x * ts.hw * f, ts.sh + 0.07, tz - 0.01);
+          add(new THREE.TorusGeometry(0.058, 0.012, 6, 24), VM.tail, x * ts.hw * f, ts.sh + 0.07, tz - 0.04);
+        }
+      }
+      // grille, splitter and diffuser
+      const ns = sec(zf - 0.06);
+      add(new THREE.BoxGeometry(ns.hw * (ang ? 1.5 : 1.1), ang ? 0.12 : 0.1, 0.04), black, 0, clr + 0.14, zf - 0.04);
+      if (ang) for (const x of [1, -1]) add(new THREE.BoxGeometry(0.34, 0.16, 0.04), black, x * ns.hw * 0.7, clr + 0.16, zf - 0.1, 0, x * 0.35, 0);
+      add(new THREE.BoxGeometry(ns.hw * 1.9, 0.025, 0.24), carbon, 0, clr + 0.02, zf - 0.08);
+      for (let k = -3; k <= 3; k++) add(new THREE.BoxGeometry(0.016, 0.09, 0.36), carbon, k * 0.2, clr + 0.02, zr + 0.2);
+      if (ang) add(new THREE.BoxGeometry(ts.hw * 1.72, ts.sh - clr - 0.04, 0.03), black, 0, (ts.sh + clr) / 2 - 0.01, zr + 0.015); // the full-width rear grille
+      else add(new THREE.BoxGeometry(ts.hw * 1.5, 0.16, 0.03), black, 0, clr + 0.1, zr + 0.02);
+      // exhausts
+      if (ang) { for (const x of [-0.09, 0.09]) add(new THREE.CylinderGeometry(0.075, 0.075, 0.16, 6).rotateX(Math.PI / 2).rotateZ(Math.PI / 6), VM.chrome, x, ts.sh - 0.08, zr); }
+      else for (const x of [1, -1]) for (const dx of [0.24, 0.42]) add(new THREE.CylinderGeometry(0.048, 0.048, 0.14, 18).rotateX(Math.PI / 2), VM.chrome, x * dx, clr + 0.16, zr + 0.03);
+      // side intakes / vents and door shut lines
+      for (const x of [1, -1]) {
+        const iz = rz + R + 0.45, is = sec(iz);
+        if (ang) {
+          add(new THREE.BoxGeometry(0.02, 0.2, 0.56), black, x * (is.hw - 0.002), clr + 0.44, iz, -0.36, 0, 0); // the slanted side intake
+          add(new THREE.BoxGeometry(0.02, 0.04, 0.5), carbon, x * (is.hw + 0.006), clr + 0.3, iz - 0.04);
+        } else {
+          const vz = fz - R - 0.2, vs = sec(vz);
+          for (const dy of [0, -0.06]) add(new THREE.BoxGeometry(0.01, 0.025, 0.3), black, x * (vs.hw + 0.002), vs.sh - 0.06 + dy, vz - 0.05, 0.25, 0, 0); // gills behind the front wheel
+        }
+        const dz = 0.15, ds = sec(dz);
+        add(new THREE.BoxGeometry(0.004, ds.sh - clr - 0.12, 0.008), black, x * (ds.hw + 0.002), clr + 0.12 + (ds.sh - clr - 0.12) / 2 - 0.0, 0.92);
+        add(new THREE.BoxGeometry(0.004, ds.sh - clr - 0.12, 0.008), black, x * (ds.hw + 0.002), clr + 0.12 + (ds.sh - clr - 0.12) / 2, -0.55);
+        // mirrors on slim stalks
+        const mz = (spec.cabin ? spec.cabin[spec.cabin.length - 1][0] : 1) - 0.32, my = topY(spec, mz, sec(mz).hw * 0.85) + 0.14;
+        add(new THREE.BoxGeometry(0.03, 0.03, 0.14), black, x * (sec(mz).hw - 0.02), my - 0.06, mz);
+        add(new THREE.BoxGeometry(0.16, 0.09, 0.12), paint, x * (sec(mz).hw + 0.08), my, mz - 0.02);
+      }
+      // engine-cover louvres, spoilers and wings
+      if (spec.louvres) for (let k = 0; k < 6; k++) { const z = zr + 0.55 + k * 0.11; add(new THREE.BoxGeometry(0.9, 0.02, 0.05), black, 0, topY(spec, z, 0) + 0.012, z, -0.15); }
+      if (spec.wing === 'lip') add(new THREE.BoxGeometry(sec(zr + 0.12).hw * 1.6, 0.03, 0.12), paint, 0, topY(spec, zr + 0.1, 0) + 0.03, zr + 0.08, -0.35);
+      if (spec.wing === 'fixed') {
+        const wy = topY(spec, zr + 0.3, 0) + 0.32;
+        add(new THREE.BoxGeometry(W - 0.25, 0.035, 0.32), carbon, 0, wy, zr + 0.26, -0.1);
+        for (const x of [0.45, -0.45]) add(new THREE.BoxGeometry(0.03, 0.34, 0.12), carbon, x, wy - 0.16, zr + 0.32);
+        for (const x of [1, -1]) add(new THREE.BoxGeometry(0.02, 0.15, 0.38), carbon, x * (W / 2 - 0.13), wy, zr + 0.26);
+      }
+      if (spec.open) { // spider: windscreen, seats and the two buttresses behind them
+        const wz = spec.screenZ, wsec = sec(wz), wy = topY(spec, wz, 0);
+        add(new THREE.BoxGeometry(wsec.hw * 1.5, 0.36, 0.025), VM.glass, 0, wy + 0.15, wz - 0.1, -0.85);
+        add(new THREE.BoxGeometry(wsec.hw * 1.55, 0.03, 0.03), black, 0, wy + 0.3, wz - 0.24, -0.85);
+        for (const x of [-0.34, 0.34]) { add(new THREE.BoxGeometry(0.48, 0.5, 0.12), VM.seat, x, wy + 0.08, wz - 1.15, -0.2); add(new THREE.BoxGeometry(0.48, 0.12, 0.5), VM.seat, x, wy - 0.18, wz - 0.9); }
+        for (const x of [-0.36, 0.36]) add(new THREE.CapsuleGeometry(0.13, 0.5, 4, 10).rotateX(Math.PI / 2 - 0.25), paint, x, wy + 0.12, wz - 1.55);
+        add(new THREE.BoxGeometry(1.2, 0.04, 1.1), black, 0, wy - 0.22, wz - 0.9);
+      }
+      add(new THREE.BoxGeometry(0.36, 0.085, 0.02), VM.plate, 0, clr + 0.24, zr - 0.005);
+      for (const [x, z] of [[track, fz], [-track, fz], [track, rz], [-track, rz]]) add(new THREE.BoxGeometry(0.06, 0.15, 0.24), caliper, x * 0.9, R + 0.13, z - 0.06);
+    }
+    const wheels = [[track, fz], [-track, fz], [track, rz], [-track, rz]].map(([x, z]) => {
+      const pivot = new THREE.Group(); pivot.position.set(x, R, z);
+      const w = wheel(R, Wd, spec.rim, lod);
+      if (x < 0) w.rotation.y = Math.PI;
+      const spin = new THREE.Group(); spin.add(w); pivot.add(spin); carG.add(pivot);
+      return { pivot, spin, front: z > 0 };
+    });
+    return finish(carG, body, wheels, spec, R, wb, track);
   }
 
   // ---- the glTF hero

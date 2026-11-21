@@ -2,18 +2,26 @@
 // Runs in a Web Worker (gen-worker.js) so building the world never stalls the frame; it only
 // produces typed arrays, which the main thread turns into meshes.
 import { createWorld, mulberry32, clamp, lerp, sstep, smooth, K } from './world.js';
+import { createLandmarks } from './landmarks.js';
 
 // Season shader categories, stored per vertex in aSea.x (aSea.y = a random 0..1).
 export const S = { NONE: 0, DECID: 1, GROUND: 2, PALM: 3, EVER: 4, FLOWER: 5 };
 
 // Facade textures tile 8 window bays × 8 floors; these are a bay's width and a floor's height.
-export const FACADE = { deco: [3.0, 3.4], condo: [3.6, 3.2], tower: [1.6, 3.8], house: [3.0, 3.0] };
-export const STREET_NAMES = ['Ocean Ave', 'Palm St', 'Collins Dr', 'Sunset Blvd', 'Bay Rd', '2nd St', 'Lincoln Rd', 'Vine St', 'Coral Way', 'Pier Ave', 'Main St', 'Alton Rd', 'Mesa Dr', 'Hibiscus Ln', '5th St', 'Harbor Dr'];
+export const FACADE = { deco: [3.0, 3.4], condo: [3.6, 3.2], tower: [1.6, 3.8], house: [3.0, 3.0], brick: [2.4, 3.4] };
+export const STREET_NAMES_BY_REGION = {
+  ca: ['Sunset Blvd', 'Wilshire Blvd', 'Vine St', 'Hollywood Blvd', 'Figueroa St', 'Melrose Ave', 'Ocean Ave', 'Pico Blvd', 'La Brea Ave', 'Santa Monica Blvd', 'Grand Ave', 'Fairfax Ave', 'Olympic Blvd', 'Main St', 'Venice Blvd', 'Highland Ave'],
+  sf: ['Ocean Dr', 'Collins Ave', 'Lincoln Rd', 'Brickell Ave', 'Biscayne Blvd', 'Alton Rd', 'Washington Ave', 'Coral Way', 'Flagler St', 'Espanola Way', 'Meridian Ave', 'Calle Ocho', 'Bay Rd', '5th St', 'Euclid Ave', 'Michigan Ave'],
+  chi: ['Michigan Ave', 'State St', 'Wacker Dr', 'LaSalle St', 'Lake Shore Dr', 'Randolph St', 'Madison St', 'Clark St', 'Dearborn St', 'Monroe St', 'Wabash Ave', 'Adams St', 'Halsted St', 'Rush St', 'Oak St', 'Division St'],
+  ny: ['5th Ave', 'Broadway', 'Park Ave', 'Madison Ave', 'Lexington Ave', '7th Ave', 'W 42nd St', 'W 34th St', 'Canal St', 'Houston St', 'Bleecker St', 'W 57th St', '6th Ave', 'Wall St', 'Bowery', 'E 14th St'],
+};
+export const STREET_NAMES = STREET_NAMES_BY_REGION.sf;
 export const SIGN_WORDS = ['HOTEL', 'CAFE', 'MOTEL', 'BAR', 'SURF', 'TACOS', 'DELI', 'GELATO', 'BOOKS', 'RECORDS', 'LIQUOR', 'PHARMACY', 'DINER', 'SALON', 'BAKERY', 'SUSHI'];
 
 export function createGen(THREE, seed, region) {
   const W = createWorld(seed, region);
-  const { CA, SF, noise, road } = W;
+  const { CA, SF, MIA, CHI, NY, noise, road } = W;
+  const TEMP = CHI || NY; // four seasons, brick and limestone, street trees instead of palms
   const { ROAD_HALF, ROAD_EDGE, FLAT, STEP, WATER, CHUNK, RES, SEG, BLOCK, SIDEWALK, SETBACK } = K;
   const M4 = new THREE.Matrix4();
   const col = (hex) => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; };
@@ -115,7 +123,19 @@ export function createGen(THREE, seed, region) {
         t.uv[v * 2], t.uv[v * 2 + 1], colors[t.kind[v]], t.sea[v], rnd);
     }
   }
-  const ball = (r, sx = 1, sy = 1, sz = 1, x = 0, y = 0, z = 0, seg = 9) => new THREE.SphereGeometry(r, seg, Math.max(5, (seg * 0.6) | 0)).scale(sx, sy, sz).translate(x, y, z);
+  // Foliage clumps: a lumpy icosphere (each vertex pushed in or out a little) instead of a smooth ball,
+  // so canopies read as leaves rather than grey blobs.
+  const ball = (r, sx = 1, sy = 1, sz = 1, x = 0, y = 0, z = 0, seg = 9) => {
+    const g = new THREE.IcosahedronGeometry(r, seg >= 9 ? 2 : 1), pa = g.attributes.position;
+    const jr = mulberry32((Math.round(r * 1000) * 31 + Math.round(x * 97) * 17 + Math.round(y * 89) * 13 + Math.round(z * 83)) >>> 0), seen = new Map();
+    for (let i = 0; i < pa.count; i++) {
+      const key = `${pa.getX(i).toFixed(3)},${pa.getY(i).toFixed(3)},${pa.getZ(i).toFixed(3)}`;
+      let f = seen.get(key); if (f === undefined) { f = 0.8 + jr() * 0.34; seen.set(key, f); }
+      pa.setXYZ(i, pa.getX(i) * f, pa.getY(i) * f, pa.getZ(i) * f);
+    }
+    g.deleteAttribute('normal');
+    return g.scale(sx, sy, sz).translate(x, y, z);
+  };
   const stick = (r0, r1, h, x = 0, y = 0, z = 0, seg = 8) => new THREE.CylinderGeometry(r1, r0, h, seg).translate(x, y + h / 2, z);
   // A palm frond: a V-folded blade that arches and droops along its length.
   function frondGeo(len, width, yaw, tilt, droop, ox, oy, oz) {
@@ -167,7 +187,7 @@ export function createGen(THREE, seed, region) {
   T.cyl8 = bake([[new THREE.CylinderGeometry(1, 1, 1, 8).translate(0, 0.5, 0), 0, S.NONE]]);
   T.hipRoof = bake([[new THREE.ConeGeometry(0.7072, 1, 4, 1).rotateY(Math.PI / 4).translate(0, 0.5, 0), 0, S.NONE, true]]);
   T.post = bake([[new THREE.BoxGeometry(0.14, 1.0, 0.14).translate(0, 0.5, 0), 2, 0, true], [new THREE.BoxGeometry(0.15, 0.14, 0.15).translate(0, 0.86, 0), 1, 0, true]]);
-  T.rock = bake([[new THREE.DodecahedronGeometry(1, 1).scale(1.3, 0.8, 1.1).translate(0, 0.25, 0), 2, S.NONE, true]]);
+  T.hedge = bake([[new THREE.BoxGeometry(1, 0.9, 1, 3, 2, 3).translate(0, 0.45, 0), 1, S.EVER, true]]);
   T.shrub = bake([[ball(0.95, 1.3, 0.7, 1.3, 0, 0.3), 1, S.EVER], [ball(0.6, 1.2, 0.7, 1.2, 0.6, 0.55, 0.3), 1, S.EVER]]);
   {
     T.fanPalm = palm(13, 12, 3.0, 0.45, 1, 0.15, 0.6, 0.18, { head: 0.55, r0: 0.28, r1: 0.18 });
@@ -179,6 +199,11 @@ export function createGen(THREE, seed, region) {
     ]);
     T.euc = bake([[stick(0.3, 0.16, 11), 2, 0], [ball(1.7, 0.9, 1.7, 0.9, 0.3, 10.6), 1, S.EVER], [ball(1.4, 0.9, 1.5, 0.9, -0.9, 8.6, 0.5), 1, S.EVER], [ball(1.2, 0.9, 1.3, 0.9, 0.9, 7.4, -0.6), 1, S.EVER]]);
     T.yucca = bake((() => { const p = []; for (let k = 0; k < 11; k++) p.push([frondGeo(1.4, 0.12, k * 0.62, 0.9 - (k % 3) * 0.25, 0.1, 0, 0.1, 0), 1, S.EVER, true]); return p; })());
+    // street trees for Chicago and New York: a slim trunk, a few branches and a loose, high canopy
+    T.street = bake([[stick(0.2, 0.12, 3.2), 0, 0], [stick(0.08, 0.05, 2.0, 0, 2.6, 0).applyMatrix4(M4.makeRotationZ(0.5)), 0, 0], [stick(0.08, 0.05, 2.0, 0, 2.6, 0).applyMatrix4(M4.makeRotationZ(-0.45)), 0, 0],
+      [ball(1.5, 1.1, 0.9, 1.1, 0, 5.0), 1, S.DECID], [ball(1.1, 1.1, 0.9, 1.0, 1.1, 4.4, 0.5), 1, S.DECID], [ball(1.0, 1.0, 0.9, 1.1, -1.0, 4.6, -0.5), 1, S.DECID], [ball(0.9, 1, 0.9, 1, 0.2, 5.9, 0.6), 1, S.DECID]]);
+    T.elm = bake([[stick(0.42, 0.26, 4.6), 0, 0], ...[0, 1, 2, 3].map((k) => [stick(0.14, 0.07, 3.4, 0, 0, 0).applyMatrix4(M4.makeRotationZ(0.7)).applyMatrix4(M4.makeRotationY(k * 1.57)).translate(0, 3.8, 0), 0, 0]),
+      [ball(2.6, 1.3, 0.75, 1.3, 0, 7.4), 1, S.DECID], [ball(2.0, 1.2, 0.8, 1.1, 2.2, 6.6, 0.8), 1, S.DECID], [ball(1.9, 1.1, 0.8, 1.2, -2.1, 6.8, -0.9), 1, S.DECID], [ball(1.6, 1.1, 0.8, 1.1, 0.4, 8.6, -1.4), 1, S.DECID]]);
     T.sycamore = bake([[stick(0.35, 0.22, 4), 2, 0], [ball(2.6, 1.1, 1.0, 1.1, 0, 5.4), 1, S.DECID], [ball(1.9, 1.1, 0.9, 1.1, 1.6, 4.6, 0.8), 1, S.DECID], [ball(1.8, 1, 0.9, 1, -1.5, 4.8, -0.6), 1, S.DECID]]);
   }
   {
@@ -212,7 +237,10 @@ export function createGen(THREE, seed, region) {
   // ---------------------------------------------------------------------------
   const DECO = ['#f6c6cf', '#bfe6dc', '#cdbfe8', '#ffd9b0', '#fff0c8', '#a8dcef', '#f7b2a0', '#f9e1e8'].map(col);
   const CONDO = ['#f4f0e6', '#e9e4da', '#fbe7d4', '#dfe8ea', '#f0e0e8', '#e8eef0'].map(col);
-  const TOWER = ['#bcd2de', '#a8c0cc', '#c8d4dc', '#b4ccc0', '#d0d6e0', '#c8c0b4'].map(col);
+  const TOWER = (CHI ? ['#3a4450', '#4a5664', '#2e3640', '#5a6470', '#8a96a0', '#6a7480'] : NY ? ['#9aaebc', '#7a90a0', '#b0bcc4', '#5a6a78', '#c8ccd0', '#8a9aa8']
+    : ['#bcd2de', '#a8c0cc', '#c8d4dc', '#b4ccc0', '#d0d6e0', '#c8c0b4']).map(col);
+  const MASONRY = (CHI ? ['#b8a68a', '#c4b498', '#a86a4a', '#9a5a40', '#d8ccb4', '#8a4a36'] : ['#cfc4ae', '#b9a888', '#8a4a36', '#a85a40', '#d8d0bc', '#7a4030']).map(col);
+  const BROWN = (NY ? ['#7a4a36', '#8a5440', '#6a3a2c', '#a8664a', '#5a3a30', '#9a7a5a'] : ['#a8644a', '#9a5a40', '#b87a5a', '#c4a888', '#8a4a36', '#d8c8a8']).map(col);
   const HOUSE = ['#fff6ea', '#f8e6d0', '#e6f0e8', '#f8dcd4', '#e4e8f4', '#fdf0c8'].map(col);
   const ACCENT = ['#ff8fab', '#5ec8c0', '#ffb057', '#8f7ad8', '#4aa3d8', '#f25f5c', '#2a9d8f'].map(col);
   const NEON = ['#ff3d9a', '#2ff3ff', '#b45cff', '#ff6a3d', '#3dff9a', '#ffe14d'].map(col);
@@ -341,8 +369,48 @@ export function createGen(THREE, seed, region) {
         B('trim', -f * (d / 2 + 3.4), 0, 0, 4.6, 0.12, Math.min(9, w - 1), WHITE, null, { ao: false, noTop: true });
         B('pool', -f * (d / 2 + 3.4), 0.12, 0, 4.0, 0.02, Math.min(8.4, w - 1.6), WHITE, null, { ao: false });
       }
+    } else if (kind === 'classic') { // pre-war masonry: shop base, brick or limestone shaft, setbacks and cornices
+      const nf = Math.round((10 + ((r() * 22) | 0)) * hMul), FH = 3.4, H = nf * FH, c = pickOf(r, MASONRY);
+      const uv = facadeUV('brick', r);
+      B('facade_condo', 0, 0, 0, d, 4.4, w, mul3(c, 0.85), facadeUV('condo', r));
+      if (hero) {
+        B('glass', f * (d / 2 + 0.03), 0.3, 0, 0.06, 3.4, w - 1.2, WHITE);
+        B('trim', f * (d / 2 + 1.0), 3.6, 0, 2.0, 0.12, w - 1, pickOf(r, [col('#1f4a3a'), col('#5a1f24'), col('#1a2a4a'), DARK]));
+      }
+      const H1 = Math.min(H, 4.4 + (H - 4.4) * (0.62 + r() * 0.25));
+      B('facade_brick', 0, 4.4, 0, d, H1 - 4.4, w, c, uv);
+      B('trim', 0, H1, 0, d + 0.9, 0.9, w + 0.9, mul3(c, 1.15), null, { ao: false }); // cornice
+      let top = H1;
+      if (H > H1 + 6) {
+        B('facade_brick', 0, H1 + 0.9, 0, d * 0.78, H - H1, w * 0.8, c, uv);
+        top = H + 0.9;
+        B('trim', 0, top, 0, d * 0.78 + 0.7, 0.7, w * 0.8 + 0.7, mul3(c, 1.15), null, { ao: false });
+      }
+      if (hero) for (let k = 1; k < 4 && k * 6 < H1; k++) B('trim', f * (d / 2 + 0.12), 4.4 + k * 10.2, 0, 0.24, 0.3, w + 0.1, mul3(c, 1.1), null, { ao: false });
+      if (NY && r() < 0.7) { // the wooden water tank on its steel legs
+        const cs = Math.cos(rot), sn = Math.sin(rot), lx = (r() - 0.5) * d * 0.3, lz = (r() - 0.5) * w * 0.3, X = x + lx * cs + lz * sn, Z = z - lx * sn + lz * cs, yb = top + 0.7;
+        for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(G, 'trim', X, y + yb, Z, rot, a * 1.1, 0, b * 1.1, 0.14, 3.0, 0.14, DARK, null, { ao: false });
+        tpl(G, 'trim', T.cyl, X, y + yb + 3.0, Z, 0, 1.6, 3.2, [col('#7a5a40'), C0, C0]);
+        tpl(G, 'trim', T.hipRoof, X, y + yb + 6.2, Z, rot, 3.4, 1.2, [col('#4a3a2c'), C0, C0]);
+      } else if (hero) rooftop(G, r, x, y, z, rot, w * 0.8, d * 0.78, top - 0.2);
+    } else if (kind === 'brown') { // a narrow row house: brownstone or brick, stoop, bay or fire escape, cornice
+      const nf = 3 + ((r() * 2) | 0) + (NY ? 1 : 0), FH = 3.3, H = nf * FH + 1.2, c = pickOf(r, BROWN);
+      B('facade_brick', 0, 0, 0, d, H, w, c, facadeUV('brick', r));
+      B('trim', 0, H, 0, d + 0.2, 0.25, w + 0.2, mul3(c, 0.8), null, { ao: false });
+      B('trim', f * (d / 2 + 0.35), H - 0.8, 0, 0.7, 0.8, w + 0.05, mul3(c, 1.25), null, { ao: false }); // cornice
+      if (!hero) return;
+      if (NY) {
+        for (let k = 0; k < 4; k++) B('trim', f * (d / 2 + 0.4 + k * 0.45), 0, -w * 0.25, 0.45, 1.6 - k * 0.4, 1.6, mul3(c, 0.9), null, { ao: false }); // the stoop
+        for (let k = 1; k < nf; k++) { // fire escape
+          B('trim', f * (d / 2 + 0.6), k * FH + 1.2, w * 0.18, 1.2, 0.06, w * 0.5, DARK, null, { ao: false });
+          B('rail', f * (d / 2 + 1.18), k * FH + 1.26, w * 0.18, 0.04, 0.9, w * 0.5, DARK, null, { ao: false });
+        }
+      } else { // a Chicago bay window
+        B('trim', f * (d / 2 + 0.55), 1.2, 0, 1.1, nf * FH - 0.6, w * 0.5, mul3(c, 1.08), null, { ao: false });
+        B('glass', f * (d / 2 + 1.12), 1.6, 0, 0.04, nf * FH - 1.6, w * 0.42, WHITE);
+      }
     } else if (kind === 'shop') {
-      const H = 4.8, c = pickOf(r, DECO);
+      const H = 4.8, c = pickOf(r, TEMP ? MASONRY : DECO);
       B('facade_deco', 0, 0, 0, d, H, w, c, [0, 0, 0.02, 0.98]);
       B('trim', 0, H, 0, d + 0.3, 1.1, w + 0.3, WHITE);
       rooftop(G, r, x, y, z, rot, w, d, H + 0.3);
@@ -384,7 +452,7 @@ export function createGen(THREE, seed, region) {
     const u = (x - W.roadXAtZ(z)) * W.OCEAN_SIDE, c0 = W.coastDist(z);
     if (h < WATER - 0.2) return [mix3(UNDER, MUD, clamp(h + 3, 0, 1) * 0.5), S.NONE];
     if (h < 0.7) return [WETSAND, S.NONE];
-    if (u > c0 - 70 && h < 1.9) return [mix3(SAND, WETSAND, sstep(1.2, 0.8, h) * 0.6), S.NONE];
+    if (u > c0 - 70 && h < 1.9) return NY ? [mix3(WALK, PLAZA, v), S.NONE] : [mix3(SAND, WETSAND, sstep(1.2, 0.8, h) * 0.6), S.NONE]; // NY: a stone esplanade on the river
     let c = mix3(LAWN, LAWN2, v), st = S.GROUND;
     if (city > 0) {
       const e = Math.min(lx, CHUNK - lx, lz, CHUNK - lz);
@@ -457,7 +525,7 @@ export function createGen(THREE, seed, region) {
       else if (k < 0.72) tpl(G, 'props', T.yucca, x, h, z, rot, s * 1.2, s * 1.2, [C0, C(0x7fa07a, 0x9ab48a), C0], rn);
       else if (k < 0.86) tpl(G, 'props', T.oak, x, h - 0.2, z, rot, s, s, [col(0x4a352c), C(0x3f6a40, 0x2f5f48), C0], rn);
       else if (k < 0.95) tpl(G, 'props', T.sycamore, x, h - 0.2, z, rot, s, s, [C0, C(0x6f9a48, 0x88a850), col(0xe0d8c8)], rn);
-      else tpl(G, 'props', T.rock, x, h, z, rot, s * 1.3, s, [C0, C0, col(0xb98a6c)], rn);
+      else tpl(G, 'props', T.yucca, x, h, z, rot, s * 1.1, s * 1.1, [C0, C(0x7fa07a, 0x9ab48a), C0], rn);
     }
   }
   const C0 = [0, 0, 0];
@@ -490,9 +558,10 @@ export function createGen(THREE, seed, region) {
           else quad(G, mat, v[0], v[1], v[2], v[3], [0, 1, 0], uv, colr);
         };
         Q4('road2', -GH, GH, WHITE, 0, [[0, uvA], [0, uvB], [1, uvB], [1, uvA]]);
-        if (t >= 8 && t < CHUNK - 8) {
-          for (const e of [-GH + 0.35, GH - 0.35]) Q4('paint', e - 0.07, e + 0.07, WHITE, 0.01); // edge lines
-          if (t % 8 === 0) Q4('paint', -0.08, 0.08, YEL, 0.01); // centre dashes (each 4 m quad, every other one)
+        if (t >= 12 && t < CHUNK - 12) { // four lanes: edge lines, dashed lane lines, double yellow centre
+          for (const e of [-GH + 0.35, GH - 0.35]) Q4('paint', e - 0.07, e + 0.07, WHITE, 0.01);
+          if (t % 8 === 0) for (const e of [-K.LANE * 2, K.LANE * 2]) Q4('paint', e - 0.07, e + 0.07, WHITE, 0.01);
+          for (const e of [-0.14, 0.14]) Q4('paint', e - 0.06, e + 0.06, YEL, 0.01);
         }
       }
     }
@@ -500,8 +569,8 @@ export function createGen(THREE, seed, region) {
     const y0 = gridPt(ox, oz);
     if (y0 === null) return;
     for (const [ux, uz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-      const cx = ox + ux * 7, cz = oz + uz * 7;
-      if (gridPt(ox + ux * 14, oz + uz * 14) === null) continue;
+      const cx = ox + ux * 9.6, cz = oz + uz * 9.6;
+      if (gridPt(ox + ux * 16, oz + uz * 16) === null) continue;
       for (let a = -GH + 0.6; a <= GH - 0.6; a += 0.9) {
         const y = y0 + 0.07;
         if (ux === 0) quad(G, 'paint', [cx + a - 0.22, y, cz - 1.4], [cx + a - 0.22, y, cz + 1.4], [cx + a + 0.22, y, cz + 1.4], [cx + a + 0.22, y, cz - 1.4], [0, 1, 0], null, WHITE);
@@ -510,28 +579,37 @@ export function createGen(THREE, seed, region) {
     }
   }
 
+  // Street and park trees per region: palms in LA and Miami, leafy street trees in Chicago and New York.
+  const LM = createLandmarks({ THREE, W, box, tpl, quad, bake, col, FACADE, T, atlasQuad });
+  const treeCols = (r, beach = false) => TEMP ? [col(0x4a3a30), mix3(col(0x4f7a3a), col(0x6f9040), r), col(0x3a3028)]
+    : CA ? [col(0x7a5444), mix3(col(0x3f7a4a), col(0x4f8a50), r), col(0x5a3f30)]
+    : beach ? [col(0x8a6a50), mix3(col(0x4a8a3a), col(0x63a048), r), col(0x6a4a2a)] : [col(0x9a8f84), mix3(col(0x3f8a4a), col(0x55a058), r), col(0x6a8a3a)];
+  const streetTree = (r, beach = false) => TEMP ? T.street : CA ? T.fanPalm : beach || r < 0.5 ? T.coconut : T.royal;
+  const parkTree = (r) => TEMP ? (r < 0.6 ? T.elm : T.street) : CA ? (r < 0.6 ? T.fanPalm : T.datePalm) : r < 0.5 ? T.royal : T.coconut;
+  const isParkSide = (x, z) => W.districtAt(z) === 'park' && ((x - W.roadXAtZ(z)) * W.OCEAN_SIDE > 0) === CHI; // Grant Park lakeside, Central Park inland
+
   // South Florida: beach, mangroves, parks, and city blocks on a street grid away from the corridor.
   function sfChunk(G, rr, cx, cz, ox, oz, st, sample) {
     const zc = oz + CHUNK / 2, dist = W.districtAt(zc);
     const C = (a, b) => mix3(col(a), col(b), rr());
-    const palmC = () => CA ? [col(0x7a5444), C(0x3f7a4a, 0x4f8a50), col(0x5a3f30)] : [col(0x9a8f84), C(0x3f8a4a, 0x55a058), col(0x6a8a3a)];
-    const cocoC = () => [col(0x8a6a50), C(0x4a8a3a, 0x63a048), col(0x6a4a2a)];
-    const STREET_PALM = CA ? T.fanPalm : T.royal, BEACH_PALM = CA ? T.fanPalm : T.coconut;
+    const palmC = () => treeCols(rr());
+    const cocoC = () => treeCols(rr(), true);
+    const STREET_PALM = streetTree(0.9), BEACH_PALM = CA ? T.fanPalm : TEMP ? T.street : T.coconut;
     // shoreline & beach dressing
     for (let t = 0; t < 70; t++) {
       const lx = rr() * CHUNK, lz = rr() * CHUNK, x = ox + lx, z = oz + lz, b = sample(lx, lz);
       const h = hBuf[b], d = dBuf[b];
       if (d < ROAD_EDGE + 6) continue;
       const u = (x - W.roadXAtZ(z)) * W.OCEAN_SIDE, c0 = W.coastDist(z);
-      if (SF && h > -0.6 && h < 0.7 && rr() < 0.5) { tpl(G, 'props', T.mangrove, x, h, z, rr() * 6, 0.8 + rr() * 0.5, 0.8 + rr() * 0.4, [col(0x5a4a3a), C(0x2f5a3a, 0x3f6a40), C0], rr()); continue; }
-      if (u > c0 - 70 && h > 0.7 && h < 1.9) { // the beach
+      if (MIA && h > -0.6 && h < 0.7 && rr() < 0.5) { tpl(G, 'props', T.mangrove, x, h, z, rr() * 6, 0.8 + rr() * 0.5, 0.8 + rr() * 0.4, [col(0x5a4a3a), C(0x2f5a3a, 0x3f6a40), C0], rr()); continue; }
+      if (!NY && u > c0 - 70 && h > 0.7 && h < 1.9) { // the beach
         const k = rr();
         if (k < 0.08) tpl(G, 'props', BEACH_PALM, x, h - 0.1, z, rr() * 6, 0.9 + rr() * 0.3, 0.9 + rr() * 0.3, CA ? palmC() : cocoC(), rr());
         else if (k < 0.16 && u < c0 - 15) tpl(G, 'props', T.seagrape, x, h, z, rr() * 6, 1 + rr() * 0.4, 1, [C0, C(0x4a7a3a, 0x5f8a40), C0], rr());
         else if (k < 0.3 && u > c0 - 50) tpl(G, 'trim', T.umbrella, x, h, z, rr() * 6, 1, 1, [WHITE, pickOf(rr, ACCENT), pickOf(rr, DECO)], 0);
       }
     }
-    if (rr() < 0.3) { // a lifeguard hut
+    if (!TEMP && rr() < 0.3) { // a lifeguard hut
       const lx = 10 + rr() * 44, lz = 10 + rr() * 44, x = ox + lx, z = oz + lz, b = sample(lx, lz), h = hBuf[b];
       const u = (x - W.roadXAtZ(z)) * W.OCEAN_SIDE, c0 = W.coastDist(z);
       if (u > c0 - 45 && u < c0 - 8 && h > 0.6 && h < 1.9 && dBuf[b] > 15) {
@@ -543,11 +621,12 @@ export function createGen(THREE, seed, region) {
     const okAt = (lx, lz) => {
       const b = sample(lx, lz), h = hBuf[b], d = dBuf[b], x = ox + lx, z = oz + lz;
       const u = (x - W.roadXAtZ(z)) * W.OCEAN_SIDE;
-      return h > 1.0 && d > 48 && u < W.coastDist(z) - 72;
+      return h > 1.0 && d > 48 && u < W.coastDist(z) - 72 && !W.landmarkNear(x, z, 4);
     };
     // street trees and lamps along this block's sidewalks
     for (let e = 0; e < 4; e++) for (let t = 8; t < CHUNK - 4; t += 16) {
-      const lx = e === 0 ? 6.6 : e === 1 ? CHUNK - 6.6 : t, lz = e === 2 ? 6.6 : e === 3 ? CHUNK - 6.6 : t;
+      const SW = K.GRID_HALF + 1.2; // on the sidewalk beside the four-lane back street
+      const lx = e === 0 ? SW : e === 1 ? CHUNK - SW : t, lz = e === 2 ? SW : e === 3 ? CHUNK - SW : t;
       if (!okAt(lx, lz)) continue;
       const b = sample(lx, lz);
       if ((t / 16 + e) % 2 === 0) tpl(G, 'props', STREET_PALM, ox + lx, hBuf[b] - 0.1, oz + lz, rr() * 6, 0.85 + rr() * 0.2, 0.75 + rr() * 0.25, palmC(), rr());
@@ -558,36 +637,47 @@ export function createGen(THREE, seed, region) {
     }
     const beachy = dist === 'deco' || dist === 'beach';
     gridStreets(G, ox, oz);
-    const park = noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || beachy && noise(cx * 0.5, cz * 0.5) > 0.3;
+    const bigPark = isParkSide(ox + CHUNK / 2, oz + CHUNK / 2);
+    const park = bigPark || noise(cx * 0.37 + 9.1, cz * 0.41 - 3.3) > 0.42 || beachy && noise(cx * 0.5, cz * 0.5) > 0.3;
     if (park) {
-      for (let t = 0; t < 14; t++) {
-        const lx = 8 + rr() * 48, lz = 8 + rr() * 48;
+      for (let t = 0; t < (bigPark ? 26 : 14); t++) {
+        const lx = 10 + rr() * 44, lz = 10 + rr() * 44;
         if (!okAt(lx, lz)) continue;
         const b = sample(lx, lz), x = ox + lx, z = oz + lz, k = rr();
-        if (k < 0.2) tpl(G, 'props', T.banyan, x, hBuf[b] - 0.2, z, rr() * 6, 0.8 + rr() * 0.3, 0.8 + rr() * 0.3, [col(0x6a5a4a), C(0x3a6a3a, 0x4a7a40), C0], rr());
-        else if (k < 0.6) tpl(G, 'props', CA ? (rr() < 0.6 ? T.fanPalm : T.datePalm) : rr() < 0.5 ? T.royal : T.coconut, x, hBuf[b] - 0.1, z, rr() * 6, 0.9, 0.85 + rr() * 0.3, palmC(), rr());
-        else tpl(G, 'props', T.bougainvillea, x, hBuf[b], z, rr() * 6, 1, 1, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr());
+        if (k < 0.2 && !TEMP) tpl(G, 'props', T.banyan, x, hBuf[b] - 0.2, z, rr() * 6, 0.8 + rr() * 0.3, 0.8 + rr() * 0.3, [col(0x6a5a4a), C(0x3a6a3a, 0x4a7a40), C0], rr());
+        else if (k < 0.75) tpl(G, 'props', parkTree(rr()), x, hBuf[b] - 0.1, z, rr() * 6, 0.9 + rr() * 0.25, 0.85 + rr() * 0.3, palmC(), rr());
+        else tpl(G, 'props', T.hedge, x, hBuf[b], z, rr() * 6, 2.4 + rr() * 2, 1, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr(), 0.9 + rr() * 0.4);
+      }
+      if (TEMP) for (const lz of [20, 44]) { // park paths and benches
+        if (!okAt(32, lz)) continue;
+        const b = sample(32, lz);
+        box(G, 'sidewalk', ox + 32, hBuf[b] + 0.02, oz + lz, 0, 0, 0, 0, 40, 0.04, 2.6, WHITE, null, { ao: false });
+        box(G, 'trim', ox + 26, hBuf[b], oz + lz + 2, 0, 0, 0.42, 0, 1.8, 0.06, 0.45, col('#4a3a2a'), null, { ao: false });
       }
       return;
     }
     const lots = [];
-    if (dist === 'downtown') {
-      if (rr() < 0.5) lots.push([32, 32, 36, 36, 'tower']);
-      else { lots.push([20, 32, 40, 22, 'tower']); lots.push([44, 32, 40, 22, rr() < 0.5 ? 'tower' : 'condo']); } // [lx, lz, w (along z), d (along x)]: clear of the streets
+    if (dist === 'downtown') { // [lx, lz, w (along z), d (along x)]: clear of the four-lane streets and their sidewalks
+      const k2 = TEMP ? (rr() < 0.5 ? 'classic' : 'tower') : rr() < 0.5 ? 'tower' : 'condo';
+      if (rr() < 0.45) lots.push([32, 32, 34, 34, TEMP && rr() < 0.4 ? 'classic' : 'tower']);
+      else { lots.push([21, 32, 34, 18, 'tower']); lots.push([43, 32, 34, 18, k2]); }
+    } else if (TEMP) { // rows of brownstones and three-flats facing the side streets
+      for (const [lx, front] of [[18, -1], [46, 1]]) for (let lz = 15; lz <= 49; lz += 8.5) lots.push([lx, lz, 8.3, 14, rr() < 0.85 ? 'brown' : 'classic', front]);
     } else if (beachy) {
       for (const [a, b] of [[19, 19], [45, 19], [19, 45], [45, 45]]) lots.push([a, b, 18, 18, rr() < 0.6 ? 'deco' : 'condo']);
     } else {
       for (const [a, b] of [[19, 19], [45, 19], [19, 45], [45, 45]]) lots.push([a, b, 13, 12, rr() < 0.82 ? 'house' : 'condo']);
     }
-    for (const [lx, lz, w, d, kind] of lots) {
+    for (const [lx, lz, w, d, kind, fr] of lots) {
       if (!(okAt(lx - d / 2, lz - w / 2) && okAt(lx + d / 2, lz - w / 2) && okAt(lx - d / 2, lz + w / 2) && okAt(lx + d / 2, lz + w / 2))) continue;
       const b = sample(lx, lz), y = hBuf[b];
-      const front = lx < CHUNK / 2 ? -1 : 1;
-      const hm = kind === 'tower' ? 0.6 + 0.9 * sstep(-0.1, 0.6, noise(cx * 0.21 + 4, cz * 0.19)) : kind === 'condo' ? 0.6 : 1;
-      building(G, rr, ox + lx, y, oz + lz, 0, w, d, kind, front, hm, kind !== 'tower' && kind !== 'condo');
+      const front = fr || (lx < CHUNK / 2 ? -1 : 1);
+      const skyline = TEMP ? 1.0 + 1.1 * sstep(-0.2, 0.5, noise(cx * 0.21 + 4, cz * 0.19)) : 0.6 + 0.9 * sstep(-0.1, 0.6, noise(cx * 0.21 + 4, cz * 0.19));
+      const hm = kind === 'tower' || kind === 'classic' ? skyline * (kind === 'classic' && dist !== 'downtown' ? 0.35 : 1) : kind === 'condo' ? 0.6 : 1;
+      building(G, rr, ox + lx, y, oz + lz, 0, w, d, kind, front, hm, kind === 'house' || kind === 'brown' || kind === 'deco');
       if (kind === 'house') {
-        tpl(G, 'props', CA ? T.fanPalm : rr() < 0.5 ? T.coconut : T.royal, ox + lx + front * (d / 2 + 2), y, oz + lz + w * 0.45, rr() * 6, 0.8, 0.7 + rr() * 0.3, palmC(), rr());
-        tpl(G, 'props', T.bougainvillea, ox + lx + front * (d / 2 + 1.2), y, oz + lz - w * 0.45, rr() * 6, 0.9, 0.9, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr());
+        tpl(G, 'props', streetTree(rr()), ox + lx + front * (d / 2 + 2), y, oz + lz + w * 0.45, rr() * 6, 0.8, 0.7 + rr() * 0.3, palmC(), rr());
+        tpl(G, 'props', T.hedge, ox + lx + front * (d / 2 + 1.2), y, oz + lz - w * 0.45, rr() * 6, 2.2, 1, [C0, C(0x3f6a35, 0x4f7a3a), C0], rr(), 1.1);
       }
     }
   }
@@ -605,7 +695,9 @@ export function createGen(THREE, seed, region) {
       const p = W.roadPoint(s);
       const dist = W.districtAt(p.z);
       let kind, w, d, gap = 0.6;
-      if (dist === 'downtown') { kind = r() < 0.55 ? 'tower' : 'condo'; w = kind === 'tower' ? 26 + r() * 10 : 18 + r() * 10; d = kind === 'tower' ? 22 + r() * 8 : 16 + r() * 6; }
+      if (TEMP && dist === 'downtown') { kind = r() < 0.5 ? 'tower' : 'classic'; w = kind === 'tower' ? 26 + r() * 10 : 20 + r() * 12; d = 20 + r() * 8; gap = 0.2; }
+      else if (TEMP) { kind = r() < 0.7 ? 'brown' : r() < 0.6 ? 'shop' : 'classic'; w = kind === 'brown' ? 7.5 + r() * 2 : 16 + r() * 10; d = kind === 'brown' ? 14 + r() * 3 : 16 + r() * 4; gap = kind === 'brown' ? 0.05 : 0.4; }
+      else if (dist === 'downtown') { kind = r() < 0.55 ? 'tower' : 'condo'; w = kind === 'tower' ? 26 + r() * 10 : 18 + r() * 10; d = kind === 'tower' ? 22 + r() * 8 : 16 + r() * 6; }
       else if (dist === 'deco' || dist === 'beach') { kind = r() < (CA ? 0.55 : 0.8) ? 'deco' : 'shop'; w = kind === 'deco' ? 14 + r() * 8 : 24 + r() * 14; d = 14 + r() * 6; gap = 0.3; }
       else { const k = r(); kind = k < 0.55 ? 'house' : k < 0.8 ? 'shop' : 'condo'; w = kind === 'house' ? 12 + r() * 3 : kind === 'shop' ? 22 + r() * 16 : 18 + r() * 8; d = kind === 'house' ? 11 + r() * 2 : 15 + r() * 4; gap = kind === 'house' ? 5 + r() * 3 : 1.5; }
       w = Math.min(w, end - s);
@@ -736,9 +828,8 @@ export function createGen(THREE, seed, region) {
             const p = RP(s, side * (ROAD_EDGE + 2.5));
             const r = mulberry32(i * 131 + side * 7)();
             const isBeach = (dist === 'deco' || dist === 'beach') && side === W.OCEAN_LAT;
-            const tp = CA ? T.fanPalm : isBeach ? T.coconut : T.royal;
-            tpl(G, 'props', tp, p.x, p.y + 0.17, p.z, r * 6, 0.9 + r * 0.2, (CA ? 1.0 : 0.85) + r * 0.3,
-              CA ? [col(0x7a5444), col(0x3f7a4a), col(0x5a3f30)] : isBeach ? [col(0x8a6a50), col(0x4f923f), col(0x6a4a2a)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r);
+            const tp = TEMP ? T.street : CA ? T.fanPalm : isBeach ? T.coconut : T.royal;
+            tpl(G, 'props', tp, p.x, p.y + 0.17, p.z, r * 6, 0.9 + r * 0.2, (CA || TEMP ? 1.0 : 0.85) + r * 0.3, treeCols(r, isBeach), r);
             box(G, 'trim', p.x, p.y + 0.17, p.z, p.h, 0, -0.02, 0, 1.4, 0.06, 1.4, col('#5a4a3a'), null, { ao: false });
           }
           const furn = (i * 7 + (side > 0 ? 3 : 0)) % 29, idist = W.intersectionDist(s);
@@ -775,6 +866,13 @@ export function createGen(THREE, seed, region) {
             box(G, 'neon', hp.x, hp.y + 0.17, hp.z, hp.h, 0, 7.75, 0, 0.6, 0.18, 0.32, LAMP, null, { ao: false });
             lights.push(hp.x, hp.y + 7.6, hp.z);
           }
+          if (TEMP && i % 2 === 0) { // the low stone wall along the park
+            const a = RP(s, side * (ROAD_EDGE + SIDEWALK + 0.25));
+            if (isParkSide(a.x, a.z)) {
+              const b = RP(s + 2 * STEP, side * (ROAD_EDGE + SIDEWALK + 0.25)), len = Math.hypot(b.x - a.x, b.z - a.z);
+              box(G, 'trim', (a.x + b.x) / 2, a.y + 0.1, (a.z + b.z) / 2, a.h, 0, 0, 0, 0.6, 0.9, len + 0.02, col('#a89a84'), null, { ao: false });
+            }
+          }
           if ((dist === 'deco' || dist === 'beach') && side === W.OCEAN_LAT && i % 2 === 0) { // low coral-stone seawall on the promenade
             const a = RP(s, side * (ROAD_EDGE + SIDEWALK + 0.25)), b = RP(s + 2 * STEP, side * (ROAD_EDGE + SIDEWALK + 0.25));
             const len = Math.hypot(b.x - a.x, b.z - a.z);
@@ -802,6 +900,63 @@ export function createGen(THREE, seed, region) {
         }
       }
     }
+    // ---- Chicago: the elevated 'L' crosses the boulevard on steel trestles at some downtown cross streets
+    if (CHI) for (let m = Math.ceil(s0 / BLOCK); m * BLOCK < s1; m++) {
+      const sb = m * BLOCK, pc = RP(sb, 0);
+      if (W.districtAt(pc.z) !== 'downtown' || ((m % 4) + 4) % 4 !== 1) continue;
+      const RUST = col('#5a4a3e'), RAIL = col('#3a3a3a'), yD = 7.2;
+      for (let lt = -84; lt <= 84; lt += 12) {
+        const a = RP(sb - 3.2, lt), b = RP(sb + 3.2, lt), e = RP(sb - 3.2, lt + 12), f = RP(sb + 3.2, lt + 12);
+        if (Math.abs(lt) > ROAD_EDGE + 1 || lt === -84) for (const q of [a, b]) box(G, 'trim', q.x, q.y, q.z, q.h, 0, -1, 0, 0.5, yD + 1, 0.5, RUST, null, { ao: false });
+        if (lt < 84) {
+          for (const [p1, p2] of [[a, e], [b, f]]) {
+            const mx = (p1.x + p2.x) / 2, mz = (p1.z + p2.z) / 2, len = Math.hypot(p2.x - p1.x, p2.z - p1.z), h = Math.atan2(p2.x - p1.x, p2.z - p1.z);
+            box(G, 'trim', mx, p1.y + yD, mz, h, 0, 0, 0, 0.5, 1.3, len + 0.05, RUST, null, { ao: false }); // girders
+          }
+          const c = RP(sb, lt + 6), h2 = Math.atan2(e.x - a.x, e.z - a.z);
+          box(G, 'trim', c.x, c.y + yD + 1.3, c.z, h2, 0, 0, 0, 7.0, 0.3, 12.05, col('#4a4440'), null, { ao: false }); // deck
+          for (const off of [-2.2, -0.8, 0.8, 2.2]) box(G, 'trim', c.x, c.y + yD + 1.6, c.z, h2, off, 0, 0, 0.12, 0.18, 12.05, RAIL, null, { ao: false });
+        }
+      }
+    }
+    // ---- New York: on the river crossings the road becomes a suspension bridge with Gothic stone towers
+    if (NY) {
+      const SPAN = 480, isBridge = (s) => s > 0 && W.districtAt(RP(s, 0).z) === 'causeway';
+      const STONE = col('#b8a888'), CABLE = col('#9aa0a6');
+      for (let t = Math.ceil(s0 / SPAN) * SPAN; t < s1; t += SPAN) { // the towers
+        if (!isBridge(t)) continue;
+        const pc = RP(t, 0), H = 64;
+        for (const side of [-1, 1]) {
+          const q = RP(t, side * (ROAD_EDGE + 2.6));
+          box(G, 'trim', q.x, pc.y - 30, q.z, q.h, 0, 0, 0, 4.4, H + 30, 9, STONE, null, { ao: false });
+          box(G, 'trim', q.x, pc.y - 30, q.z, q.h, 0, H + 30, 0, 5.0, 1.4, 9.6, mul3(STONE, 1.1), null, { ao: false });
+        }
+        box(G, 'trim', pc.x, pc.y + 30, pc.z, pc.h, 0, 0, 0, 2 * (ROAD_EDGE + 2.6), H - 30, 9, STONE, null, { ao: false }); // over the road, above the arches
+        box(G, 'trim', pc.x, pc.y + H, pc.z, pc.h, 0, 0, 0, 2 * (ROAD_EDGE + 2.6) + 5, 1.6, 9.8, mul3(STONE, 1.1), null, { ao: false });
+        for (const lt of [-ROAD_EDGE / 2 - 0.6, ROAD_EDGE / 2 + 0.6]) { // two pointed arches, one per direction
+          let prev = null;
+          for (let k = 0; k <= 10; k++) {
+            const a = (k / 10) * Math.PI, xo = Math.cos(a) * (ROAD_EDGE / 2 + 0.6), yo = 18 + Math.pow(Math.sin(a), 0.55) * 12;
+            const p = RP(t - 4.6, lt + xo), cur = [p.x, pc.y + yo, p.z];
+            if (prev) LM.beam(G, 'trim', prev, cur, 1.0, 1.2, mul3(STONE, 0.85));
+            prev = cur;
+          }
+        }
+      }
+      for (let i = i0; i < i1; i += 3) { // the main cables and suspenders between towers
+        const s = i * STEP, t0 = Math.floor(s / SPAN) * SPAN, t1 = t0 + SPAN;
+        if (!isBridge(t0) || !isBridge(t1)) continue;
+        const u = (s - t0) / SPAN, sag = 4 * u * (1 - u), s2 = s + 3 * STEP, u2 = (s2 - t0) / SPAN, sag2 = 4 * u2 * (1 - u2);
+        for (const side of [-1, 1]) {
+          const a = RP(s, side * (ROAD_EDGE + 2.6)), b = RP(s2, side * (ROAD_EDGE + 2.6));
+          const ya = a.y + 64 - sag * 56, yb = b.y + 64 - sag2 * 56;
+          LM.beam(G, 'trim', [a.x, ya, a.z], [b.x, yb, b.z], 0.7, 0.7, CABLE);
+          box(G, 'trim', a.x, a.y + 0.8, a.z, a.h, 0, 0, 0, 0.12, ya - a.y - 0.8, 0.12, CABLE, null, { ao: false });
+        }
+      }
+    }
+    // ---- landmarks whose spot falls in this stretch
+    for (const L of W.landmarks()) if (L.s >= s0 && L.s < s1) LM.build(G, L);
     // ---- corridor buildings, block by block
     for (let m = Math.floor((s0 - BLOCK) / BLOCK); m * BLOCK < s1 + BLOCK; m++) {
       if (m < 0) continue;
@@ -814,13 +969,14 @@ export function createGen(THREE, seed, region) {
           const u = (p.x - W.roadXAtZ(p.z)) * W.OCEAN_SIDE;
           if (u > W.coastDist(p.z) - 28 - lot.d / 2) continue;
           if (W.baseH(p.x, p.z) < 0.9) continue;
+          if (W.landmarkNear(p.x, p.z, Math.max(lot.w, lot.d) / 2)) continue; // a landmark stands here
           const r = mulberry32(lot.seed);
           building(G, r, p.x, p.y + 0.17, p.z, p.h, lot.w, lot.d, lot.kind, side, 1, true);
           if (lot.kind === 'house') {
             const q = W.roadPoint(lot.s + lot.w / 2 + 2.5, side * (SETBACK + 3));
-            tpl(G, 'props', CA ? T.fanPalm : r() < 0.5 ? T.coconut : T.royal, q.x, q.y, q.z, r() * 6, 0.85, 0.75 + r() * 0.3, CA ? [col(0x7a5444), col(0x3f7a4a), col(0x5a3f30)] : [col(0x9a8f84), col(0x4a9050), col(0x6a8a3a)], r());
+            tpl(G, 'props', streetTree(r()), q.x, q.y, q.z, r() * 6, 0.85, 0.75 + r() * 0.3, treeCols(r()), r());
             const q2 = W.roadPoint(lot.s - lot.w / 2 - 1.5, side * (SETBACK + 1.5));
-            tpl(G, 'props', T.bougainvillea, q2.x, q2.y, q2.z, r() * 6, 1, 1, [C0, col(0x46703a), C0], r());
+            tpl(G, 'props', T.hedge, q2.x, q2.y, q2.z, q2.h, 1.1, 1, [C0, col(0x46703a), C0], r(), 2.6);
           }
         }
       }
