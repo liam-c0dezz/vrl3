@@ -983,5 +983,12 @@ export function createGen(THREE, seed, region) {
     }
   }
 
-  return { world: W, chunk, segment };
+  function landmark(id) { // one landmark on its own (for previews and checks)
+    const L = W.landmarks().find((l) => l.id === id);
+    if (!L) return null;
+    const G = new Groups(L.x, L.z);
+    LM.build(G, L);
+    return { L, ...G.out() };
+  }
+  return { world: W, chunk, segment, landmark };
 }
