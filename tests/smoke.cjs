@@ -265,8 +265,9 @@ async function run(browser, base, region, device) {
     const ped = g.peds.list.find((q) => q.alive && !q.fall && !q.cross && Math.abs(q.s - c.s) < 200);
     if (!ped) return 'no pedestrian near the car';
     g.setAuto(false);
-    const pt = g.world.roadPoint(ped.s, ped.lat), back = g.world.roadPoint(ped.s - 5, ped.lat);
-    c.x = back.x; c.z = back.z; c.h = Math.atan2(pt.x - back.x, pt.z - back.z); c.vx = Math.sin(c.h) * 13; c.vz = Math.cos(c.h) * 13;
+    ped.lat = Math.sign(ped.lat) * 5.4; ped.dir = 1; ped.speed = 0.01; // stepping out into the outer lane
+    const pt = g.world.roadPoint(ped.s, ped.lat), back = g.world.roadPoint(ped.s - 6, ped.lat);
+    c.x = back.x; c.z = back.z; c.h = Math.atan2(pt.x - back.x, pt.z - back.z); c.vx = Math.sin(c.h) * 18; c.vz = Math.cos(c.h) * 18; // above the 14 m/s that people can jump clear of
     return true;
   });
   await page.waitForFunction(() => window.__game.state().pedsDown > 0, null, { timeout: 60000 }).catch(() => {});
