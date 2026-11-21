@@ -1828,7 +1828,7 @@ addEventListener('keydown', (e) => {
   if (k && !photo.on) { input[k] = true; e.preventDefault(); if (k === 'hand' && autoDrive) setAuto(false); return; }
   if (e.repeat) return;
   if (garageOpen) { if (e.code === 'KeyV' || e.code === 'Escape' || e.code === 'Enter') setGarage(false); return; }
-  if (menuOpen && e.code !== 'Escape' && e.code !== 'KeyH') return;
+  if (menuOpen && e.code !== 'Escape' && e.code !== 'KeyM' && e.code !== 'KeyH') return;
   if (photo.on) {
     if (e.code === 'Enter' || e.code === 'Space') { photo.save = true; e.preventDefault(); }
     else if (e.code === 'KeyF' || e.code === 'Escape') setPhoto(false);
